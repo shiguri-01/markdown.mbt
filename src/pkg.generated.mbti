@@ -2,6 +2,8 @@
 package "username/markdown"
 
 // Values
+pub fn attr(AttrName, String) -> Attr
+
 pub fn commonmark() -> Processor
 
 pub fn commonmark_plugin() -> Plugin
@@ -26,17 +28,19 @@ pub(all) enum AstError {
   UnclosedTag(Tag)
 }
 
-pub(all) struct AstNode {
-  element : Element?
-  children : Array[AstNode]
-  text : String
-  range : SourceRange?
+pub struct AstNode {
+  // private fields
 }
+pub fn AstNode::children(Self) -> Array[Self]
+pub fn AstNode::element(Self) -> Element?
+pub fn AstNode::range(Self) -> SourceRange?
+pub fn AstNode::text(Self) -> String
 
-pub(all) struct Attr {
-  name : AttrName
-  value : String
+pub struct Attr {
+  // private fields
 }
+pub fn Attr::name(Self) -> AttrName
+pub fn Attr::value(Self) -> String
 
 pub struct AttrName {
   // private fields
@@ -54,11 +58,12 @@ pub fn BlockContext::current_line_start(Self) -> Int
 pub fn BlockContext::line_at(Self, Int) -> String?
 pub fn BlockContext::line_index(Self) -> Int
 
-pub(all) struct Element {
-  tag : Tag
-  attrs : Array[Attr]
-  range : SourceRange?
+pub struct Element {
+  // private fields
 }
+pub fn Element::attrs(Self) -> Array[Attr]
+pub fn Element::range(Self) -> SourceRange?
+pub fn Element::tag(Self) -> Tag
 
 pub(all) enum Event {
   Enter(Element)
@@ -131,13 +136,7 @@ pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? :
 pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 
-pub(all) enum RuleChain {
-  BlockContinue
-  BlockStart
-  Inline
-  Delimiter
-  Core
-} derive(Eq)
+type RuleChain derive(Eq)
 
 pub struct RuleName {
   // private fields

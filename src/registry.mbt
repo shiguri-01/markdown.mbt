@@ -1,5 +1,5 @@
 ///|
-pub(all) enum RuleChain {
+enum RuleChain {
   BlockContinue
   BlockStart
   Inline

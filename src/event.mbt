@@ -98,16 +98,16 @@ pub(all) struct SourceRange {
 }
 
 ///|
-pub(all) struct Attr {
-  name : AttrName
-  value : String
+pub struct Attr {
+  priv name : AttrName
+  priv value : String
 }
 
 ///|
-pub(all) struct Element {
-  tag : Tag
-  attrs : Array[Attr]
-  range : SourceRange?
+pub struct Element {
+  priv tag : Tag
+  priv attrs : Array[Attr]
+  priv range : SourceRange?
 }
 
 ///|
@@ -118,6 +118,21 @@ pub(all) enum Event {
   SoftBreak
   HardBreak
   Html(String)
+}
+
+///|
+pub fn attr(name : AttrName, value : String) -> Attr {
+  { name, value }
+}
+
+///|
+pub fn Attr::name(self : Attr) -> AttrName {
+  self.name
+}
+
+///|
+pub fn Attr::value(self : Attr) -> String {
+  self.value
 }
 
 ///|
@@ -132,4 +147,19 @@ pub fn element_with_attrs(
   range? : SourceRange? = None,
 ) -> Element {
   { tag, attrs, range }
+}
+
+///|
+pub fn Element::tag(self : Element) -> Tag {
+  self.tag
+}
+
+///|
+pub fn Element::attrs(self : Element) -> Array[Attr] {
+  self.attrs
+}
+
+///|
+pub fn Element::range(self : Element) -> SourceRange? {
+  self.range
 }

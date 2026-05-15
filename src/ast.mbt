@@ -1,9 +1,9 @@
 ///|
-pub(all) struct AstNode {
-  element : Element?
-  children : Array[AstNode]
-  text : String
-  range : SourceRange?
+pub struct AstNode {
+  priv element : Element?
+  priv children : Array[AstNode]
+  priv text : String
+  priv range : SourceRange?
 }
 
 ///|
@@ -20,6 +20,26 @@ pub struct AstBuilder {
 ///|
 pub fn AstBuilder::new() -> AstBuilder {
   { unit: 0 }
+}
+
+///|
+pub fn AstNode::element(self : AstNode) -> Element? {
+  self.element
+}
+
+///|
+pub fn AstNode::children(self : AstNode) -> Array[AstNode] {
+  self.children
+}
+
+///|
+pub fn AstNode::text(self : AstNode) -> String {
+  self.text
+}
+
+///|
+pub fn AstNode::range(self : AstNode) -> SourceRange? {
+  self.range
 }
 
 ///|

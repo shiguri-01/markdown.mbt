@@ -21,7 +21,7 @@ test {
 test {
   let parser = @markdown.Processor::commonmark().parse("hello")
   match parser.next() {
-    Some(@markdown.Enter(el)) => assert_eq(el.tag.to_string(), "cm:paragraph")
+    Some(@markdown.Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
   match parser.next() {
@@ -83,7 +83,7 @@ test {
   ]
   let transformed = @markdown.Transform::new(events).text_merge().collect()
   match @markdown.AstBuilder::new().build(transformed) {
-    Ok(root) => assert_eq(root.children[0].children[0].text, "ab")
+    Ok(root) => assert_eq(root.children()[0].children()[0].text(), "ab")
     Err(_) => abort("expected AST")
   }
 }
