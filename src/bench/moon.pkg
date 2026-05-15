@@ -1,0 +1,4 @@
+import {
+  "username/markdown" @markdown,
+  "moonbitlang/core/bench" @bencher,
+}

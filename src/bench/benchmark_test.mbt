@@ -94,7 +94,7 @@ test "benchmark parser scenarios produce events" {
 
 ///|
 test "benchmark markdown parser scenarios" {
-  let bencher = @bench.new()
+  let bencher = @bencher.new()
   bencher.bench(
     name="large_paragraph",
     fn() {
