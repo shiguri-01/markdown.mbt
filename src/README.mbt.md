@@ -21,11 +21,11 @@ test {
 test {
   let parser = @markdown.Processor::commonmark().parse("hello")
   match parser.next() {
-    Some(@markdown.Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
   match parser.next() {
-    Some(@markdown.Text(text)) => assert_eq(text, "hello")
+    Some(Text(text)) => assert_eq(text, "hello")
     _ => abort("expected text")
   }
 }
@@ -55,11 +55,9 @@ test {
       if ctx.offset() + end >= ctx.source().length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:math"))),
-      )
-      sink.emit(@markdown.Text(scanner.slice(1, end)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:math")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:math"))))
+      sink.emit(Text(scanner.slice(1, end)))
+      sink.emit(Exit(@markdown.Tag::raw("x:math")))
       end + 1
     },
   )
@@ -75,11 +73,11 @@ test {
 ```mbt check
 ///|
 test {
-  let events = [
-    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
-    @markdown.Text("a"),
-    @markdown.Text("b"),
-    @markdown.Exit(@markdown.Tag::raw("x:note")),
+  let events : Array[@markdown.Event] = [
+    Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
+    Text("a"),
+    Text("b"),
+    Exit(@markdown.Tag::raw("x:note")),
   ]
   let transformed = @markdown.Transform::new(events).text_merge().collect()
   match @markdown.AstBuilder::new().build(transformed) {

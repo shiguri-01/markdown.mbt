@@ -26,15 +26,15 @@ test "commonmark plugin can be installed explicitly" {
 test "empty builder parses paragraph text without registered rules" {
   let parser = @markdown.Processor::new().parse("plain")
   match parser.next() {
-    Some(@markdown.Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected fallback paragraph")
   }
   match parser.next() {
-    Some(@markdown.Text(text)) => assert_eq(text, "plain")
+    Some(Text(text)) => assert_eq(text, "plain")
     _ => abort("expected fallback text")
   }
   match parser.next() {
-    Some(@markdown.Exit(tag)) => assert_eq(tag.to_string(), "cm:paragraph")
+    Some(Exit(tag)) => assert_eq(tag.to_string(), "cm:paragraph")
     _ => abort("expected fallback paragraph exit")
   }
   match parser.next() {
@@ -100,11 +100,9 @@ test "paragraph rule can be replaced" {
     @markdown.RuleName::raw("cm:block:paragraph"),
     priority=0,
     fn(ctx, sink) {
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:paragraph"))),
-      )
-      sink.emit(@markdown.Text(ctx.current_line()))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:paragraph")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:paragraph"))))
+      sink.emit(Text(ctx.current_line()))
+      sink.emit(Exit(@markdown.Tag::raw("x:paragraph")))
       1
     },
   )
@@ -163,12 +161,12 @@ test "hard break rule can be disabled" {
 test "hard break rule emits event for backslash and spaces" {
   let backslash = @markdown.Processor::commonmark().parse("a\\\nb").collect()
   match backslash[2] {
-    @markdown.HardBreak => ()
+    HardBreak => ()
     _ => abort("expected backslash hard break")
   }
   let spaces = @markdown.Processor::commonmark().parse("a  \nb").collect()
   match spaces[2] {
-    @markdown.HardBreak => ()
+    HardBreak => ()
     _ => abort("expected spaces hard break")
   }
 }
@@ -177,7 +175,7 @@ test "hard break rule emits event for backslash and spaces" {
 test "soft break rule emits event and can be disabled" {
   let enabled = @markdown.Processor::commonmark().parse("a\nb").collect()
   match enabled[2] {
-    @markdown.SoftBreak => ()
+    SoftBreak => ()
     _ => abort("expected soft break")
   }
   let disabled = @markdown.Processor::commonmark()
@@ -185,7 +183,7 @@ test "soft break rule emits event and can be disabled" {
     .parse("a\nb")
     .collect()
   match disabled[2] {
-    @markdown.Text(text) => assert_eq(text, "\n")
+    Text(text) => assert_eq(text, "\n")
     _ => abort("expected text newline")
   }
 }
@@ -202,7 +200,7 @@ test "entity rule can be disabled" {
 test "entity rule emits text event and can be disabled" {
   let enabled = @markdown.Processor::commonmark().parse("&amp;").collect()
   match enabled[1] {
-    @markdown.Text(text) => assert_eq(text, "&")
+    Text(text) => assert_eq(text, "&")
     _ => abort("expected decoded entity text")
   }
   let disabled = @markdown.Processor::commonmark()
@@ -210,11 +208,11 @@ test "entity rule emits text event and can be disabled" {
     .parse("&amp;")
     .collect()
   match disabled[1] {
-    @markdown.Text(text) => assert_eq(text, "&")
+    Text(text) => assert_eq(text, "&")
     _ => abort("expected raw ampersand text")
   }
   match disabled[2] {
-    @markdown.Text(text) => assert_eq(text, "amp;")
+    Text(text) => assert_eq(text, "amp;")
     _ => abort("expected raw entity suffix text")
   }
 }
@@ -226,11 +224,9 @@ test "standard rule can be replaced" {
     priority=100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:heading"))),
-        )
-        sink.emit(@markdown.Text("replaced"))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:heading")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:heading"))))
+        sink.emit(Text("replaced"))
+        sink.emit(Exit(@markdown.Tag::raw("x:heading")))
         1
       } else {
         0
@@ -250,11 +246,9 @@ test "replaced disabled rule stays disabled until enabled" {
     priority=100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:heading"))),
-        )
-        sink.emit(@markdown.Text("replaced"))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:heading")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:heading"))))
+        sink.emit(Text("replaced"))
+        sink.emit(Exit(@markdown.Tag::raw("x:heading")))
         1
       } else {
         0
@@ -294,11 +288,9 @@ test "standard delimiter rule can be replaced" {
       if base + close >= source.length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:emphasis"))),
-      )
-      sink.emit(@markdown.Text(scanner.slice(1, close)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:emphasis")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:emphasis"))))
+      sink.emit(Text(scanner.slice(1, close)))
+      sink.emit(Exit(@markdown.Tag::raw("x:emphasis")))
       close + 1
     },
   )
@@ -328,11 +320,9 @@ test "standard inline rule can be replaced" {
       if base + close >= source.length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:code"))),
-      )
-      sink.emit(@markdown.Text(scanner.slice(1, close)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:code")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:code"))))
+      sink.emit(Text(scanner.slice(1, close)))
+      sink.emit(Exit(@markdown.Tag::raw("x:code")))
       close + 1
     },
   )
@@ -349,7 +339,7 @@ test "standard text inline rule can be replaced" {
     priority=-1000,
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("abc") {
-        sink.emit(@markdown.Text("XYZ"))
+        sink.emit(Text("XYZ"))
         3
       } else {
         0
@@ -366,7 +356,7 @@ test "standard text inline rule can be replaced" {
 test "standard text inline rule can be disabled" {
   let enabled = @markdown.Processor::commonmark().parse("abc").collect()
   match enabled[1] {
-    @markdown.Text(text) => assert_eq(text, "abc")
+    Text(text) => assert_eq(text, "abc")
     _ => abort("expected text")
   }
   let disabled = @markdown.Processor::commonmark()
@@ -374,15 +364,15 @@ test "standard text inline rule can be disabled" {
     .parse("abc")
     .collect()
   match disabled[1] {
-    @markdown.Text(text) => assert_eq(text, "a")
+    Text(text) => assert_eq(text, "a")
     _ => abort("expected fallback text")
   }
   match disabled[2] {
-    @markdown.Text(text) => assert_eq(text, "b")
+    Text(text) => assert_eq(text, "b")
     _ => abort("expected fallback text")
   }
   match disabled[3] {
-    @markdown.Text(text) => assert_eq(text, "c")
+    Text(text) => assert_eq(text, "c")
     _ => abort("expected fallback text")
   }
 }
@@ -396,7 +386,7 @@ test "external plugin rule participates in block chain" {
       let line = ctx.current_line()
       if line.has_prefix("!!! ") {
         sink.emit(
-          @markdown.Enter(
+          Enter(
             @markdown.element_with_attrs(@markdown.Tag::raw("x:admonition"), [
               @markdown.attr(
                 @markdown.AttrName::raw("kind"),
@@ -405,7 +395,7 @@ test "external plugin rule participates in block chain" {
             ]),
           ),
         )
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:admonition")))
+        sink.emit(Exit(@markdown.Tag::raw("x:admonition")))
         1
       } else {
         0
@@ -428,7 +418,7 @@ test "external block plugin rule can be disabled and re-enabled" {
       let line = ctx.current_line()
       if line.has_prefix("!!! ") {
         sink.emit(
-          @markdown.Enter(
+          Enter(
             @markdown.element_with_attrs(@markdown.Tag::raw("x:admonition"), [
               @markdown.attr(
                 @markdown.AttrName::raw("kind"),
@@ -437,7 +427,7 @@ test "external block plugin rule can be disabled and re-enabled" {
             ]),
           ),
         )
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:admonition")))
+        sink.emit(Exit(@markdown.Tag::raw("x:admonition")))
         1
       } else {
         0
@@ -465,11 +455,9 @@ test "external plugin rule can be disabled and re-enabled" {
     priority=100,
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("@@") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:marker"))),
-        )
-        sink.emit(@markdown.Text("marked"))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:marker")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:marker"))))
+        sink.emit(Text("marked"))
+        sink.emit(Exit(@markdown.Tag::raw("x:marker")))
         2
       } else {
         0
@@ -520,7 +508,7 @@ test "external block plugin can consume multiline admonition" {
       }
       let start = ctx.current_line_start()
       sink.emit(
-        @markdown.Enter(
+        Enter(
           @markdown.element_with_attrs(
             @markdown.Tag::raw("x:admonition"),
             [
@@ -533,8 +521,8 @@ test "external block plugin can consume multiline admonition" {
           ),
         ),
       )
-      sink.emit(@markdown.Text(body))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:admonition")))
+      sink.emit(Text(body))
+      sink.emit(Exit(@markdown.Tag::raw("x:admonition")))
       consumed
     },
   )
@@ -543,7 +531,7 @@ test "external block plugin can consume multiline admonition" {
     .parse("!!! note\n    first\n    second\n\nnext")
     .collect()
   match events[0] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "x:admonition")
       assert_eq(el.attrs()[0].value(), "note")
       match el.range() {
@@ -557,11 +545,11 @@ test "external block plugin can consume multiline admonition" {
     _ => abort("expected admonition")
   }
   match events[1] {
-    @markdown.Text(text) => assert_eq(text, "first\nsecond")
+    Text(text) => assert_eq(text, "first\nsecond")
     _ => abort("expected admonition body")
   }
   match events[3] {
-    @markdown.Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected following paragraph")
   }
 }
@@ -574,11 +562,9 @@ test "external plugin rule participates in block continue chain" {
     fn(ctx, sink) {
       let line = ctx.current_line()
       if line.has_prefix("% ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:continued"))),
-        )
-        sink.emit(@markdown.Text(line[2:].to_owned()))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:continued")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:continued"))))
+        sink.emit(Text(line[2:].to_owned()))
+        sink.emit(Exit(@markdown.Tag::raw("x:continued")))
         1
       } else {
         0
@@ -591,11 +577,9 @@ test "external plugin rule participates in block continue chain" {
     fn(ctx, sink) {
       let line = ctx.current_line()
       if line.has_prefix("% ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:start"))),
-        )
-        sink.emit(@markdown.Text(line[2:].to_owned()))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:start")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:start"))))
+        sink.emit(Text(line[2:].to_owned()))
+        sink.emit(Exit(@markdown.Tag::raw("x:start")))
         1
       } else {
         0
@@ -618,11 +602,9 @@ test "external block continue rule can be disabled and re-enabled" {
     priority=-100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("% ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:continued"))),
-        )
-        sink.emit(@markdown.Text(ctx.current_line()[2:].to_owned()))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:continued")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:continued"))))
+        sink.emit(Text(ctx.current_line()[2:].to_owned()))
+        sink.emit(Exit(@markdown.Tag::raw("x:continued")))
         1
       } else {
         0
@@ -634,11 +616,9 @@ test "external block continue rule can be disabled and re-enabled" {
     priority=100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("% ") {
-        sink.emit(
-          @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:start"))),
-        )
-        sink.emit(@markdown.Text(ctx.current_line()[2:].to_owned()))
-        sink.emit(@markdown.Exit(@markdown.Tag::raw("x:start")))
+        sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:start"))))
+        sink.emit(Text(ctx.current_line()[2:].to_owned()))
+        sink.emit(Exit(@markdown.Tag::raw("x:start")))
         1
       } else {
         0
@@ -668,7 +648,7 @@ test "block continue rule order honors before edges" {
     priority=10,
     fn(ctx, sink) {
       if ctx.current_line() == "%" {
-        sink.emit(@markdown.Text("first"))
+        sink.emit(Text("first"))
         1
       } else {
         0
@@ -681,7 +661,7 @@ test "block continue rule order honors before edges" {
     before=[@markdown.RuleName::raw("x:block_continue:first")],
     fn(ctx, sink) {
       if ctx.current_line() == "%" {
-        sink.emit(@markdown.Text("second"))
+        sink.emit(Text("second"))
         1
       } else {
         0
@@ -717,11 +697,9 @@ test "external plugin rule participates in inline chain" {
       if offset_index + offset >= source.length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:math"))),
-      )
-      sink.emit(@markdown.Text(scanner.slice(1, offset)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:math")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:math"))))
+      sink.emit(Text(scanner.slice(1, offset)))
+      sink.emit(Exit(@markdown.Tag::raw("x:math")))
       offset + 1
     },
   )
@@ -752,11 +730,9 @@ test "external plugin rule participates in delimiter chain" {
       if offset_index + offset + 1 >= source.length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:mark"))),
-      )
-      sink.emit(@markdown.Text(scanner.slice(2, offset)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:mark")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:mark"))))
+      sink.emit(Text(scanner.slice(2, offset)))
+      sink.emit(Exit(@markdown.Tag::raw("x:mark")))
       offset + 2
     },
   )
@@ -786,11 +762,9 @@ test "external delimiter rule can be disabled and re-enabled" {
       if base + offset + 1 >= source.length() {
         return 0
       }
-      sink.emit(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:mark"))),
-      )
-      sink.emit(@markdown.Text(ctx.scanner().slice(2, offset)))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:mark")))
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:mark"))))
+      sink.emit(Text(ctx.scanner().slice(2, offset)))
+      sink.emit(Exit(@markdown.Tag::raw("x:mark")))
       offset + 2
     },
   )
@@ -815,7 +789,7 @@ test "delimiter rule order honors after edges" {
     priority=1,
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("^") {
-        sink.emit(@markdown.Text("first"))
+        sink.emit(Text("first"))
         1
       } else {
         0
@@ -828,7 +802,7 @@ test "delimiter rule order honors after edges" {
     after=[@markdown.RuleName::raw("x:delimiter:first")],
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("^") {
-        sink.emit(@markdown.Text("second"))
+        sink.emit(Text("second"))
         1
       } else {
         0
@@ -864,14 +838,14 @@ test "external plugin can define wikilinks" {
       }
       let target = source[offset_index + 2:end].to_owned()
       sink.emit(
-        @markdown.Enter(
+        Enter(
           @markdown.element_with_attrs(@markdown.Tag::raw("x:wikilink"), [
             @markdown.attr(@markdown.AttrName::raw("target"), target),
           ]),
         ),
       )
-      sink.emit(@markdown.Text(target))
-      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:wikilink")))
+      sink.emit(Text(target))
+      sink.emit(Exit(@markdown.Tag::raw("x:wikilink")))
       end - offset_index + 2
     },
   )
@@ -893,11 +867,9 @@ test "external plugin core rule transforms event stream" {
       for event in events {
         next.push(event)
       }
-      next.push(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:footer"))),
-      )
-      next.push(@markdown.Text("done"))
-      next.push(@markdown.Exit(@markdown.Tag::raw("x:footer")))
+      next.push(Enter(@markdown.element(@markdown.Tag::raw("x:footer"))))
+      next.push(Text("done"))
+      next.push(Exit(@markdown.Tag::raw("x:footer")))
       next
     },
   )
@@ -917,11 +889,9 @@ test "external core plugin rule can be disabled and re-enabled" {
       for event in events {
         next.push(event)
       }
-      next.push(
-        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:footer"))),
-      )
-      next.push(@markdown.Text("done"))
-      next.push(@markdown.Exit(@markdown.Tag::raw("x:footer")))
+      next.push(Enter(@markdown.element(@markdown.Tag::raw("x:footer"))))
+      next.push(Text("done"))
+      next.push(Exit(@markdown.Tag::raw("x:footer")))
       next
     },
   )
@@ -949,7 +919,7 @@ test "rule order honors priority and registration order" {
       for event in events {
         next.push(event)
       }
-      next.push(@markdown.Text("A"))
+      next.push(Text("A"))
       next
     },
   )
@@ -961,7 +931,7 @@ test "rule order honors priority and registration order" {
       for event in events {
         next.push(event)
       }
-      next.push(@markdown.Text("B"))
+      next.push(Text("B"))
       next
     },
   )
@@ -973,7 +943,7 @@ test "rule order honors priority and registration order" {
       for event in events {
         next.push(event)
       }
-      next.push(@markdown.Text("C"))
+      next.push(Text("C"))
       next
     },
   )
@@ -994,7 +964,7 @@ test "rule order honors before and after edges" {
       for event in events {
         next.push(event)
       }
-      next.push(@markdown.Text("1"))
+      next.push(Text("1"))
       next
     },
   )
@@ -1006,7 +976,7 @@ test "rule order honors before and after edges" {
       for event in events {
         next.push(event)
       }
-      next.push(@markdown.Text("2"))
+      next.push(Text("2"))
       next
     },
   )
@@ -1024,7 +994,7 @@ test "block rule order honors before edges" {
     priority=1,
     fn(ctx, sink) {
       if ctx.current_line() == "!" {
-        sink.emit(@markdown.Text("first"))
+        sink.emit(Text("first"))
         1
       } else {
         0
@@ -1037,7 +1007,7 @@ test "block rule order honors before edges" {
     before=[@markdown.RuleName::raw("x:block:first")],
     fn(ctx, sink) {
       if ctx.current_line() == "!" {
-        sink.emit(@markdown.Text("second"))
+        sink.emit(Text("second"))
         1
       } else {
         0
@@ -1058,7 +1028,7 @@ test "rule order ignores edges that target another chain" {
     priority=10,
     fn(ctx, sink) {
       if ctx.current_line() == "!" {
-        sink.emit(@markdown.Text("first"))
+        sink.emit(Text("first"))
         1
       } else {
         0
@@ -1071,7 +1041,7 @@ test "rule order ignores edges that target another chain" {
     before=[@markdown.RuleName::raw("x:inline:target")],
     fn(ctx, sink) {
       if ctx.current_line() == "!" {
-        sink.emit(@markdown.Text("second"))
+        sink.emit(Text("second"))
         1
       } else {
         0
@@ -1100,7 +1070,7 @@ test "inline rule order honors after edges" {
     priority=1,
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("@") {
-        sink.emit(@markdown.Text("first"))
+        sink.emit(Text("first"))
         1
       } else {
         0
@@ -1113,7 +1083,7 @@ test "inline rule order honors after edges" {
     after=[@markdown.RuleName::raw("x:inline:first")],
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("@") {
-        sink.emit(@markdown.Text("second"))
+        sink.emit(Text("second"))
         1
       } else {
         0
@@ -1131,15 +1101,15 @@ test "inline rule order honors after edges" {
 test "parser is pull based" {
   let parser = @markdown.Processor::commonmark().parse("hello")
   match parser.next() {
-    Some(@markdown.Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph enter")
   }
   match parser.next() {
-    Some(@markdown.Text(text)) => assert_eq(text, "hello")
+    Some(Text(text)) => assert_eq(text, "hello")
     _ => abort("expected text")
   }
   match parser.next() {
-    Some(@markdown.Exit(tag)) => assert_eq(tag.to_string(), "cm:paragraph")
+    Some(Exit(tag)) => assert_eq(tag.to_string(), "cm:paragraph")
     _ => abort("expected paragraph exit")
   }
   match parser.next() {
@@ -1156,7 +1126,7 @@ test "parser is pull based" {
 test "parser attaches block source ranges" {
   let parser = @markdown.Processor::commonmark().parse("# hi\n\ntext")
   match parser.next() {
-    Some(@markdown.Enter(el)) =>
+    Some(Enter(el)) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:heading")
@@ -1170,7 +1140,7 @@ test "parser attaches block source ranges" {
   ignore(parser.next())
   ignore(parser.next())
   match parser.next() {
-    Some(@markdown.Enter(el)) =>
+    Some(Enter(el)) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:paragraph")
@@ -1189,7 +1159,7 @@ test "parser attaches list source ranges" {
     .parse("- one\n  continued\n- two")
     .collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:list")
@@ -1201,7 +1171,7 @@ test "parser attaches list source ranges" {
     _ => abort("expected list enter")
   }
   match events[1] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:item")
@@ -1220,7 +1190,7 @@ test "parser attaches loose list source ranges across blank continuation" {
     .parse("- one\n\n  two\n- three")
     .collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:list")
@@ -1232,7 +1202,7 @@ test "parser attaches loose list source ranges across blank continuation" {
     _ => abort("expected list enter")
   }
   match events[1] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:item")
@@ -1251,7 +1221,7 @@ test "parser attaches blockquote source ranges" {
     .parse("> quote\n> more\n\ntext")
     .collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:block_quote")
@@ -1270,7 +1240,7 @@ test "parser attaches fenced code source ranges" {
     .parse("```\ncode\n```\n\ntext")
     .collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1287,7 +1257,7 @@ test "parser attaches fenced code source ranges" {
 test "parser attaches unclosed fenced code source ranges" {
   let events = @markdown.Processor::commonmark().parse("```\ncode").collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1306,7 +1276,7 @@ test "parser attaches indented code source ranges" {
     .parse("    code\n\ntext")
     .collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1323,7 +1293,7 @@ test "parser attaches indented code source ranges" {
 test "four space indented blockquote marker is code" {
   let events = @markdown.Processor::commonmark().parse("    > quote").collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1340,7 +1310,7 @@ test "four space indented blockquote marker is code" {
 test "four space indented heading marker is code" {
   let events = @markdown.Processor::commonmark().parse("    # foo").collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1357,7 +1327,7 @@ test "four space indented heading marker is code" {
 test "four space indented thematic break marker is code" {
   let events = @markdown.Processor::commonmark().parse("    ***").collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1374,7 +1344,7 @@ test "four space indented thematic break marker is code" {
 test "four space indented setext underline stays paragraph" {
   let events = @markdown.Processor::commonmark().parse("Foo\n    ---").collect()
   match events[0] {
-    @markdown.Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
 }
@@ -1383,7 +1353,7 @@ test "four space indented setext underline stays paragraph" {
 test "four space indented fence does not interrupt paragraph" {
   let events = @markdown.Processor::commonmark().parse("foo\n    ```").collect()
   match events[0] {
-    @markdown.Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
 }
@@ -1392,7 +1362,7 @@ test "four space indented fence does not interrupt paragraph" {
 test "four space indented html block marker is code" {
   let events = @markdown.Processor::commonmark().parse("    <div>").collect()
   match events[0] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
@@ -1411,12 +1381,12 @@ test "four space indented list marker does not interrupt paragraph" {
     .parse("paragraph\n    - item")
     .collect()
   match events[0] {
-    @markdown.Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
   for event in events {
     match event {
-      @markdown.Enter(el) =>
+      Enter(el) =>
         if el.tag().to_string() == "cm:list" {
           abort("did not expect list")
         }
@@ -1429,7 +1399,7 @@ test "four space indented list marker does not interrupt paragraph" {
 test "parser attaches thematic break source ranges" {
   let events = @markdown.Processor::commonmark().parse("text\n\n---").collect()
   match events[3] {
-    @markdown.Enter(el) =>
+    Enter(el) =>
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:thematic_break")
@@ -1448,7 +1418,7 @@ test "parser normalizes image alt text" {
     .parse("![a\\*b &amp; c](/img.png)")
     .collect()
   match events[1] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:image")
       assert_eq(el.attrs().length(), 2)
       assert_eq(el.attrs()[1].name().to_string(), "alt")
@@ -1464,7 +1434,7 @@ test "parser flattens image alt inline markup" {
     .parse("![*em* **strong** `code`](/img.png)")
     .collect()
   match events[1] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:image")
       assert_eq(el.attrs()[1].name().to_string(), "alt")
       assert_eq(el.attrs()[1].value(), "em strong code")
@@ -1479,7 +1449,7 @@ test "parser normalizes link destination and title attributes" {
     .parse("[link](/a\\*b?x=&amp; \"a\\*b &amp; c\")")
     .collect()
   match events[1] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:link")
       assert_eq(el.attrs().length(), 2)
       assert_eq(el.attrs()[0].value(), "/a*b?x=&")
@@ -1492,13 +1462,13 @@ test "parser normalizes link destination and title attributes" {
 ///|
 test "html renderer escapes text and attribute values" {
   let html = @markdown.HtmlRenderer::new().render([
-    @markdown.Enter(
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("x:<tag>"), [
         @markdown.attr(@markdown.AttrName::raw("data<&>"), "\"<&>"),
       ]),
     ),
-    @markdown.Text("<&>\""),
-    @markdown.Exit(@markdown.Tag::raw("x:<tag>")),
+    Text("<&>\""),
+    Exit(@markdown.Tag::raw("x:<tag>")),
   ])
   assert_eq(
     html, "<x:&lt;tag&gt; data&lt;&amp;&gt;=\"&quot;&lt;&amp;&gt;\">&lt;&amp;&gt;&quot;</x:&lt;tag&gt;>",
@@ -1508,31 +1478,31 @@ test "html renderer escapes text and attribute values" {
 ///|
 test "html renderer preserves raw html events" {
   let html = @markdown.HtmlRenderer::new().render([
-    @markdown.Text("<"),
-    @markdown.Html("<span>raw</span>"),
-    @markdown.Text(">"),
+    Text("<"),
+    Html("<span>raw</span>"),
+    Text(">"),
   ])
   assert_eq(html, "&lt;<span>raw</span>&gt;")
 }
 
 ///|
 test "html renderer preserves extension attrs on standard tags" {
-  let events = [
-    @markdown.Enter(
+  let events : Array[@markdown.Event] = [
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("cm:paragraph"), [
         @markdown.attr(@markdown.AttrName::raw("class"), "lead"),
       ]),
     ),
-    @markdown.Enter(
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("cm:link"), [
         @markdown.attr(@markdown.AttrName::raw("destination"), "/url"),
         @markdown.attr(@markdown.AttrName::raw("title"), "Title"),
         @markdown.attr(@markdown.AttrName::raw("data-kind"), "xref"),
       ]),
     ),
-    @markdown.Text("link"),
-    @markdown.Exit(@markdown.Tag::raw("cm:link")),
-    @markdown.Exit(@markdown.Tag::raw("cm:paragraph")),
+    Text("link"),
+    Exit(@markdown.Tag::raw("cm:link")),
+    Exit(@markdown.Tag::raw("cm:paragraph")),
   ]
   assert_eq(
     @markdown.HtmlRenderer::new().render(events),
@@ -1542,21 +1512,21 @@ test "html renderer preserves extension attrs on standard tags" {
 
 ///|
 test "html renderer preserves extension attrs on standard void tags" {
-  let events = [
-    @markdown.Enter(
+  let events : Array[@markdown.Event] = [
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("cm:image"), [
         @markdown.attr(@markdown.AttrName::raw("destination"), "/img.png"),
         @markdown.attr(@markdown.AttrName::raw("alt"), "alt"),
         @markdown.attr(@markdown.AttrName::raw("data-size"), "small"),
       ]),
     ),
-    @markdown.Exit(@markdown.Tag::raw("cm:image")),
-    @markdown.Enter(
+    Exit(@markdown.Tag::raw("cm:image")),
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("cm:thematic_break"), [
         @markdown.attr(@markdown.AttrName::raw("class"), "cut"),
       ]),
     ),
-    @markdown.Exit(@markdown.Tag::raw("cm:thematic_break")),
+    Exit(@markdown.Tag::raw("cm:thematic_break")),
   ]
   assert_eq(
     @markdown.HtmlRenderer::new().render(events),
@@ -1566,11 +1536,11 @@ test "html renderer preserves extension attrs on standard void tags" {
 
 ///|
 test "event transform and ast conversion keep extension tags" {
-  let events = [
-    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
-    @markdown.Text("a"),
-    @markdown.Text("b"),
-    @markdown.Exit(@markdown.Tag::raw("x:note")),
+  let events : Array[@markdown.Event] = [
+    Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
+    Text("a"),
+    Text("b"),
+    Exit(@markdown.Tag::raw("x:note")),
   ]
   let transformed = @markdown.Transform::new(events)
     .text_merge()
@@ -1599,14 +1569,14 @@ test "event transform and ast conversion keep extension tags" {
 ///|
 test "ast builder preserves extension attributes" {
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Enter(
+    Enter(
       @markdown.element_with_attrs(@markdown.Tag::raw("x:note"), [
         @markdown.attr(@markdown.AttrName::raw("kind"), "tip"),
         @markdown.attr(@markdown.AttrName::raw("data-id"), "42"),
       ]),
     ),
-    @markdown.Text("body"),
-    @markdown.Exit(@markdown.Tag::raw("x:note")),
+    Text("body"),
+    Exit(@markdown.Tag::raw("x:note")),
   ])
   match result {
     Ok(root) =>
@@ -1629,15 +1599,15 @@ test "ast builder preserves extension attributes" {
 test "ast builder preserves element source range" {
   let range : @markdown.SourceRange = { start: 2, end: 9 }
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Enter(
+    Enter(
       @markdown.element_with_attrs(
         @markdown.Tag::raw("x:note"),
         [],
         range=Some(range),
       ),
     ),
-    @markdown.Text("body"),
-    @markdown.Exit(@markdown.Tag::raw("x:note")),
+    Text("body"),
+    Exit(@markdown.Tag::raw("x:note")),
   ])
   match result {
     Ok(root) => {
@@ -1667,10 +1637,10 @@ test "ast builder preserves element source range" {
 ///|
 test "ast builder converts break and raw html events" {
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Text("a"),
-    @markdown.SoftBreak,
-    @markdown.HardBreak,
-    @markdown.Html("<span>raw</span>"),
+    Text("a"),
+    SoftBreak,
+    HardBreak,
+    Html("<span>raw</span>"),
   ])
   match result {
     Ok(node) => {
@@ -1694,15 +1664,15 @@ test "ast builder converts break and raw html events" {
 ///|
 test "transform preserves source range while renaming and injecting attrs" {
   let range : @markdown.SourceRange = { start: 1, end: 4 }
-  let events = [
-    @markdown.Enter(
+  let events : Array[@markdown.Event] = [
+    Enter(
       @markdown.element_with_attrs(
         @markdown.Tag::raw("x:old"),
         [],
         range=Some(range),
       ),
     ),
-    @markdown.Exit(@markdown.Tag::raw("x:old")),
+    Exit(@markdown.Tag::raw("x:old")),
   ]
   let transformed = @markdown.Transform::new(events)
     .rename_tag(@markdown.Tag::raw("x:old"), @markdown.Tag::raw("x:new"))
@@ -1712,7 +1682,7 @@ test "transform preserves source range while renaming and injecting attrs" {
     )
     .collect()
   match transformed[0] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "x:new")
       assert_eq(el.attrs().length(), 1)
       match el.range() {
@@ -1730,12 +1700,12 @@ test "transform preserves source range while renaming and injecting attrs" {
 ///|
 test "transform injects attrs on unknown extension tags" {
   let transformed = @markdown.Transform::new([
-      @markdown.Enter(
+      Enter(
         @markdown.element_with_attrs(@markdown.Tag::raw("x:note"), [
           @markdown.attr(@markdown.AttrName::raw("kind"), "tip"),
         ]),
       ),
-      @markdown.Exit(@markdown.Tag::raw("x:note")),
+      Exit(@markdown.Tag::raw("x:note")),
     ])
     .inject_attr(
       @markdown.Tag::raw("x:note"),
@@ -1743,7 +1713,7 @@ test "transform injects attrs on unknown extension tags" {
     )
     .collect()
   match transformed[0] {
-    @markdown.Enter(el) => {
+    Enter(el) => {
       assert_eq(el.tag().to_string(), "x:note")
       assert_eq(el.attrs().length(), 2)
       assert_eq(el.attrs()[0].name().to_string(), "kind")
@@ -1758,51 +1728,51 @@ test "transform injects attrs on unknown extension tags" {
 ///|
 test "transform text merge only merges adjacent text" {
   let transformed = @markdown.Transform::new([
-      @markdown.Text("a"),
-      @markdown.Text("b"),
-      @markdown.SoftBreak,
-      @markdown.Text("c"),
-      @markdown.Text("d"),
+      Text("a"),
+      Text("b"),
+      SoftBreak,
+      Text("c"),
+      Text("d"),
     ])
     .text_merge()
     .collect()
   assert_eq(transformed.length(), 3)
   match transformed[0] {
-    @markdown.Text(text) => assert_eq(text, "ab")
+    Text(text) => assert_eq(text, "ab")
     _ => abort("expected merged first text")
   }
   match transformed[2] {
-    @markdown.Text(text) => assert_eq(text, "cd")
+    Text(text) => assert_eq(text, "cd")
     _ => abort("expected merged second text")
   }
 }
 
 ///|
 test "transform preserves event order and unknown tags" {
-  let events = [
-    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:unknown"))),
-    @markdown.Text("a"),
-    @markdown.SoftBreak,
-    @markdown.Text("b"),
-    @markdown.Exit(@markdown.Tag::raw("x:unknown")),
+  let events : Array[@markdown.Event] = [
+    Enter(@markdown.element(@markdown.Tag::raw("x:unknown"))),
+    Text("a"),
+    SoftBreak,
+    Text("b"),
+    Exit(@markdown.Tag::raw("x:unknown")),
   ]
   let transformed = @markdown.Transform::new(events)
     .softbreak_to_hardbreak()
     .collect()
   match transformed[0] {
-    @markdown.Enter(el) => assert_eq(el.tag().to_string(), "x:unknown")
+    Enter(el) => assert_eq(el.tag().to_string(), "x:unknown")
     _ => abort("expected unknown enter")
   }
   match transformed[1] {
-    @markdown.Text(text) => assert_eq(text, "a")
+    Text(text) => assert_eq(text, "a")
     _ => abort("expected first text")
   }
   match transformed[2] {
-    @markdown.HardBreak => ()
+    HardBreak => ()
     _ => abort("expected hard break")
   }
   match transformed[4] {
-    @markdown.Exit(tag) => assert_eq(tag.to_string(), "x:unknown")
+    Exit(tag) => assert_eq(tag.to_string(), "x:unknown")
     _ => abort("expected unknown exit")
   }
 }
@@ -1810,11 +1780,10 @@ test "transform preserves event order and unknown tags" {
 ///|
 test "ast builder rejects invalid event stream" {
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Exit(@markdown.Tag::raw("x:missing")),
+    Exit(@markdown.Tag::raw("x:missing")),
   ])
   match result {
-    Err(@markdown.UnexpectedExit(tag)) =>
-      assert_eq(tag.to_string(), "x:missing")
+    Err(UnexpectedExit(tag)) => assert_eq(tag.to_string(), "x:missing")
     _ => abort("expected ast error")
   }
 }
@@ -1822,11 +1791,11 @@ test "ast builder rejects invalid event stream" {
 ///|
 test "ast builder rejects mismatched closing tag" {
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:open"))),
-    @markdown.Exit(@markdown.Tag::raw("x:other")),
+    Enter(@markdown.element(@markdown.Tag::raw("x:open"))),
+    Exit(@markdown.Tag::raw("x:other")),
   ])
   match result {
-    Err(@markdown.UnexpectedExit(tag)) => assert_eq(tag.to_string(), "x:other")
+    Err(UnexpectedExit(tag)) => assert_eq(tag.to_string(), "x:other")
     _ => abort("expected mismatched tag error")
   }
 }
@@ -1834,11 +1803,11 @@ test "ast builder rejects mismatched closing tag" {
 ///|
 test "ast builder rejects unclosed tags" {
   let result = @markdown.AstBuilder::new().build([
-    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:open"))),
-    @markdown.Text("body"),
+    Enter(@markdown.element(@markdown.Tag::raw("x:open"))),
+    Text("body"),
   ])
   match result {
-    Err(@markdown.UnclosedTag(tag)) => assert_eq(tag.to_string(), "x:open")
+    Err(UnclosedTag(tag)) => assert_eq(tag.to_string(), "x:open")
     _ => abort("expected unclosed tag error")
   }
 }
