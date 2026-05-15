@@ -109,9 +109,9 @@ fn cm_code_span_inline(ctx : InlineContext, sink : EventSink) -> Int {
   if end < 0 {
     return 0
   }
-  sink.emit(Enter(element("cm:code_span")))
+  sink.emit(Enter(element(tag_name("cm:code_span"))))
   sink.emit(Text(normalize_code_span(text[i + width:end].to_owned())))
-  sink.emit(Exit("cm:code_span"))
+  sink.emit(Exit(tag_name("cm:code_span")))
   end - i + width
 }
 
@@ -152,10 +152,14 @@ fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
     return 0
   }
   sink.emit(
-    Enter(element_with_attrs("cm:link", [{ name: "destination", value: href }])),
+    Enter(
+      element_with_attrs(tag_name("cm:link"), [
+        { name: attr_name("destination"), value: href },
+      ]),
+    ),
   )
   sink.emit(Text(destination))
-  sink.emit(Exit("cm:link"))
+  sink.emit(Exit(tag_name("cm:link")))
   end - i + 1
 }
 
@@ -263,9 +267,9 @@ fn cm_link_inline(ctx : InlineContext, sink : EventSink) -> Int {
   if attrs.length() == 0 {
     return 0
   }
-  sink.emit(Enter(element_with_attrs("cm:link", attrs)))
+  sink.emit(Enter(element_with_attrs(tag_name("cm:link"), attrs)))
   parse_inlines(text[i + 1:close_text].to_owned(), ctx.registry, sink)
-  sink.emit(Exit("cm:link"))
+  sink.emit(Exit(tag_name("cm:link")))
   close_dest - i + 1
 }
 
@@ -293,9 +297,9 @@ fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
   if attrs.length() == 0 {
     return 0
   }
-  attrs.push({ name: "alt", value: alt })
-  sink.emit(Enter(element_with_attrs("cm:image", attrs)))
-  sink.emit(Exit("cm:image"))
+  attrs.push({ name: attr_name("alt"), value: alt })
+  sink.emit(Enter(element_with_attrs(tag_name("cm:image"), attrs)))
+  sink.emit(Exit(tag_name("cm:image")))
   close_dest - i + 1
 }
 
@@ -417,11 +421,11 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element("cm:emphasis")))
-    sink.emit(Enter(element("cm:strong")))
+    sink.emit(Enter(element(tag_name("cm:emphasis"))))
+    sink.emit(Enter(element(tag_name("cm:strong"))))
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink)
-    sink.emit(Exit("cm:strong"))
-    sink.emit(Exit("cm:emphasis"))
+    sink.emit(Exit(tag_name("cm:strong")))
+    sink.emit(Exit(tag_name("cm:emphasis")))
     end - i + 3
   } else if run >= 2 {
     if is_intraword_underscore_delimiter(text, i, 2, marker) {
@@ -431,9 +435,9 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element("cm:strong")))
+    sink.emit(Enter(element(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink)
-    sink.emit(Exit("cm:strong"))
+    sink.emit(Exit(tag_name("cm:strong")))
     end - i + 2
   } else {
     if is_intraword_underscore_delimiter(text, i, 1, marker) {
@@ -443,9 +447,9 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element("cm:emphasis")))
+    sink.emit(Enter(element(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink)
-    sink.emit(Exit("cm:emphasis"))
+    sink.emit(Exit(tag_name("cm:emphasis")))
     end - i + 1
   }
 }
@@ -518,7 +522,7 @@ fn parse_link_attrs(spec : String) -> Array[Attr] {
       return attrs
     }
     attrs.push({
-      name: "destination",
+      name: attr_name("destination"),
       value: normalize_link_destination(trimmed),
     })
   } else {
@@ -527,11 +531,11 @@ fn parse_link_attrs(spec : String) -> Array[Attr] {
       return attrs
     }
     attrs.push({
-      name: "destination",
+      name: attr_name("destination"),
       value: normalize_link_destination(destination),
     })
     attrs.push({
-      name: "title",
+      name: attr_name("title"),
       value: normalize_attribute_text(
         trimmed[split + 2:trimmed.length() - 1].to_owned(),
       ),

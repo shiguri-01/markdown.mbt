@@ -41,8 +41,8 @@ pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
 ///|
 pub fn Transform::rename_tag(
   self : Transform,
-  from : TagName,
-  to : TagName,
+  from : Tag,
+  to : Tag,
 ) -> Transform {
   self.map(fn(event) {
     match event {
@@ -61,7 +61,7 @@ pub fn Transform::rename_tag(
 ///|
 pub fn Transform::inject_attr(
   self : Transform,
-  tag : TagName,
+  tag : Tag,
   attr : Attr,
 ) -> Transform {
   self.map(fn(event) {

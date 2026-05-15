@@ -64,10 +64,10 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
   let mut destination = ""
   let mut title = ""
   for attr in attrs {
-    if attr.name == "destination" {
+    if attr.name.value == "destination" {
       has_destination = true
       destination = attr.value
-    } else if attr.name == "title" {
+    } else if attr.name.value == "title" {
       title = attr.value
     }
   }

@@ -17,14 +17,14 @@ fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
     sink.emit(
       Enter(
         element_with_attrs(
-          "cm:paragraph",
+          tag_name("cm:paragraph"),
           [],
           range=Some(block_source_range(ctx, ctx.index, i)),
         ),
       ),
     )
     parse_inlines(text, ctx.registry, sink)
-    sink.emit(Exit("cm:paragraph"))
+    sink.emit(Exit(tag_name("cm:paragraph")))
     i - ctx.index
   }
 }
@@ -78,14 +78,14 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:heading",
-        [{ name: "level", value: level.to_string() }],
+        tag_name("cm:heading"),
+        [{ name: attr_name("level"), value: level.to_string() }],
         range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
       ),
     ),
   )
   parse_inlines(content, ctx.registry, sink)
-  sink.emit(Exit("cm:heading"))
+  sink.emit(Exit(tag_name("cm:heading")))
   1
 }
 
@@ -106,14 +106,14 @@ fn cm_setext_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:heading",
-        [{ name: "level", value: level.to_string() }],
+        tag_name("cm:heading"),
+        [{ name: attr_name("level"), value: level.to_string() }],
         range=Some(block_source_range(ctx, ctx.index, ctx.index + 2)),
       ),
     ),
   )
   parse_inlines(trim(content), ctx.registry, sink)
-  sink.emit(Exit("cm:heading"))
+  sink.emit(Exit(tag_name("cm:heading")))
   2
 }
 
@@ -127,13 +127,13 @@ fn cm_thematic_break_block(ctx : BlockContext, sink : EventSink) -> Int {
     sink.emit(
       Enter(
         element_with_attrs(
-          "cm:thematic_break",
+          tag_name("cm:thematic_break"),
           [],
           range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
         ),
       ),
     )
-    sink.emit(Exit("cm:thematic_break"))
+    sink.emit(Exit(tag_name("cm:thematic_break")))
     1
   } else {
     0
@@ -251,14 +251,14 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
       sink.emit(
         Enter(
           element_with_attrs(
-            "cm:code_block",
+            tag_name("cm:code_block"),
             code_block_attrs(info),
             range=Some(block_source_range(ctx, ctx.index, i + 1)),
           ),
         ),
       )
       sink.emit(Text(code))
-      sink.emit(Exit("cm:code_block"))
+      sink.emit(Exit(tag_name("cm:code_block")))
       return i - ctx.index + 1
     }
     if i > ctx.index + 1 {
@@ -270,14 +270,14 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:code_block",
+        tag_name("cm:code_block"),
         code_block_attrs(info),
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
     ),
   )
   sink.emit(Text(code))
-  sink.emit(Exit("cm:code_block"))
+  sink.emit(Exit(tag_name("cm:code_block")))
   i - ctx.index
 }
 
@@ -320,14 +320,14 @@ fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:code_block",
+        tag_name("cm:code_block"),
         [],
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
     ),
   )
   sink.emit(Text(code))
-  sink.emit(Exit("cm:code_block"))
+  sink.emit(Exit(tag_name("cm:code_block")))
   i - ctx.index
 }
 
@@ -367,7 +367,7 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:block_quote",
+        tag_name("cm:block_quote"),
         [],
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
@@ -377,7 +377,7 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
   for event in events {
     sink.emit(event)
   }
-  sink.emit(Exit("cm:block_quote"))
+  sink.emit(Exit(tag_name("cm:block_quote")))
   i - ctx.index
 }
 
@@ -483,19 +483,19 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
     list_events.emit(
       Enter(
         element_with_attrs(
-          "cm:item",
+          tag_name("cm:item"),
           [],
           range=Some(block_source_range(ctx, item_starts[n], item_ends[n])),
         ),
       ),
     )
     emit_list_item_content(item_texts[n], ctx.registry, list_events, loose~)
-    list_events.emit(Exit("cm:item"))
+    list_events.emit(Exit(tag_name("cm:item")))
   }
   sink.emit(
     Enter(
       element_with_attrs(
-        "cm:list",
+        tag_name("cm:list"),
         list_attrs,
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
@@ -504,7 +504,7 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
   for event in list_events.events {
     sink.emit(event)
   }
-  sink.emit(Exit("cm:list"))
+  sink.emit(Exit(tag_name("cm:list")))
   i - ctx.index
 }
 
@@ -584,11 +584,11 @@ fn same_list_marker(
 ///|
 fn is_single_paragraph_events(events : Array[Event]) -> Bool {
   match events[0] {
-    Enter(el) => if el.tag != "cm:paragraph" { return false }
+    Enter(el) => if el.tag.value != "cm:paragraph" { return false }
     _ => return false
   }
   match events[events.length() - 1] {
-    Exit(tag) => if tag != "cm:paragraph" { return false }
+    Exit(tag) => if tag.value != "cm:paragraph" { return false }
     _ => return false
   }
   let mut depth = 0
@@ -782,10 +782,20 @@ fn strip_unordered_marker(line : String) -> String {
 ///|
 fn list_attrs(ordered : Bool, line : String) -> Array[Attr] {
   let attrs = [
-    { name: "ordered", value: if ordered { "true" } else { "false" } },
+    {
+      name: attr_name("ordered"),
+      value: if ordered {
+        "true"
+      } else {
+        "false"
+      },
+    },
   ]
   if ordered {
-    attrs.push({ name: "start", value: ordered_list_start(line).to_string() })
+    attrs.push({
+      name: attr_name("start"),
+      value: ordered_list_start(line).to_string(),
+    })
   }
   attrs
 }
@@ -903,7 +913,7 @@ fn code_block_attrs(info : String) -> Array[Attr] {
   if info == "" {
     []
   } else {
-    [{ name: "info", value: info }]
+    [{ name: attr_name("info"), value: info }]
   }
 }
 

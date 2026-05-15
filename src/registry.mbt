@@ -172,14 +172,15 @@ pub struct Rule {
 
 ///|
 pub struct Plugin {
+  priv name : String
   priv rules : Array[Rule]
 }
 
 ///|
-pub struct RuleRegistry {
-  priv mut rules : Array[Rule]
-  priv mut disabled : Array[RuleName]
-  priv mut next_order : Int
+struct RuleRegistry {
+  mut rules : Array[Rule]
+  mut disabled : Array[RuleName]
+  mut next_order : Int
 }
 
 ///|
@@ -316,8 +317,12 @@ fn Rule::source_core(
 
 ///|
 pub fn Plugin::new(name : String) -> Plugin {
-  ignore(name)
-  { rules: [] }
+  { name, rules: [] }
+}
+
+///|
+pub fn Plugin::name(self : Plugin) -> String {
+  self.name
 }
 
 ///|
@@ -520,7 +525,7 @@ fn move_rule(rules : Array[Rule], from : Int, to : Int) -> Unit {
 }
 
 ///|
-fn array_contains_string(items : Array[String], needle : String) -> Bool {
+fn array_contains_string(items : Array[RuleName], needle : RuleName) -> Bool {
   for item in items {
     if item == needle {
       return true

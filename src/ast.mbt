@@ -8,8 +8,8 @@ pub(all) struct AstNode {
 
 ///|
 pub(all) enum AstError {
-  UnexpectedExit(TagName)
-  UnclosedTag(TagName)
+  UnexpectedExit(Tag)
+  UnclosedTag(Tag)
 }
 
 ///|
@@ -67,14 +67,14 @@ pub fn AstBuilder::build(
         })
       HardBreak =>
         stack[stack.length() - 1].children.push({
-          element: Some(element("cm:hard_break")),
+          element: Some(element(tag_name("cm:hard_break"))),
           children: [],
           text: "",
           range: None,
         })
       Html(raw) =>
         stack[stack.length() - 1].children.push({
-          element: Some(element("cm:html")),
+          element: Some(element(tag_name("cm:html"))),
           children: [{ element: None, children: [], text: raw, range: None }],
           text: "",
           range: None,
@@ -84,7 +84,7 @@ pub fn AstBuilder::build(
   if stack.length() != 1 {
     match stack[stack.length() - 1].element {
       Some(el) => Err(UnclosedTag(el.tag))
-      None => Err(UnclosedTag("<root>"))
+      None => Err(UnclosedTag(tag_name("<root>")))
     }
   } else {
     Ok(stack[0])

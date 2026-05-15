@@ -42,7 +42,7 @@ fn many_extension_rules_plugin(count : Int) -> @markdown.Plugin {
     ignore(
       plugin.add(
         @markdown.Rule::inline(
-          "x:inline:no_op:" + i.to_string(),
+          @markdown.RuleName::raw("x:inline:no_op:" + i.to_string()),
           priority=-i,
           no_op_inline_rule,
         ),

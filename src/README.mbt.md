@@ -21,7 +21,7 @@ test {
 test {
   let parser = @markdown.Processor::commonmark().parse("hello")
   match parser.next() {
-    Some(@markdown.Enter(el)) => assert_eq(el.tag, "cm:paragraph")
+    Some(@markdown.Enter(el)) => assert_eq(el.tag.to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
   match parser.next() {
@@ -39,27 +39,30 @@ CommonMark syntax. Rule functions receive a context, scanner, and event sink.
 ```mbt check
 ///|
 test {
-  let math = @markdown.Rule::inline("x:inline:math", priority=100, fn(
-    ctx,
-    sink,
-  ) {
-    let scanner = ctx.scanner()
-    if !scanner.has_prefix("$") {
-      return 0
-    }
-    let mut end = 1
-    while scanner.char_at_offset(end) != Some(36) &&
-          ctx.offset() + end < ctx.source().length() {
-      end = end + 1
-    }
-    if ctx.offset() + end >= ctx.source().length() {
-      return 0
-    }
-    sink.emit(@markdown.Enter(@markdown.element("x:math")))
-    sink.emit(@markdown.Text(scanner.slice(1, end)))
-    sink.emit(@markdown.Exit("x:math"))
-    end + 1
-  })
+  let math = @markdown.Rule::inline(
+    @markdown.RuleName::raw("x:inline:math"),
+    priority=100,
+    fn(ctx, sink) {
+      let scanner = ctx.scanner()
+      if !scanner.has_prefix("$") {
+        return 0
+      }
+      let mut end = 1
+      while scanner.char_at_offset(end) != Some(36) &&
+            ctx.offset() + end < ctx.source().length() {
+        end = end + 1
+      }
+      if ctx.offset() + end >= ctx.source().length() {
+        return 0
+      }
+      sink.emit(
+        @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:math"))),
+      )
+      sink.emit(@markdown.Text(scanner.slice(1, end)))
+      sink.emit(@markdown.Exit(@markdown.Tag::raw("x:math")))
+      end + 1
+    },
+  )
   let html = @markdown.commonmark()
     .with_plugin(@markdown.Plugin::new("math").add(math))
     .render_html("Euler: $x + y$")
@@ -73,10 +76,10 @@ test {
 ///|
 test {
   let events = [
-    @markdown.Enter(@markdown.element("x:note")),
+    @markdown.Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
     @markdown.Text("a"),
     @markdown.Text("b"),
-    @markdown.Exit("x:note"),
+    @markdown.Exit(@markdown.Tag::raw("x:note")),
   ]
   let transformed = @markdown.Transform::new(events).text_merge().collect()
   match @markdown.AstBuilder::new().build(transformed) {

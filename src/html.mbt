@@ -29,7 +29,7 @@ pub fn HtmlRenderer::render(
           ignore(close_stack.pop())
           out = out + close
         } else {
-          out = out + "</" + escape_html(tag) + ">"
+          out = out + "</" + escape_html(tag.value) + ">"
         }
       Text(text) => out = out + escape_html(text)
       SoftBreak => out = out + "\n"
@@ -44,27 +44,27 @@ pub fn HtmlRenderer::render(
 fn open_html(el : Element) -> String {
   match html_tag_name(el.tag) {
     Some(name) =>
-      if el.tag == "cm:heading" {
+      if el.tag.value == "cm:heading" {
         "<h" +
         attr_value(el.attrs, "level", "1") +
         attrs_html_except(el.attrs, ["level"]) +
         ">"
-      } else if el.tag == "cm:list" &&
+      } else if el.tag.value == "cm:list" &&
         attr_value(el.attrs, "ordered", "false") == "true" {
         "<ol" +
         ordered_start_attr(el.attrs) +
         attrs_html_except(el.attrs, ["ordered", "start"]) +
         ">\n"
-      } else if el.tag == "cm:list" {
+      } else if el.tag.value == "cm:list" {
         "<ul" + attrs_html_except(el.attrs, ["ordered", "start"]) + ">\n"
-      } else if el.tag == "cm:link" {
+      } else if el.tag.value == "cm:link" {
         "<a href=\"" +
         escape_html(attr_value(el.attrs, "destination", "")) +
         "\"" +
         title_attr(el.attrs) +
         attrs_html_except(el.attrs, ["destination", "title"]) +
         ">"
-      } else if el.tag == "cm:image" {
+      } else if el.tag.value == "cm:image" {
         "<img src=\"" +
         escape_html(attr_value(el.attrs, "destination", "")) +
         "\" alt=\"" +
@@ -73,9 +73,9 @@ fn open_html(el : Element) -> String {
         title_attr(el.attrs) +
         attrs_html_except(el.attrs, ["destination", "alt", "title"]) +
         " />"
-      } else if el.tag == "cm:thematic_break" {
+      } else if el.tag.value == "cm:thematic_break" {
         "<hr" + attrs_html(el.attrs) + " />\n"
-      } else if el.tag == "cm:code_block" {
+      } else if el.tag.value == "cm:code_block" {
         "<pre><code" +
         code_info_attr(el.attrs) +
         attrs_html_except(el.attrs, ["info"]) +
@@ -84,7 +84,7 @@ fn open_html(el : Element) -> String {
         let suffix = if needs_open_newline(el.tag) { "\n" } else { "" }
         "<" + name + attrs_html(el.attrs) + ">" + suffix
       }
-    None => "<" + escape_html(el.tag) + attrs_html(el.attrs) + ">"
+    None => "<" + escape_html(el.tag.value) + attrs_html(el.attrs) + ">"
   }
 }
 
@@ -92,29 +92,30 @@ fn open_html(el : Element) -> String {
 fn close_html(el : Element) -> String {
   match html_tag_name(el.tag) {
     Some(name) =>
-      if el.tag == "cm:heading" {
+      if el.tag.value == "cm:heading" {
         "</h" + attr_value(el.attrs, "level", "1") + ">\n"
-      } else if el.tag == "cm:list" &&
+      } else if el.tag.value == "cm:list" &&
         attr_value(el.attrs, "ordered", "false") == "true" {
         "</ol>\n"
-      } else if el.tag == "cm:list" {
+      } else if el.tag.value == "cm:list" {
         "</ul>\n"
-      } else if el.tag == "cm:code_block" {
+      } else if el.tag.value == "cm:code_block" {
         "\n</code></pre>\n"
-      } else if el.tag == "cm:image" || el.tag == "cm:thematic_break" {
+      } else if el.tag.value == "cm:image" ||
+        el.tag.value == "cm:thematic_break" {
         ""
       } else if is_block_tag(el.tag) {
         "</" + name + ">\n"
       } else {
         "</" + name + ">"
       }
-    None => "</" + escape_html(el.tag) + ">"
+    None => "</" + escape_html(el.tag.value) + ">"
   }
 }
 
 ///|
-fn html_tag_name(tag : TagName) -> String? {
-  match tag {
+fn html_tag_name(tag : Tag) -> String? {
+  match tag.value {
     "cm:paragraph" => Some("p")
     "cm:strong" => Some("strong")
     "cm:emphasis" => Some("em")
@@ -132,16 +133,16 @@ fn html_tag_name(tag : TagName) -> String? {
 }
 
 ///|
-fn is_block_tag(tag : TagName) -> Bool {
-  tag == "cm:paragraph" ||
-  tag == "cm:block_quote" ||
-  tag == "cm:list" ||
-  tag == "cm:item"
+fn is_block_tag(tag : Tag) -> Bool {
+  tag.value == "cm:paragraph" ||
+  tag.value == "cm:block_quote" ||
+  tag.value == "cm:list" ||
+  tag.value == "cm:item"
 }
 
 ///|
-fn needs_open_newline(tag : TagName) -> Bool {
-  tag == "cm:block_quote" || tag == "cm:list"
+fn needs_open_newline(tag : Tag) -> Bool {
+  tag.value == "cm:block_quote" || tag.value == "cm:list"
 }
 
 ///|
@@ -150,7 +151,7 @@ fn attrs_html(attrs : Array[Attr]) -> String {
   for attr in attrs {
     out = out +
       " " +
-      escape_html(attr.name) +
+      escape_html(attr.name.value) +
       "=\"" +
       escape_html(attr.value) +
       "\""
@@ -162,10 +163,10 @@ fn attrs_html(attrs : Array[Attr]) -> String {
 fn attrs_html_except(attrs : Array[Attr], excluded : Array[String]) -> String {
   let mut out = ""
   for attr in attrs {
-    if !attr_name_in(excluded, attr.name) {
+    if !attr_name_in(excluded, attr.name.value) {
       out = out +
         " " +
-        escape_html(attr.name) +
+        escape_html(attr.name.value) +
         "=\"" +
         escape_html(attr.value) +
         "\""
@@ -187,7 +188,7 @@ fn attr_name_in(names : Array[String], needle : String) -> Bool {
 ///|
 fn attr_value(attrs : Array[Attr], name : String, default : String) -> String {
   for attr in attrs {
-    if attr.name == name {
+    if attr.name.value == name {
       return attr.value
     }
   }
