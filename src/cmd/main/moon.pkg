@@ -1,0 +1,7 @@
+// import {
+//   "username/markdown" @lib,
+// }
+
+options(
+  "is-main": true,
+)

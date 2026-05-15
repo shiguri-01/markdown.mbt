@@ -1,0 +1,97 @@
+///|
+pub struct Transform {
+  priv events : Array[Event]
+}
+
+///|
+pub fn Transform::new(events : Array[Event]) -> Transform {
+  { events, }
+}
+
+///|
+pub fn Transform::text_merge(self : Transform) -> Transform {
+  let merged : Array[Event] = []
+  for event in self.events {
+    match event {
+      Text(text) =>
+        if merged.length() > 0 {
+          match merged[merged.length() - 1] {
+            Text(prev) => merged[merged.length() - 1] = Text(prev + text)
+            _ => merged.push(event)
+          }
+        } else {
+          merged.push(event)
+        }
+      _ => merged.push(event)
+    }
+  }
+  { events: merged }
+}
+
+///|
+pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
+  self.map(fn(event) {
+    match event {
+      SoftBreak => HardBreak
+      _ => event
+    }
+  })
+}
+
+///|
+pub fn Transform::rename_tag(
+  self : Transform,
+  from : TagName,
+  to : TagName,
+) -> Transform {
+  self.map(fn(event) {
+    match event {
+      Enter(el) =>
+        if el.tag == from {
+          Enter({ tag: to, attrs: el.attrs, range: el.range })
+        } else {
+          event
+        }
+      Exit(tag) => if tag == from { Exit(to) } else { event }
+      _ => event
+    }
+  })
+}
+
+///|
+pub fn Transform::inject_attr(
+  self : Transform,
+  tag : TagName,
+  attr : Attr,
+) -> Transform {
+  self.map(fn(event) {
+    match event {
+      Enter(el) =>
+        if el.tag == tag {
+          let attrs : Array[Attr] = []
+          for old in el.attrs {
+            attrs.push(old)
+          }
+          attrs.push(attr)
+          Enter({ tag: el.tag, attrs, range: el.range })
+        } else {
+          event
+        }
+      _ => event
+    }
+  })
+}
+
+///|
+pub fn Transform::collect(self : Transform) -> Array[Event] {
+  self.events
+}
+
+///|
+fn Transform::map(self : Transform, f : (Event) -> Event) -> Transform {
+  let next : Array[Event] = []
+  for event in self.events {
+    next.push(f(event))
+  }
+  { events: next }
+}

@@ -1,0 +1,13 @@
+.DS_Store
+_build/
+.mooncakes/
+.moonagent/
+.direnv/
+.repos/
+.agents/skills/moonbit/
+**/.git/
+
+# Local/editor noise
+*.swp
+*.swo
+*~

@@ -1,0 +1,168 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/markdown"
+
+// Values
+pub fn commonmark() -> ParserBuilder
+
+pub fn commonmark_plugin() -> Plugin
+
+pub fn element(String) -> Element
+
+pub fn element_with_attrs(String, Array[Attr], range? : SourceRange?) -> Element
+
+pub fn new() -> ParserBuilder
+
+// Errors
+
+// Types and methods
+pub struct AstBuilder {
+  // private fields
+}
+pub fn AstBuilder::build(Self, Array[Event]) -> Result[AstNode, AstError]
+pub fn AstBuilder::new() -> Self
+
+pub(all) enum AstError {
+  UnexpectedExit(String)
+  UnclosedTag(String)
+}
+
+pub(all) struct AstNode {
+  element : Element?
+  children : Array[AstNode]
+  text : String
+  range : SourceRange?
+}
+
+pub(all) struct Attr {
+  name : String
+  value : String
+}
+
+pub struct BlockContext {
+  // private fields
+}
+pub fn BlockContext::current_line(Self) -> String
+pub fn BlockContext::current_line_start(Self) -> Int
+pub fn BlockContext::line_at(Self, Int) -> String?
+pub fn BlockContext::line_index(Self) -> Int
+
+pub(all) struct Element {
+  tag : String
+  attrs : Array[Attr]
+  range : SourceRange?
+}
+
+pub(all) enum Event {
+  Enter(Element)
+  Exit(String)
+  Text(String)
+  SoftBreak
+  HardBreak
+  Html(String)
+}
+
+pub struct EventSink {
+  // private fields
+}
+pub fn EventSink::emit(Self, Event) -> Unit
+
+pub struct HtmlRenderer {
+  // private fields
+}
+pub fn HtmlRenderer::new() -> Self
+pub fn HtmlRenderer::render(Self, Array[Event]) -> String
+
+pub struct InlineContext {
+  // private fields
+}
+pub fn InlineContext::offset(Self) -> Int
+pub fn InlineContext::scanner(Self) -> InlineScanner
+pub fn InlineContext::source(Self) -> String
+
+pub struct InlineScanner {
+  // private fields
+}
+pub fn InlineScanner::char(Self) -> Int?
+pub fn InlineScanner::char_at_offset(Self, Int) -> Int?
+pub fn InlineScanner::find_char(Self, Int) -> Int
+pub fn InlineScanner::has_prefix(Self, String) -> Bool
+pub fn InlineScanner::new(String, Int) -> Self
+pub fn InlineScanner::slice(Self, Int, Int) -> String
+
+pub struct Parser {
+  // private fields
+}
+pub fn Parser::collect(Self) -> Array[Event]
+pub fn Parser::next(Self) -> Event?
+pub fn Parser::to_html(Self) -> String
+
+pub struct ParserBuilder {
+  // private fields
+}
+pub fn ParserBuilder::commonmark() -> Self
+pub fn ParserBuilder::disable(Self, String) -> Self
+pub fn ParserBuilder::enable(Self, String) -> Self
+pub fn ParserBuilder::new() -> Self
+pub fn ParserBuilder::parse(Self, String) -> Parser
+pub fn ParserBuilder::replace(Self, Rule) -> Self
+pub fn ParserBuilder::use(Self, Plugin) -> Self
+
+pub struct Plugin {
+  // private fields
+}
+pub fn Plugin::add(Self, Rule) -> Self
+pub fn Plugin::new(String) -> Self
+
+pub struct Rule {
+  // private fields
+}
+pub fn Rule::block(String, priority? : Int, before? : Array[String], after? : Array[String], (BlockContext, EventSink) -> Int) -> Self
+pub fn Rule::block_continue(String, priority? : Int, before? : Array[String], after? : Array[String], (BlockContext, EventSink) -> Int) -> Self
+pub fn Rule::core(String, priority? : Int, before? : Array[String], after? : Array[String], (Array[Event]) -> Array[Event]) -> Self
+pub fn Rule::delimiter(String, priority? : Int, before? : Array[String], after? : Array[String], (InlineContext, EventSink) -> Int) -> Self
+pub fn Rule::inline(String, priority? : Int, before? : Array[String], after? : Array[String], (InlineContext, EventSink) -> Int) -> Self
+
+pub(all) enum RuleChain {
+  BlockContinue
+  BlockStart
+  Inline
+  Delimiter
+  Core
+} derive(Eq)
+
+pub struct RuleRegistry {
+  // private fields
+}
+
+pub(all) struct SourceRange {
+  start : Int
+  end : Int
+}
+
+pub struct Transform {
+  // private fields
+}
+pub fn Transform::collect(Self) -> Array[Event]
+pub fn Transform::inject_attr(Self, String, Attr) -> Self
+pub fn Transform::new(Array[Event]) -> Self
+pub fn Transform::rename_tag(Self, String, String) -> Self
+pub fn Transform::softbreak_to_hardbreak(Self) -> Self
+pub fn Transform::text_merge(Self) -> Self
+
+// Type aliases
+pub type BlockRuleFn = (BlockContext, EventSink) -> Int
+
+pub type CoreRuleFn = (Array[Event]) -> Array[Event]
+
+pub type InlineRuleFn = (InlineContext, EventSink) -> Int
+
+pub type RuleName = String
+
+pub type StringView = String
+
+pub type TagName = String
+
+pub type TextSpan = String
+
+// Traits
+
