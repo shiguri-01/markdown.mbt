@@ -958,7 +958,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 
 ///|
 fn render_commonmark(markdown : String) -> String {
-  @markdown.ParserBuilder::commonmark().parse(markdown).to_html()
+  @markdown.Processor::commonmark().render_html(markdown)
 }
 
 ///|
@@ -1080,7 +1080,7 @@ test "upstream CommonMark spec pass rate is tracked by category" {
 ///|
 test "CommonMark subset parser events build AST" {
   for example in commonmark_subset_examples() {
-    let events = @markdown.ParserBuilder::commonmark()
+    let events = @markdown.Processor::commonmark()
       .parse(example.markdown)
       .collect()
     match @markdown.AstBuilder::new().build(events) {

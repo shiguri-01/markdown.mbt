@@ -1,5 +1,5 @@
 ///|
-pub struct ParserBuilder {
+pub struct Processor {
   priv registry : RuleRegistry
 }
 
@@ -10,68 +10,61 @@ pub struct Parser {
 }
 
 ///|
-pub fn ParserBuilder::new() -> ParserBuilder {
+pub fn Processor::new() -> Processor {
   { registry: RuleRegistry::new() }
 }
 
 ///|
-pub fn new() -> ParserBuilder {
-  ParserBuilder::new()
+pub fn new() -> Processor {
+  Processor::new()
 }
 
 ///|
-pub fn ParserBuilder::commonmark() -> ParserBuilder {
-  ParserBuilder::new().use(commonmark_plugin())
+pub fn Processor::commonmark() -> Processor {
+  Processor::new().with_plugin(commonmark_plugin())
 }
 
 ///|
-pub fn commonmark() -> ParserBuilder {
-  ParserBuilder::commonmark()
+pub fn commonmark() -> Processor {
+  Processor::commonmark()
 }
 
 ///|
-pub fn ParserBuilder::use(
-  self : ParserBuilder,
-  plugin : Plugin,
-) -> ParserBuilder {
+pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
   ignore(self.registry.use_plugin(plugin))
   self
 }
 
 ///|
-pub fn ParserBuilder::enable(
-  self : ParserBuilder,
-  name : RuleName,
-) -> ParserBuilder {
+pub fn Processor::enable(self : Processor, name : RuleName) -> Processor {
   ignore(self.registry.enable(name))
   self
 }
 
 ///|
-pub fn ParserBuilder::disable(
-  self : ParserBuilder,
-  name : RuleName,
-) -> ParserBuilder {
+pub fn Processor::disable(self : Processor, name : RuleName) -> Processor {
   ignore(self.registry.disable(name))
   self
 }
 
 ///|
-pub fn ParserBuilder::replace(
-  self : ParserBuilder,
-  rule : Rule,
-) -> ParserBuilder {
+pub fn Processor::replace(self : Processor, rule : Rule) -> Processor {
   ignore(self.registry.replace(rule))
   self
 }
 
 ///|
-pub fn ParserBuilder::parse(self : ParserBuilder, input : String) -> Parser {
+pub fn Processor::parse(self : Processor, input : String) -> Parser {
   let source = apply_source_core_rules(input, self.registry)
   {
     events: apply_core_rules(parse_blocks(source, self.registry), self.registry),
     index: 0,
   }
+}
+
+///|
+pub fn Processor::render_html(self : Processor, input : String) -> String {
+  HtmlRenderer::new().render(self.parse(input).collect())
 }
 
 ///|
@@ -88,11 +81,6 @@ pub fn Parser::next(self : Parser) -> Event? {
 ///|
 pub fn Parser::collect(self : Parser) -> Array[Event] {
   self.events
-}
-
-///|
-pub fn Parser::to_html(self : Parser) -> String {
-  HtmlRenderer::new().render(self.events)
 }
 
 ///|

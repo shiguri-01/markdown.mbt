@@ -55,36 +55,36 @@ fn many_extension_rules_plugin(count : Int) -> @markdown.Plugin {
 ///|
 test "benchmark parser scenarios produce events" {
   assert_true(
-    @markdown.ParserBuilder::commonmark()
+    @markdown.Processor::commonmark()
     .parse(large_paragraph_input())
     .collect()
     .length() >
     0,
   )
   assert_true(
-    @markdown.ParserBuilder::commonmark()
+    @markdown.Processor::commonmark()
     .parse(deep_list_input())
     .collect()
     .length() >
     0,
   )
   assert_true(
-    @markdown.ParserBuilder::commonmark()
+    @markdown.Processor::commonmark()
     .parse(long_delimiter_input())
     .collect()
     .length() >
     0,
   )
   assert_true(
-    @markdown.ParserBuilder::commonmark()
+    @markdown.Processor::commonmark()
     .parse(many_links_input())
     .collect()
     .length() >
     0,
   )
   assert_true(
-    @markdown.ParserBuilder::commonmark()
-    .use(many_extension_rules_plugin(50))
+    @markdown.Processor::commonmark()
+    .with_plugin(many_extension_rules_plugin(50))
     .parse(large_paragraph_input())
     .collect()
     .length() >
@@ -99,7 +99,7 @@ test "benchmark markdown parser scenarios" {
     name="large_paragraph",
     fn() {
       bencher.keep(
-        @markdown.ParserBuilder::commonmark()
+        @markdown.Processor::commonmark()
         .parse(large_paragraph_input())
         .collect()
         .length(),
@@ -111,7 +111,7 @@ test "benchmark markdown parser scenarios" {
     name="deep_list",
     fn() {
       bencher.keep(
-        @markdown.ParserBuilder::commonmark()
+        @markdown.Processor::commonmark()
         .parse(deep_list_input())
         .collect()
         .length(),
@@ -123,7 +123,7 @@ test "benchmark markdown parser scenarios" {
     name="long_delimiter_run",
     fn() {
       bencher.keep(
-        @markdown.ParserBuilder::commonmark()
+        @markdown.Processor::commonmark()
         .parse(long_delimiter_input())
         .collect()
         .length(),
@@ -135,7 +135,7 @@ test "benchmark markdown parser scenarios" {
     name="many_links",
     fn() {
       bencher.keep(
-        @markdown.ParserBuilder::commonmark()
+        @markdown.Processor::commonmark()
         .parse(many_links_input())
         .collect()
         .length(),
@@ -147,8 +147,8 @@ test "benchmark markdown parser scenarios" {
     name="many_extension_rules",
     fn() {
       bencher.keep(
-        @markdown.ParserBuilder::commonmark()
-        .use(many_extension_rules_plugin(50))
+        @markdown.Processor::commonmark()
+        .with_plugin(many_extension_rules_plugin(50))
         .parse(large_paragraph_input())
         .collect()
         .length(),

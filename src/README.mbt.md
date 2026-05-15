@@ -9,7 +9,7 @@ provided as downstream helpers.
 ```mbt check
 ///|
 test {
-  let html = @markdown.commonmark().parse("# Hello *MoonBit*").to_html()
+  let html = @markdown.commonmark().render_html("# Hello *MoonBit*")
   assert_eq(html, "<h1>Hello <em>MoonBit</em></h1>\n")
 }
 ```
@@ -19,7 +19,7 @@ test {
 ```mbt check
 ///|
 test {
-  let parser = @markdown.ParserBuilder::commonmark().parse("hello")
+  let parser = @markdown.Processor::commonmark().parse("hello")
   match parser.next() {
     Some(@markdown.Enter(el)) => assert_eq(el.tag, "cm:paragraph")
     _ => abort("expected paragraph")
@@ -61,9 +61,8 @@ test {
     end + 1
   })
   let html = @markdown.commonmark()
-    .use(@markdown.Plugin::new("math").add(math))
-    .parse("Euler: $x + y$")
-    .to_html()
+    .with_plugin(@markdown.Plugin::new("math").add(math))
+    .render_html("Euler: $x + y$")
   assert_eq(html, "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
 ```
