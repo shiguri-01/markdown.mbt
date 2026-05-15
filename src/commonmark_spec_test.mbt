@@ -1001,6 +1001,32 @@ fn find_category_report(
 }
 
 ///|
+fn category_passed(
+  reports : Array[CommonMarkCategoryReport],
+  category : String,
+) -> Int {
+  let index = find_category_report(reports, category)
+  if index >= 0 {
+    reports[index].passed
+  } else {
+    -1
+  }
+}
+
+///|
+fn category_total(
+  reports : Array[CommonMarkCategoryReport],
+  category : String,
+) -> Int {
+  let index = find_category_report(reports, category)
+  if index >= 0 {
+    reports[index].total
+  } else {
+    -1
+  }
+}
+
+///|
 test "CommonMark subset examples render expected HTML" {
   let seen : Array[Int] = []
   for example in commonmark_subset_examples() {
@@ -1071,10 +1097,34 @@ test "upstream CommonMark spec pass rate is tracked by category" {
     passed = passed + report.passed
   }
   assert_eq(total, 652)
-  assert_true(passed >= 402)
+  assert_eq(passed, 402)
   assert_true(passed < total)
-  assert_true(find_category_report(reports, "ATX headings") >= 0)
-  assert_true(find_category_report(reports, "Textual content") >= 0)
+  assert_eq(category_passed(reports, "Tabs"), 3)
+  assert_eq(category_total(reports, "Tabs"), 11)
+  assert_eq(category_passed(reports, "Backslash escapes"), 10)
+  assert_eq(category_total(reports, "Backslash escapes"), 13)
+  assert_eq(
+    category_passed(reports, "Entity and numeric character references"),
+    8,
+  )
+  assert_eq(
+    category_total(reports, "Entity and numeric character references"),
+    17,
+  )
+  assert_eq(category_passed(reports, "ATX headings"), 17)
+  assert_eq(category_total(reports, "ATX headings"), 18)
+  assert_eq(category_passed(reports, "HTML blocks"), 27)
+  assert_eq(category_total(reports, "HTML blocks"), 44)
+  assert_eq(category_passed(reports, "Emphasis and strong emphasis"), 67)
+  assert_eq(category_total(reports, "Emphasis and strong emphasis"), 132)
+  assert_eq(category_passed(reports, "Links"), 58)
+  assert_eq(category_total(reports, "Links"), 90)
+  assert_eq(category_passed(reports, "Images"), 18)
+  assert_eq(category_total(reports, "Images"), 22)
+  assert_eq(category_passed(reports, "Autolinks"), 18)
+  assert_eq(category_total(reports, "Autolinks"), 19)
+  assert_eq(category_passed(reports, "Textual content"), 3)
+  assert_eq(category_total(reports, "Textual content"), 3)
 }
 
 ///|

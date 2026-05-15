@@ -23,6 +23,132 @@ test "commonmark plugin can be installed explicitly" {
 }
 
 ///|
+test "typed keys expose stable string contracts" {
+  let cm_tag = @markdown.Tag::commonmark("paragraph")
+  let custom_tag = @markdown.Tag::custom("x", "note")
+  let raw_tag = @markdown.Tag::raw("x:raw")
+  assert_eq(cm_tag.to_string(), "cm:paragraph")
+  assert_eq(custom_tag.to_string(), "x:note")
+  assert_eq(raw_tag.to_string(), "x:raw")
+  assert_true(custom_tag == @markdown.Tag::raw("x:note"))
+  let cm_attr = @markdown.AttrName::commonmark("title")
+  let custom_attr = @markdown.AttrName::custom("x", "role")
+  let raw_attr = @markdown.AttrName::raw("data-id")
+  assert_eq(cm_attr.to_string(), "title")
+  assert_eq(custom_attr.to_string(), "x:role")
+  assert_eq(raw_attr.to_string(), "data-id")
+  assert_true(custom_attr == @markdown.AttrName::raw("x:role"))
+  let cm_rule = @markdown.RuleName::commonmark("block:paragraph")
+  let custom_rule = @markdown.RuleName::custom("x", "inline:math")
+  let raw_rule = @markdown.RuleName::raw("x:inline:math")
+  assert_eq(cm_rule.to_string(), "cm:block:paragraph")
+  assert_eq(custom_rule.to_string(), "x:inline:math")
+  assert_eq(raw_rule.to_string(), "x:inline:math")
+  assert_true(custom_rule == raw_rule)
+}
+
+///|
+test "public element and attr accessors preserve extension data" {
+  let range : @markdown.SourceRange = { start: 2, end: 8 }
+  let attr = @markdown.attr(@markdown.AttrName::custom("x", "role"), "tip")
+  let el = @markdown.element_with_attrs(
+    @markdown.Tag::custom("x", "note"),
+    [attr],
+    range=Some(range),
+  )
+  assert_eq(el.tag().to_string(), "x:note")
+  assert_eq(el.attrs().length(), 1)
+  assert_eq(el.attrs()[0].name().to_string(), "x:role")
+  assert_eq(el.attrs()[0].value(), "tip")
+  match el.range() {
+    Some(actual) => {
+      assert_eq(actual.start, 2)
+      assert_eq(actual.end, 8)
+    }
+    None => abort("expected source range")
+  }
+}
+
+///|
+test "plugin and inline scanner public helpers have stable behavior" {
+  let plugin = @markdown.Plugin::new("contract")
+  assert_eq(plugin.name(), "contract")
+  let scanner = @markdown.InlineScanner::new("abcdef", 2)
+  assert_true(scanner.has_prefix("cd"))
+  assert_true(!scanner.has_prefix("bc"))
+  match scanner.char() {
+    Some(c) => assert_eq(c, 99)
+    None => abort("expected current char")
+  }
+  match scanner.char_at_offset(-1) {
+    Some(c) => assert_eq(c, 98)
+    None => abort("expected previous char")
+  }
+  assert_true(scanner.char_at_offset(4) is None)
+  assert_eq(scanner.slice(-1, 2), "bcd")
+  assert_eq(scanner.slice(3, 1), "")
+  assert_eq(scanner.find_char(101), 2)
+  assert_eq(scanner.find_char(120), -1)
+}
+
+///|
+test "block context public helpers expose parser position safely" {
+  let seen : Array[String] = []
+  let rule = @markdown.Rule::block(
+    @markdown.RuleName::raw("x:block:context"),
+    priority=100,
+    fn(ctx, sink) {
+      seen.push(ctx.current_line())
+      seen.push(ctx.line_index().to_string())
+      seen.push(ctx.current_line_start().to_string())
+      match ctx.line_at(-1) {
+        None => seen.push("none-before")
+        Some(_) => seen.push("unexpected-before")
+      }
+      match ctx.line_at(ctx.line_index() + 1) {
+        Some(line) => seen.push(line)
+        None => seen.push("unexpected-next")
+      }
+      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:ctx"))))
+      sink.emit(Text(ctx.current_line()))
+      sink.emit(Exit(@markdown.Tag::raw("x:ctx")))
+      1
+    },
+  )
+  let html = @markdown.Processor::new()
+    .with_plugin(@markdown.Plugin::new("context").add(rule))
+    .render_html("first\nsecond")
+  assert_eq(html, "<x:ctx>first</x:ctx><x:ctx>second</x:ctx>")
+  assert_eq(seen.length(), 10)
+  assert_eq(seen[0], "first")
+  assert_eq(seen[1], "0")
+  assert_eq(seen[2], "0")
+  assert_eq(seen[3], "none-before")
+  assert_eq(seen[4], "second")
+  assert_eq(seen[5], "second")
+  assert_eq(seen[6], "1")
+  assert_eq(seen[7], "6")
+  assert_eq(seen[8], "none-before")
+  assert_eq(seen[9], "unexpected-next")
+}
+
+///|
+test "html renderer keeps extension tags attrs and stray exits deterministic" {
+  let events : Array[@markdown.Event] = [
+    Enter(
+      @markdown.element_with_attrs(@markdown.Tag::custom("x", "note"), [
+        @markdown.attr(@markdown.AttrName::custom("x", "role"), "tip"),
+      ]),
+    ),
+    Text("<body>"),
+    Exit(@markdown.Tag::custom("x", "note")),
+    Exit(@markdown.Tag::custom("x", "missing")),
+  ]
+  let html = @markdown.HtmlRenderer::new().render(events)
+  assert_eq(html, "<x:note x:role=\"tip\">&lt;body&gt;</x:note></x:missing>")
+}
+
+///|
 test "empty builder parses paragraph text without registered rules" {
   let parser = @markdown.Processor::new().parse("plain")
   match parser.next() {
