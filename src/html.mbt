@@ -1,14 +1,21 @@
 ///|
+/// Renders Markdown events as HTML.
+///
+/// CommonMark tags are mapped to their HTML representation. Unknown extension
+/// tags are rendered with their tag value, with tag and attribute text escaped.
+/// Raw HTML events are passed through unchanged.
 pub struct HtmlRenderer {
   priv unit : Int
 }
 
 ///|
+/// Creates an HTML renderer.
 pub fn HtmlRenderer::new() -> HtmlRenderer {
   { unit: 0 }
 }
 
 ///|
+/// Renders an event stream as HTML.
 pub fn HtmlRenderer::render(
   self : HtmlRenderer,
   events : Array[Event],

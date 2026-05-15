@@ -1,14 +1,17 @@
 ///|
+/// A chainable event stream transformer.
 pub struct Transform {
   priv events : Array[Event]
 }
 
 ///|
+/// Creates a transform from an event array.
 pub fn Transform::new(events : Array[Event]) -> Transform {
   { events, }
 }
 
 ///|
+/// Merges adjacent `Text` events.
 pub fn Transform::text_merge(self : Transform) -> Transform {
   let merged : Array[Event] = []
   for event in self.events {
@@ -29,6 +32,7 @@ pub fn Transform::text_merge(self : Transform) -> Transform {
 }
 
 ///|
+/// Rewrites every `SoftBreak` event to `HardBreak`.
 pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
   self.map(fn(event) {
     match event {
@@ -39,6 +43,9 @@ pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
 }
 
 ///|
+/// Renames matching `Enter` and `Exit` tags.
+///
+/// Element attributes and source ranges are preserved.
 pub fn Transform::rename_tag(
   self : Transform,
   from : Tag,
@@ -59,6 +66,9 @@ pub fn Transform::rename_tag(
 }
 
 ///|
+/// Appends an attribute to matching `Enter` elements.
+///
+/// Existing attributes and source ranges are preserved.
 pub fn Transform::inject_attr(
   self : Transform,
   tag : Tag,
@@ -83,6 +93,7 @@ pub fn Transform::inject_attr(
 }
 
 ///|
+/// Returns the transformed event array.
 pub fn Transform::collect(self : Transform) -> Array[Event] {
   self.events
 }

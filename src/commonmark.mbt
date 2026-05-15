@@ -1,4 +1,8 @@
 ///|
+/// Returns the built-in CommonMark plugin.
+///
+/// The plugin registers source, block, inline, delimiter, and core rules under
+/// `cm:` rule names.
 pub fn commonmark_plugin() -> Plugin {
   Plugin::new("commonmark")
   .add(
