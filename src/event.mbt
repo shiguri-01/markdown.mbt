@@ -125,7 +125,21 @@ pub struct SourceRange {
 
 ///|
 /// Creates a source range from inclusive `start` and exclusive `end` offsets.
-pub fn SourceRange::new(start : Int, end : Int) -> SourceRange? {
+pub fn SourceRange::new(
+  start : Int,
+  end : Int,
+) -> SourceRange? where {
+  proof_ensure: result => {
+    match result {
+      Some(range) =>
+        range.start == start &&
+        range.end == end &&
+        range.start >= 0 &&
+        range.end >= range.start
+      None => start < 0 || end < start
+    }
+  },
+} {
   if start < 0 || end < start {
     None
   } else {
@@ -146,7 +160,13 @@ pub fn SourceRange::end(self : SourceRange) -> Int {
 }
 
 ///|
-fn source_range(start : Int, end : Int) -> SourceRange {
+fn source_range(
+  start : Int,
+  end : Int,
+) -> SourceRange where {
+  proof_require: start >= 0 && end >= start,
+  proof_ensure: result => result.start == start && result.end == end,
+} {
   { start, end }
 }
 

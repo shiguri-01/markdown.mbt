@@ -40,6 +40,8 @@
               git
               lefthook
               moonbit-bin.moonbit.latest
+              why3
+              z3
             ];
           };
         }
