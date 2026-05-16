@@ -116,8 +116,11 @@ test "plugin and inline scanner public helpers have stable behavior" {
   assert_true(scanner.char_at_offset(4) is None)
   assert_eq(scanner.slice(-1, 2), "bcd")
   assert_eq(scanner.slice(3, 1), "")
-  assert_eq(scanner.find_char(101), 2)
-  assert_eq(scanner.find_char(120), -1)
+  match scanner.find_char(101) {
+    Some(offset) => assert_eq(offset, 2)
+    None => abort("expected char offset")
+  }
+  assert_true(scanner.find_char(120) is None)
 }
 
 ///|

@@ -103,7 +103,7 @@ pub struct InlineScanner {
 }
 pub fn InlineScanner::char(Self) -> Int?
 pub fn InlineScanner::char_at_offset(Self, Int) -> Int?
-pub fn InlineScanner::find_char(Self, Int) -> Int
+pub fn InlineScanner::find_char(Self, Int) -> Int?
 pub fn InlineScanner::has_prefix(Self, String) -> Bool
 pub fn InlineScanner::new(String, Int) -> Self
 pub fn InlineScanner::slice(Self, Int, Int) -> String

@@ -155,15 +155,13 @@ pub fn InlineScanner::slice(
 
 ///|
 /// Finds `needle` from the scanner position and returns a relative offset.
-///
-/// Returns `-1` when the character is not found.
-pub fn InlineScanner::find_char(self : InlineScanner, needle : Int) -> Int {
+pub fn InlineScanner::find_char(self : InlineScanner, needle : Int) -> Int? {
   for i in self.index..<self.text.length() {
     if self.text[i].to_int() == needle {
-      return i - self.index
+      return Some(i - self.index)
     }
   }
-  -1
+  None
 }
 
 ///|
