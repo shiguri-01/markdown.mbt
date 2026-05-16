@@ -21,12 +21,6 @@ pub fn to_html(events : Array[Event]) -> String {
 }
 
 ///|
-/// Parses Markdown input with this processor and renders it as HTML.
-pub fn Processor::render_html(self : Processor, source : String) -> String {
-  self.parse(source).collect() |> to_html
-}
-
-///|
 /// Renders an event stream as HTML.
 pub fn HtmlRenderer::render(
   self : HtmlRenderer,

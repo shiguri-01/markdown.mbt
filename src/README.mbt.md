@@ -79,9 +79,11 @@ test {
     .disable(@markdown.RuleName::raw("cm:block:html"))
     .disable(@markdown.RuleName::raw("cm:inline:raw_html"))
   let configured = @markdown.commonmark_plugin().with_plugin(no_raw_html)
-  let html = @markdown.Processor::new()
+  let events = @markdown.Processor::new()
     .with_plugin(configured)
-    .render_html("<span>raw</span>")
+    .parse("<span>raw</span>")
+    .collect()
+  let html = events |> @markdown.to_html
   assert_eq(html, "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }
 ```
