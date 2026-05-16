@@ -189,7 +189,7 @@ pub(all) enum Event {
 
 ///|
 /// Creates an attribute.
-pub fn attr(name : AttrName, value : String) -> Attr {
+pub fn Attr::new(name : AttrName, value : String) -> Attr {
   { name, value }
 }
 
@@ -207,13 +207,13 @@ pub fn Attr::value(self : Attr) -> String {
 
 ///|
 /// Creates an element without attributes or source range.
-pub fn element(tag : Tag) -> Element {
+pub fn Element::new(tag : Tag) -> Element {
   { tag, attrs: [], range: None }
 }
 
 ///|
 /// Creates an element with attributes and an optional source range.
-pub fn element_with_attrs(
+pub fn Element::with_attrs(
   tag : Tag,
   attrs : Array[Attr],
   range? : SourceRange? = None,

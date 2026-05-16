@@ -2,15 +2,9 @@
 package "shiguri/markdown"
 
 // Values
-pub fn attr(AttrName, String) -> Attr
-
 pub fn commonmark() -> Processor
 
 pub fn commonmark_plugin() -> Plugin
-
-pub fn element(Tag) -> Element
-
-pub fn element_with_attrs(Tag, Array[Attr], range? : SourceRange?) -> Element
 
 pub fn parse(String) -> Array[Event]
 
@@ -45,6 +39,7 @@ pub struct Attr {
   // private fields
 }
 pub fn Attr::name(Self) -> AttrName
+pub fn Attr::new(AttrName, String) -> Self
 pub fn Attr::value(Self) -> String
 
 pub struct AttrName {
@@ -68,8 +63,10 @@ pub struct Element {
 }
 pub fn Element::attr(Self, AttrName) -> String?
 pub fn Element::attrs(Self) -> Array[Attr]
+pub fn Element::new(Tag) -> Self
 pub fn Element::range(Self) -> SourceRange?
 pub fn Element::tag(Self) -> Tag
+pub fn Element::with_attrs(Tag, Array[Attr], range? : SourceRange?) -> Self
 
 pub(all) enum Event {
   Enter(Element)

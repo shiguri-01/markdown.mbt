@@ -153,7 +153,7 @@ pub fn AstBuilder::build(
       HardBreak =>
         stack[stack.length() - 1].children.push({
           kind: ElementNode,
-          element: Some(element(tag_name("cm:hard_break"))),
+          element: Some(Element::new(tag_name("cm:hard_break"))),
           children: [],
           text: "",
           range: None,
@@ -161,7 +161,7 @@ pub fn AstBuilder::build(
       Html(raw) =>
         stack[stack.length() - 1].children.push({
           kind: ElementNode,
-          element: Some(element(tag_name("cm:html"))),
+          element: Some(Element::new(tag_name("cm:html"))),
           children: [
             {
               kind: TextNode,

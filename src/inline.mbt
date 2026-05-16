@@ -109,7 +109,7 @@ fn cm_code_span_inline(ctx : InlineContext, sink : EventSink) -> Int {
   if end < 0 {
     return 0
   }
-  sink.emit(Enter(element(tag_name("cm:code_span"))))
+  sink.emit(Enter(Element::new(tag_name("cm:code_span"))))
   sink.emit(Text(normalize_code_span(text[i + width:end].to_owned())))
   sink.emit(Exit(tag_name("cm:code_span")))
   end - i + width
@@ -153,7 +153,7 @@ fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(tag_name("cm:link"), [
+      Element::with_attrs(tag_name("cm:link"), [
         { name: attr_name("destination"), value: href },
       ]),
     ),
@@ -267,7 +267,7 @@ fn cm_link_inline(ctx : InlineContext, sink : EventSink) -> Int {
   if attrs.length() == 0 {
     return 0
   }
-  sink.emit(Enter(element_with_attrs(tag_name("cm:link"), attrs)))
+  sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
   parse_inlines(text[i + 1:close_text].to_owned(), ctx.registry, sink)
   sink.emit(Exit(tag_name("cm:link")))
   close_dest - i + 1
@@ -298,7 +298,7 @@ fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
     return 0
   }
   attrs.push({ name: attr_name("alt"), value: alt })
-  sink.emit(Enter(element_with_attrs(tag_name("cm:image"), attrs)))
+  sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), attrs)))
   sink.emit(Exit(tag_name("cm:image")))
   close_dest - i + 1
 }
@@ -421,8 +421,8 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element(tag_name("cm:emphasis"))))
-    sink.emit(Enter(element(tag_name("cm:strong"))))
+    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:strong")))
     sink.emit(Exit(tag_name("cm:emphasis")))
@@ -435,7 +435,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element(tag_name("cm:strong"))))
+    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:strong")))
     end - i + 2
@@ -447,7 +447,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
     if end < 0 {
       return 0
     }
-    sink.emit(Enter(element(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:emphasis")))
     end - i + 1

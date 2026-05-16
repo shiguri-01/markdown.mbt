@@ -88,7 +88,7 @@ test {
       if ctx.offset() + end >= ctx.source().length() {
         return 0
       }
-      sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:math"))))
+      sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:math"))))
       match scanner.slice(1, end) {
         Some(text) => sink.emit(Text(text))
         None => return 0
@@ -128,7 +128,7 @@ test {
 ///|
 test {
   let events : Array[@markdown.Event] = [
-    Enter(@markdown.element(@markdown.Tag::raw("x:note"))),
+    Enter(@markdown.Element::new(@markdown.Tag::raw("x:note"))),
     Text("a"),
     Text("b"),
     Exit(@markdown.Tag::raw("x:note")),

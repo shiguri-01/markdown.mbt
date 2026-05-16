@@ -16,7 +16,7 @@ fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
   } else {
     sink.emit(
       Enter(
-        element_with_attrs(
+        Element::with_attrs(
           tag_name("cm:paragraph"),
           [],
           range=Some(block_source_range(ctx, ctx.index, i)),
@@ -77,7 +77,7 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:heading"),
         [{ name: attr_name("level"), value: level.to_string() }],
         range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
@@ -105,7 +105,7 @@ fn cm_setext_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:heading"),
         [{ name: attr_name("level"), value: level.to_string() }],
         range=Some(block_source_range(ctx, ctx.index, ctx.index + 2)),
@@ -126,7 +126,7 @@ fn cm_thematic_break_block(ctx : BlockContext, sink : EventSink) -> Int {
   if is_thematic_break(line) {
     sink.emit(
       Enter(
-        element_with_attrs(
+        Element::with_attrs(
           tag_name("cm:thematic_break"),
           [],
           range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
@@ -250,7 +250,7 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
     if is_closing_fence_line(ctx.lines[i], fence) {
       sink.emit(
         Enter(
-          element_with_attrs(
+          Element::with_attrs(
             tag_name("cm:code_block"),
             code_block_attrs(info),
             range=Some(block_source_range(ctx, ctx.index, i + 1)),
@@ -269,7 +269,7 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:code_block"),
         code_block_attrs(info),
         range=Some(block_source_range(ctx, ctx.index, i)),
@@ -319,7 +319,7 @@ fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:code_block"),
         [],
         range=Some(block_source_range(ctx, ctx.index, i)),
@@ -366,7 +366,7 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:block_quote"),
         [],
         range=Some(block_source_range(ctx, ctx.index, i)),
@@ -482,7 +482,7 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
   for n in 0..<item_texts.length() {
     list_events.emit(
       Enter(
-        element_with_attrs(
+        Element::with_attrs(
           tag_name("cm:item"),
           [],
           range=Some(block_source_range(ctx, item_starts[n], item_ends[n])),
@@ -494,7 +494,7 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
   }
   sink.emit(
     Enter(
-      element_with_attrs(
+      Element::with_attrs(
         tag_name("cm:list"),
         list_attrs,
         range=Some(block_source_range(ctx, ctx.index, i)),
