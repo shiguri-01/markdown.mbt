@@ -154,7 +154,7 @@ pub struct SourceRange {
   // private fields
 }
 pub fn SourceRange::end(Self) -> Int
-pub fn SourceRange::new(Int, Int) -> Self
+pub fn SourceRange::new(Int, Int) -> Self?
 pub fn SourceRange::start(Self) -> Int
 
 pub struct Tag {

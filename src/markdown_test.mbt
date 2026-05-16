@@ -60,7 +60,10 @@ test "typed keys expose stable string contracts" {
 
 ///|
 test "public element and attr accessors preserve extension data" {
-  let range = @markdown.SourceRange::new(2, 8)
+  let range = match @markdown.SourceRange::new(2, 8) {
+    Some(range) => range
+    None => abort("expected valid range")
+  }
   let attr = @markdown.attr(@markdown.AttrName::custom("x", "role"), "tip")
   let el = @markdown.element_with_attrs(
     @markdown.Tag::custom("x", "note"),
@@ -82,6 +85,19 @@ test "public element and attr accessors preserve extension data" {
       assert_eq(actual.end(), 8)
     }
     None => abort("expected source range")
+  }
+}
+
+///|
+test "source range constructor rejects invalid ranges" {
+  assert_true(@markdown.SourceRange::new(-1, 2) is None)
+  assert_true(@markdown.SourceRange::new(4, 3) is None)
+  match @markdown.SourceRange::new(3, 3) {
+    Some(range) => {
+      assert_eq(range.start(), 3)
+      assert_eq(range.end(), 3)
+    }
+    None => abort("expected empty valid range")
   }
 }
 
@@ -897,7 +913,7 @@ test "external block plugin can consume multiline admonition" {
                 line[4:].to_owned(),
               ),
             ],
-            range=Some(@markdown.SourceRange::new(start, start + line.length())),
+            range=@markdown.SourceRange::new(start, start + line.length()),
           ),
         ),
       )
@@ -2065,7 +2081,10 @@ test "ast builder preserves extension attributes" {
 
 ///|
 test "ast builder preserves element source range" {
-  let range = @markdown.SourceRange::new(2, 9)
+  let range = match @markdown.SourceRange::new(2, 9) {
+    Some(range) => range
+    None => abort("expected valid range")
+  }
   let result = @markdown.AstBuilder::new().build([
     Enter(
       @markdown.element_with_attrs(
@@ -2158,7 +2177,10 @@ test "ast builder converts break and raw html events" {
 
 ///|
 test "transform preserves source range while renaming and injecting attrs" {
-  let range = @markdown.SourceRange::new(1, 4)
+  let range = match @markdown.SourceRange::new(1, 4) {
+    Some(range) => range
+    None => abort("expected valid range")
+  }
   let events : Array[@markdown.Event] = [
     Enter(
       @markdown.element_with_attrs(

@@ -393,7 +393,7 @@ fn block_source_range(
   end_line : Int,
 ) -> SourceRange {
   if start_line >= ctx.line_starts.length() || end_line <= start_line {
-    SourceRange::new(0, 0)
+    source_range(0, 0)
   } else {
     let last = end_line - 1
     let end = if last < ctx.lines.length() && last < ctx.line_starts.length() {
@@ -401,7 +401,7 @@ fn block_source_range(
     } else {
       ctx.line_starts[start_line]
     }
-    SourceRange::new(ctx.line_starts[start_line], end)
+    source_range(ctx.line_starts[start_line], end)
   }
 }
 

@@ -129,8 +129,12 @@ pub struct SourceRange {
 
 ///|
 /// Creates a source range from inclusive `start` and exclusive `end` offsets.
-pub fn SourceRange::new(start : Int, end : Int) -> SourceRange {
-  { start, end }
+pub fn SourceRange::new(start : Int, end : Int) -> SourceRange? {
+  if start < 0 || end < start {
+    None
+  } else {
+    Some(source_range(start, end))
+  }
 }
 
 ///|
@@ -143,6 +147,11 @@ pub fn SourceRange::start(self : SourceRange) -> Int {
 /// Returns the exclusive end byte offset.
 pub fn SourceRange::end(self : SourceRange) -> Int {
   self.end
+}
+
+///|
+fn source_range(start : Int, end : Int) -> SourceRange {
+  { start, end }
 }
 
 ///|
