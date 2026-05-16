@@ -12,8 +12,6 @@ pub fn element(Tag) -> Element
 
 pub fn element_with_attrs(Tag, Array[Attr], range? : SourceRange?) -> Element
 
-pub fn new() -> Processor
-
 pub fn parse(String) -> Array[Event]
 
 pub fn to_ast(Array[Event]) -> Result[AstNode, AstError]

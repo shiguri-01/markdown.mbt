@@ -9,13 +9,13 @@ test "commonmark block and inline html rendering" {
 }
 
 ///|
-test "top-level parser builders are available" {
+test "convenience parser builders are available" {
   assert_eq(@markdown.to_html(@markdown.parse("# hi")), "<h1>hi</h1>\n")
   match @markdown.to_ast(@markdown.parse("# hi")) {
     Ok(root) => assert_eq(root.children().length(), 1)
     Err(_) => abort("expected AST")
   }
-  assert_eq(@markdown.new().render_html("# hi"), "<p># hi</p>\n")
+  assert_eq(@markdown.Processor::new().render_html("# hi"), "<p># hi</p>\n")
 }
 
 ///|

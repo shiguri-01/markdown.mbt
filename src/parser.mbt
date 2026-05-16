@@ -24,12 +24,6 @@ pub fn Processor::new() -> Processor {
 }
 
 ///|
-/// Creates an empty processor.
-pub fn new() -> Processor {
-  Processor::new()
-}
-
-///|
 /// Creates a processor with the built-in CommonMark plugin installed.
 pub fn Processor::commonmark() -> Processor {
   Processor::new().with_plugin(commonmark_plugin())

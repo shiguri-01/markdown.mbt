@@ -1,5 +1,5 @@
 ///|
 pub fn keep_imports_used() -> Unit {
-  ignore(@markdown.new())
+  ignore(@markdown.Processor::new())
   ignore(@bencher.new())
 }
