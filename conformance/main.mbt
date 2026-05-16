@@ -119,7 +119,7 @@ fn print_help() -> Unit {
   println("CommonMark 0.31.2 conformance report")
   println("")
   println("Usage:")
-  println("  moon -C scripts/commonmark-conformance run . [options]")
+  println("  moon -C conformance run . [options]")
   println("")
   println("Options:")
   println("  --section NAME     Run only examples from a section")
