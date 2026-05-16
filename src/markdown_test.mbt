@@ -1,12 +1,4 @@
 ///|
-fn @markdown.Processor::render_html(
-  self : @markdown.Processor,
-  source : String,
-) -> String {
-  @markdown.to_html(self.parse(source).collect())
-}
-
-///|
 test "commonmark block and inline html rendering" {
   let html = @markdown.Processor::commonmark().render_html(
     "## Hello *MoonBit*\n\n- one\n- two",
