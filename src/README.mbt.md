@@ -4,6 +4,33 @@ An event-driven Markdown parser for MoonBit. The main API is a pull parser that
 emits Markdown events, with HTML rendering, event transforms, and AST building
 provided as downstream helpers.
 
+## Design Contract
+
+This package is built around a small, stable event pipeline:
+
+1. `Processor` owns Markdown parsing configuration and produces `Event` values.
+2. `Parser` is a pull view over an already-produced event stream.
+3. `Transform`, `HtmlRenderer`, and `AstBuilder` consume event streams. They do
+   not belong to `Processor`, so output formats stay downstream of parsing.
+4. Extensions are ordinary `Plugin` values that register named `Rule` values.
+   Plugin builders and processor builders return new values and leave the
+   original value unchanged.
+5. Public constructors and accessors copy mutable arrays at API boundaries.
+   Callers can mutate returned arrays without mutating parser-owned state.
+
+Event streams use a tree-shaped contract. `Enter(element)` opens an element,
+`Exit(tag)` closes the most recent open element with the same tag, and text,
+break, and raw HTML events are leaves. `AstBuilder::build` validates this
+contract and returns `AstError` for unbalanced streams. `HtmlRenderer` is a
+renderer for event streams; callers that need validation should run
+`to_ast(events)` before rendering.
+
+Rule functions return the amount of input they consumed. Returning `0` means the
+rule did not match and lets later rules try the same source position. Positive
+values mean the rule matched and emitted any events it owns. Rule names and tags
+use `cm:` for built-in CommonMark behavior and custom namespaces such as `x:`
+for extensions.
+
 ## Parse CommonMark to HTML
 
 ```mbt check
