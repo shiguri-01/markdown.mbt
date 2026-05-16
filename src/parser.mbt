@@ -77,9 +77,14 @@ pub fn Parser::next(self : Parser) -> Event? {
 }
 
 ///|
-/// Returns the parser's event array.
+/// Collects the remaining events and advances the parser to the end.
 pub fn Parser::collect(self : Parser) -> Array[Event] {
-  copy_events(self.events)
+  let remaining : Array[Event] = []
+  while self.index < self.events.length() {
+    remaining.push(copy_event(self.events[self.index]))
+    self.index = self.index + 1
+  }
+  remaining
 }
 
 ///|

@@ -9,7 +9,8 @@ provided as downstream helpers.
 This package is built around a small, stable event pipeline:
 
 1. `Processor` owns Markdown parsing configuration and produces `Event` values.
-2. `Parser` is a pull view over an already-produced event stream.
+2. `Parser` is a pull view over an already-produced event stream. `next()`
+   consumes one event and `collect()` consumes the remaining events.
 3. `Transform`, `HtmlRenderer`, and `AstBuilder` consume event streams. They do
    not belong to `Processor`, so output formats stay downstream of parsing.
 4. Extensions are ordinary `Plugin` values that register named `Rule` values.

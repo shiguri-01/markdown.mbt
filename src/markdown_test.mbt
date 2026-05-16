@@ -1554,7 +1554,27 @@ test "parser collect does not expose internal event arrays" {
   assert_eq(events.length(), 3)
   ignore(events.pop())
   assert_eq(events.length(), 2)
-  assert_eq(parser.collect().length(), 3)
+  assert_eq(parser.collect().length(), 0)
+}
+
+///|
+test "parser collect returns remaining events" {
+  let parser = @markdown.Processor::commonmark().parse("hello")
+  match parser.next() {
+    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
+    _ => abort("expected paragraph enter")
+  }
+  let remaining = parser.collect()
+  assert_eq(remaining.length(), 2)
+  match remaining[0] {
+    Text(text) => assert_eq(text, "hello")
+    _ => abort("expected text")
+  }
+  match remaining[1] {
+    Exit(tag) => assert_eq(tag.to_string(), "cm:paragraph")
+    _ => abort("expected paragraph exit")
+  }
+  assert_eq(parser.collect().length(), 0)
 }
 
 ///|
