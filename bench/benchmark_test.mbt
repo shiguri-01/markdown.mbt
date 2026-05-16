@@ -27,7 +27,7 @@ fn plain_throughput_document() -> String {
 fn single_paragraph_throughput_document() -> String {
   repeat_text(
     "MoonBit markdown parser benchmark text without inline markup. ",
-    2000,
+    1000,
   )
 }
 

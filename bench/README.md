@@ -24,7 +24,7 @@ Fixture sizes:
 | --- | ---: | ---: |
 | `paragraph_document` | 10,560 | 240 |
 | `plain_throughput_document` | 202,000 | 4,000 |
-| `single_paragraph_throughput_document` | 124,000 | 1 |
+| `single_paragraph_throughput_document` | 62,000 | 1 |
 | `list_document` | 7,880 | 180 |
 | `delimiter_document` | 2,010 | 3 |
 | `reference_document` | 9,170 | 360 |
