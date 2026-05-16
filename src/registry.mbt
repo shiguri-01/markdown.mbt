@@ -137,19 +137,17 @@ pub fn InlineScanner::char_at_offset(
 
 ///|
 /// Returns a slice relative to the scanner position.
-///
-/// Invalid ranges return an empty string.
 pub fn InlineScanner::slice(
   self : InlineScanner,
   start_offset : Int,
   end_offset : Int,
-) -> String {
+) -> String? {
   let start = self.index + start_offset
   let end = self.index + end_offset
   if start < 0 || end < start || end > self.text.length() {
-    ""
+    None
   } else {
-    self.text[start:end].to_owned()
+    Some(self.text[start:end].to_owned())
   }
 }
 

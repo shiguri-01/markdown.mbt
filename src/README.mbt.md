@@ -89,7 +89,10 @@ test {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:math"))))
-      sink.emit(Text(scanner.slice(1, end)))
+      match scanner.slice(1, end) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:math")))
       end + 1
     },

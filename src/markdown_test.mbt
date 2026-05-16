@@ -114,8 +114,11 @@ test "plugin and inline scanner public helpers have stable behavior" {
     None => abort("expected previous char")
   }
   assert_true(scanner.char_at_offset(4) is None)
-  assert_eq(scanner.slice(-1, 2), "bcd")
-  assert_eq(scanner.slice(3, 1), "")
+  match scanner.slice(-1, 2) {
+    Some(text) => assert_eq(text, "bcd")
+    None => abort("expected slice")
+  }
+  assert_true(scanner.slice(3, 1) is None)
   match scanner.find_char(101) {
     Some(offset) => assert_eq(offset, 2)
     None => abort("expected char offset")
@@ -641,7 +644,10 @@ test "standard delimiter rule can be overridden" {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:emphasis"))))
-      sink.emit(Text(scanner.slice(1, close)))
+      match scanner.slice(1, close) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:emphasis")))
       close + 1
     },
@@ -675,7 +681,10 @@ test "standard inline rule can be overridden" {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:code"))))
-      sink.emit(Text(scanner.slice(1, close)))
+      match scanner.slice(1, close) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:code")))
       close + 1
     },
@@ -1076,7 +1085,10 @@ test "external plugin rule participates in inline chain" {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:math"))))
-      sink.emit(Text(scanner.slice(1, offset)))
+      match scanner.slice(1, offset) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:math")))
       offset + 1
     },
@@ -1112,7 +1124,10 @@ test "external plugin rule participates in delimiter chain" {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:mark"))))
-      sink.emit(Text(scanner.slice(2, offset)))
+      match scanner.slice(2, offset) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:mark")))
       offset + 2
     },
@@ -1147,7 +1162,10 @@ test "external delimiter rule can be disabled and re-enabled" {
         return 0
       }
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:mark"))))
-      sink.emit(Text(ctx.scanner().slice(2, offset)))
+      match ctx.scanner().slice(2, offset) {
+        Some(text) => sink.emit(Text(text))
+        None => return 0
+      }
       sink.emit(Exit(@markdown.Tag::raw("x:mark")))
       offset + 2
     },
