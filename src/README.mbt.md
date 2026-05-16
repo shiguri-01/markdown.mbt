@@ -55,12 +55,12 @@ test {
   let buffer = @markdown.EventBuffer::new()
   @markdown.Processor::commonmark().parse_into("hello", buffer.sink())
   let events = buffer.collect()
-  match events[0] {
-    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
+  match events.get(0) {
+    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
-  match events[1] {
-    Text(text) => assert_eq(text, "hello")
+  match events.get(1) {
+    Some(Text(text)) => assert_eq(text, "hello")
     _ => abort("expected text")
   }
 }
@@ -82,23 +82,27 @@ test {
     fn(ctx, sink) {
       let scanner = ctx.scanner()
       if !scanner.has_prefix("$") {
-        return 0
+        0
+      } else {
+        let mut end = 1
+        while scanner.char_at_offset(end) != Some(36) &&
+              ctx.offset() + end < ctx.source().length() {
+          end = end + 1
+        }
+        if ctx.offset() + end >= ctx.source().length() {
+          0
+        } else {
+          sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:math"))))
+          match scanner.slice(1, end) {
+            Some(text) => {
+              sink.emit(Text(text))
+              sink.emit(Exit(@markdown.Tag::raw("x:math")))
+              end + 1
+            }
+            None => 0
+          }
+        }
       }
-      let mut end = 1
-      while scanner.char_at_offset(end) != Some(36) &&
-            ctx.offset() + end < ctx.source().length() {
-        end = end + 1
-      }
-      if ctx.offset() + end >= ctx.source().length() {
-        return 0
-      }
-      sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:math"))))
-      match scanner.slice(1, end) {
-        Some(text) => sink.emit(Text(text))
-        None => return 0
-      }
-      sink.emit(Exit(@markdown.Tag::raw("x:math")))
-      end + 1
     },
   )
   let html = @markdown.HtmlBuffer::new()
@@ -138,9 +142,17 @@ test {
   sink.finish()
   match ast.result() {
     Ok(root) =>
-      match root.children()[0].children()[0].text() {
-        Some(text) => assert_eq(text, "ab")
-        None => abort("expected text node")
+      match root.children().get(0) {
+        Some(note) =>
+          match note.children().get(0) {
+            Some(child) =>
+              match child.text() {
+                Some(text) => assert_eq(text, "ab")
+                None => abort("expected text node")
+              }
+            None => abort("expected child node")
+          }
+        None => abort("expected note node")
       }
     Err(_) => abort("expected AST")
   }
