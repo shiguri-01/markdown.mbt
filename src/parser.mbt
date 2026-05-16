@@ -162,7 +162,8 @@ fn commonmark_block_dispatch(ctx : BlockContext, sink : EventSink) -> Int {
   let line = ctx.lines[ctx.index]
   let trimmed = trim(line)
   if trimmed == "" {
-    return cm_blank_block(ctx, sink)
+    ignore(sink)
+    return 1
   }
   let leading = count_leading_spaces(line)
   let c = char_at(trimmed, 0)

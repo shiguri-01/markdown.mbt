@@ -16,6 +16,22 @@ fn paragraph_document() -> String {
 }
 
 ///|
+fn plain_throughput_document() -> String {
+  repeat_text(
+    "MoonBit markdown parser benchmark text without inline markup for sustained throughput measurements.\n\n",
+    2000,
+  )
+}
+
+///|
+fn single_paragraph_throughput_document() -> String {
+  repeat_text(
+    "MoonBit markdown parser benchmark text without inline markup. ",
+    2000,
+  )
+}
+
+///|
 fn list_document() -> String {
   let mut out = ""
   for i in 0..<180 {
@@ -181,6 +197,8 @@ fn ast_child_count(events : Array[@markdown.Event]) -> Int {
 ///|
 test "benchmark fixtures produce work" {
   assert_true(parse_event_count(paragraph_document()) > 0)
+  assert_true(parse_event_count(plain_throughput_document()) > 0)
+  assert_true(parse_event_count(single_paragraph_throughput_document()) > 0)
   assert_true(parse_event_count(list_document()) > 0)
   assert_true(parse_event_count(delimiter_document()) > 0)
   assert_true(parse_event_count(reference_document()) > 0)
@@ -198,6 +216,8 @@ test "benchmark fixtures produce work" {
 ///|
 test "markdown processing speed" (b : @bench.T) {
   let paragraph = paragraph_document()
+  let plain_throughput = plain_throughput_document()
+  let single_paragraph_throughput = single_paragraph_throughput_document()
   let list = list_document()
   let delimiter = delimiter_document()
   let references = reference_document()
@@ -212,6 +232,18 @@ test "markdown processing speed" (b : @bench.T) {
     name="parse/paragraphs_inline_markup",
     fn() { b.keep(parse_event_count_with(commonmark, paragraph)) },
     count=5,
+  )
+  b.bench(
+    name="parse/plain_paragraphs_throughput",
+    fn() { b.keep(parse_event_count_with(commonmark, plain_throughput)) },
+    count=3,
+  )
+  b.bench(
+    name="parse/single_paragraph_throughput",
+    fn() {
+      b.keep(parse_event_count_with(commonmark, single_paragraph_throughput))
+    },
+    count=3,
   )
   b.bench(
     name="parse/lists_links_code_spans",

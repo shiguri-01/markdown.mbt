@@ -1,14 +1,9 @@
 ///|
 fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
   let mut i = ctx.index
-  let text = StringBuilder::new()
   while i < ctx.lines.length() &&
         trim(ctx.lines[i]) != "" &&
         (i == ctx.index || !is_paragraph_interrupt(ctx.lines[i])) {
-    if i > ctx.index {
-      text.write_string("\n")
-    }
-    text.write_string(paragraph_line(ctx.lines[i]))
     i = i + 1
   }
   if i == ctx.index {
@@ -23,15 +18,27 @@ fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
         ),
       ),
     )
-    parse_inlines_with_rules(
-      text.to_string(),
-      ctx.registry,
-      ctx.inline_rules,
-      sink,
-    )
+    let inline_text = if i == ctx.index + 1 {
+      paragraph_line(ctx.lines[ctx.index])
+    } else {
+      paragraph_text(ctx, i)
+    }
+    parse_inlines_with_rules(inline_text, ctx.registry, ctx.inline_rules, sink)
     sink.emit(Exit(tag_name("cm:paragraph")))
     i - ctx.index
   }
+}
+
+///|
+fn paragraph_text(ctx : BlockContext, end : Int) -> String {
+  let text = StringBuilder::new()
+  for i in ctx.index..<end {
+    if i > ctx.index {
+      text.write_string("\n")
+    }
+    text.write_string(paragraph_line(ctx.lines[i]))
+  }
+  text.to_string()
 }
 
 ///|
