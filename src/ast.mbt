@@ -43,16 +43,23 @@ pub fn AstNode::element(self : AstNode) -> Element? {
 
 ///|
 /// Returns the node children.
-///
-/// The returned array is the node's stored array.
 pub fn AstNode::children(self : AstNode) -> Array[AstNode] {
-  self.children
+  copy_ast_nodes(self.children)
 }
 
 ///|
 /// Returns the text carried by a text node.
 pub fn AstNode::text(self : AstNode) -> String {
   self.text
+}
+
+///|
+fn copy_ast_nodes(nodes : Array[AstNode]) -> Array[AstNode] {
+  let copied : Array[AstNode] = []
+  for node in nodes {
+    copied.push(node)
+  }
+  copied
 }
 
 ///|

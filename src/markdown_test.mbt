@@ -82,6 +82,19 @@ test "public element and attr accessors preserve extension data" {
 }
 
 ///|
+test "element attributes are isolated from mutable arrays" {
+  let original = [@markdown.attr(@markdown.AttrName::raw("class"), "note")]
+  let el = @markdown.element_with_attrs(@markdown.Tag::raw("x:note"), original)
+  original.push(@markdown.attr(@markdown.AttrName::raw("id"), "later"))
+  assert_eq(el.attrs().length(), 1)
+  let exposed = el.attrs()
+  exposed.push(@markdown.attr(@markdown.AttrName::raw("data-x"), "changed"))
+  assert_eq(el.attrs().length(), 1)
+  assert_eq(el.attrs()[0].name().to_string(), "class")
+  assert_eq(el.attrs()[0].value(), "note")
+}
+
+///|
 test "plugin and inline scanner public helpers have stable behavior" {
   let plugin = @markdown.Plugin::new("contract")
   assert_eq(plugin.name(), "contract")
@@ -1927,6 +1940,24 @@ test "ast builder preserves element source range" {
           }
         None => abort("expected element")
       }
+    }
+    Err(_) => abort("expected ast")
+  }
+}
+
+///|
+test "ast node children accessor does not expose internal arrays" {
+  let result = @markdown.to_ast(@markdown.parse("hello"))
+  match result {
+    Ok(root) => {
+      let children = root.children()
+      assert_eq(children.length(), 1)
+      ignore(children.pop())
+      assert_eq(root.children().length(), 1)
+      assert_eq(root.children()[0].children().length(), 1)
+      let paragraph_children = root.children()[0].children()
+      ignore(paragraph_children.pop())
+      assert_eq(root.children()[0].children().length(), 1)
     }
     Err(_) => abort("expected ast")
   }

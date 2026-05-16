@@ -204,14 +204,12 @@ pub fn element(tag : Tag) -> Element {
 
 ///|
 /// Creates an element with attributes and an optional source range.
-///
-/// The attribute array is stored as provided.
 pub fn element_with_attrs(
   tag : Tag,
   attrs : Array[Attr],
   range? : SourceRange? = None,
 ) -> Element {
-  { tag, attrs, range }
+  { tag, attrs: copy_attrs(attrs), range }
 }
 
 ///|
@@ -222,14 +220,21 @@ pub fn Element::tag(self : Element) -> Tag {
 
 ///|
 /// Returns the element attributes.
-///
-/// The returned array is the element's stored array.
 pub fn Element::attrs(self : Element) -> Array[Attr] {
-  self.attrs
+  copy_attrs(self.attrs)
 }
 
 ///|
 /// Returns the source range attached to the element, if any.
 pub fn Element::range(self : Element) -> SourceRange? {
   self.range
+}
+
+///|
+fn copy_attrs(attrs : Array[Attr]) -> Array[Attr] {
+  let copied : Array[Attr] = []
+  for attr in attrs {
+    copied.push(attr)
+  }
+  copied
 }
