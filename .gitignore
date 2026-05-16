@@ -6,6 +6,7 @@ _build/
 .repos/
 .agents/skills/moonbit/
 **/.git/
+scripts/commonmark-conformance/commonmark_spec_json.mbt
 
 # Local/editor noise
 *.swp

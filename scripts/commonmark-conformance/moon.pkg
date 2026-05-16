@@ -1,0 +1,16 @@
+import {
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "shiguri/markdown" @markdown,
+}
+
+options(
+  "is-main": true,
+  "pre-build": [
+    {
+      "input": "../../testdata/commonmark-0.31.2-spec.json",
+      "output": "commonmark_spec_json.mbt",
+      "command": ":embed -i $input -o $output --name commonmark_spec_json",
+    },
+  ],
+)

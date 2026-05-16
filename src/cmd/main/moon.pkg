@@ -1,7 +1,0 @@
-// import {
-//   "shiguri/markdown" @lib,
-// }
-
-options(
-  "is-main": true,
-)

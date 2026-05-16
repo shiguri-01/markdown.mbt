@@ -14,132 +14,6 @@ struct CommonMarkCategoryReport {
 }
 
 ///|
-fn parse_commonmark_spec_fixture(
-  category : String,
-  start_number : Int,
-  fixture : String,
-) -> Array[CommonMarkSpecExample] {
-  let examples : Array[CommonMarkSpecExample] = []
-  let mut state = 0
-  let mut number = start_number
-  let mut markdown = ""
-  let mut html = ""
-  for line_view in fixture.split("\n") {
-    let line = line_view.to_owned()
-    if line == "." {
-      if state == 0 {
-        markdown = ""
-        html = ""
-        state = 1
-      } else if state == 1 {
-        state = 2
-      } else {
-        examples.push({ number, category, markdown, html })
-        number = number + 1
-        state = 0
-      }
-    } else if state == 1 {
-      markdown = markdown + line + "\n"
-    } else if state == 2 {
-      html = html + line + "\n"
-    }
-  }
-  examples
-}
-
-///|
-fn fixture_examples() -> Array[CommonMarkSpecExample] {
-  parse_commonmark_spec_fixture(
-    "Fixture parser", 1000, ".\n# fixture\n.\n<h1>fixture</h1>\n.\n.\n[fixture]: /url\n\n[fixture]\n.\n<p><a href=\"/url\">fixture</a></p>\n.\n",
-  )
-}
-
-///|
-fn parse_commonmark_spec_document(
-  document : String,
-) -> Array[CommonMarkSpecExample] {
-  let examples : Array[CommonMarkSpecExample] = []
-  let mut category = "Uncategorized"
-  let mut state = 0
-  let mut number = 2000
-  let mut markdown = ""
-  let mut html = ""
-  for line_view in document.split("\n") {
-    let line = line_view.to_owned()
-    if state == 0 {
-      if is_commonmark_spec_heading(line) {
-        category = commonmark_spec_heading_text(line)
-      } else if is_commonmark_example_fence_start(line) {
-        markdown = ""
-        html = ""
-        state = 1
-      }
-    } else if state == 1 {
-      if line == "." {
-        state = 2
-      } else {
-        markdown = markdown + line + "\n"
-      }
-    } else if state == 2 {
-      if is_commonmark_example_fence_close(line) {
-        examples.push({ number, category, markdown, html })
-        number = number + 1
-        state = 0
-      } else {
-        html = html + line + "\n"
-      }
-    }
-  }
-  examples
-}
-
-///|
-fn is_commonmark_spec_heading(line : String) -> Bool {
-  commonmark_spec_heading_text(line) != ""
-}
-
-///|
-fn commonmark_spec_heading_text(line : String) -> String {
-  let mut level = 0
-  while level < line.length() && line[level].to_int() == 35 {
-    level = level + 1
-  }
-  if level > 0 && level + 1 < line.length() && line[level].to_int() == 32 {
-    line[level + 1:].to_owned()
-  } else {
-    ""
-  }
-}
-
-///|
-fn is_commonmark_example_fence_start(line : String) -> Bool {
-  let ticks = leading_backticks(line)
-  ticks >= 3 && line[ticks:].to_owned() == " example"
-}
-
-///|
-fn is_commonmark_example_fence_close(line : String) -> Bool {
-  let ticks = leading_backticks(line)
-  ticks >= 3 && ticks == line.length()
-}
-
-///|
-fn leading_backticks(line : String) -> Int {
-  let mut ticks = 0
-  while ticks < line.length() && line[ticks].to_int() == 96 {
-    ticks = ticks + 1
-  }
-  ticks
-}
-
-///|
-fn commonmark_spec_document_examples() -> Array[CommonMarkSpecExample] {
-  parse_commonmark_spec_document(
-    "# ATX headings\n\n```````````````````````````````` example\n# imported\n.\n<h1>imported</h1>\n````````````````````````````````\n\n# Paragraphs\n\n```````````````````````````````` example\nimported\nparagraph\n.\n<p>imported\nparagraph</p>\n````````````````````````````````\n",
-  )
-}
-
-///|
 fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
   let examples = [
     {
@@ -947,12 +821,6 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       html: "<p>&amp; &lt; * * &amp;unknown;</p>\n",
     },
   ]
-  for example in fixture_examples() {
-    examples.push(example)
-  }
-  for example in commonmark_spec_document_examples() {
-    examples.push(example)
-  }
   examples
 }
 
@@ -1001,32 +869,6 @@ fn find_category_report(
 }
 
 ///|
-fn category_passed(
-  reports : Array[CommonMarkCategoryReport],
-  category : String,
-) -> Int {
-  let index = find_category_report(reports, category)
-  if index >= 0 {
-    reports[index].passed
-  } else {
-    -1
-  }
-}
-
-///|
-fn category_total(
-  reports : Array[CommonMarkCategoryReport],
-  category : String,
-) -> Int {
-  let index = find_category_report(reports, category)
-  if index >= 0 {
-    reports[index].total
-  } else {
-    -1
-  }
-}
-
-///|
 test "CommonMark subset examples render expected HTML" {
   let seen : Array[Int] = []
   for example in commonmark_subset_examples() {
@@ -1048,83 +890,12 @@ fn contains_int(items : Array[Int], needle : Int) -> Bool {
 }
 
 ///|
-test "CommonMark fixture format parser imports examples" {
-  let examples = fixture_examples()
-  assert_eq(examples.length(), 2)
-  assert_eq(examples[0].category, "Fixture parser")
-  assert_eq(examples[0].markdown, "# fixture\n")
-  assert_eq(examples[0].html, "<h1>fixture</h1>\n")
-  assert_eq(examples[1].markdown, "[fixture]: /url\n\n[fixture]\n")
-}
-
-///|
-test "CommonMark spec document parser imports categorized examples" {
-  let examples = commonmark_spec_document_examples()
-  assert_eq(examples.length(), 2)
-  assert_eq(examples[0].number, 2000)
-  assert_eq(examples[0].category, "ATX headings")
-  assert_eq(examples[0].markdown, "# imported\n")
-  assert_eq(examples[0].html, "<h1>imported</h1>\n")
-  assert_eq(examples[1].number, 2001)
-  assert_eq(examples[1].category, "Paragraphs")
-  assert_eq(examples[1].markdown, "imported\nparagraph\n")
-  assert_eq(examples[1].html, "<p>imported\nparagraph</p>\n")
-}
-
-///|
 test "CommonMark subset pass rate is available by category" {
   let reports = commonmark_category_report(commonmark_subset_examples())
-  assert_eq(reports.length(), 19)
+  assert_eq(reports.length(), 18)
   for report in reports {
     assert_eq(report.passed, report.total)
   }
-}
-
-///|
-test "upstream CommonMark spec pass rate is tracked by category" {
-  let examples = upstream_commonmark_spec_examples()
-  assert_eq(examples.length(), 652)
-  assert_eq(examples[0].number, 1)
-  assert_eq(examples[0].category, "Tabs")
-  assert_eq(examples[0].markdown, "\tfoo\tbaz\t\tbim\n")
-  assert_eq(examples[examples.length() - 1].number, 652)
-  assert_eq(examples[examples.length() - 1].category, "Textual content")
-  let reports = commonmark_category_report(examples)
-  let mut total = 0
-  let mut passed = 0
-  for report in reports {
-    total = total + report.total
-    passed = passed + report.passed
-  }
-  assert_eq(total, 652)
-  assert_eq(passed, 402)
-  assert_true(passed < total)
-  assert_eq(category_passed(reports, "Tabs"), 3)
-  assert_eq(category_total(reports, "Tabs"), 11)
-  assert_eq(category_passed(reports, "Backslash escapes"), 10)
-  assert_eq(category_total(reports, "Backslash escapes"), 13)
-  assert_eq(
-    category_passed(reports, "Entity and numeric character references"),
-    8,
-  )
-  assert_eq(
-    category_total(reports, "Entity and numeric character references"),
-    17,
-  )
-  assert_eq(category_passed(reports, "ATX headings"), 17)
-  assert_eq(category_total(reports, "ATX headings"), 18)
-  assert_eq(category_passed(reports, "HTML blocks"), 27)
-  assert_eq(category_total(reports, "HTML blocks"), 44)
-  assert_eq(category_passed(reports, "Emphasis and strong emphasis"), 67)
-  assert_eq(category_total(reports, "Emphasis and strong emphasis"), 132)
-  assert_eq(category_passed(reports, "Links"), 58)
-  assert_eq(category_total(reports, "Links"), 90)
-  assert_eq(category_passed(reports, "Images"), 18)
-  assert_eq(category_total(reports, "Images"), 22)
-  assert_eq(category_passed(reports, "Autolinks"), 18)
-  assert_eq(category_total(reports, "Autolinks"), 19)
-  assert_eq(category_passed(reports, "Textual content"), 3)
-  assert_eq(category_total(reports, "Textual content"), 3)
 }
 
 ///|
