@@ -107,8 +107,8 @@ test {
 ///|
 test {
   let no_raw_html = @markdown.Plugin::new("no-raw-html")
-    .disable(@markdown.RuleName::raw("cm:block:html"))
-    .disable(@markdown.RuleName::raw("cm:inline:raw_html"))
+    .disable(@markdown.RuleName::commonmark("block:html"))
+    .disable(@markdown.RuleName::commonmark("inline:raw_html"))
   let configured = @markdown.commonmark_plugin().with_plugin(no_raw_html)
   let events = @markdown.Processor::new()
     .with_plugin(configured)

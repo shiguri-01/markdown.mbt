@@ -200,7 +200,7 @@ test "processor builders leave the original processor unchanged" {
 ///|
 test "plugins can carry rule controls" {
   let no_heading = @markdown.Plugin::new("no-heading")
-    .disable(@markdown.RuleName::raw("cm:block:atx_heading"))
+    .disable(@markdown.RuleName::commonmark("block:atx_heading"))
     .with_plugin(@markdown.commonmark_plugin())
   assert_eq(
     render_html(@markdown.Processor::new().with_plugin(no_heading), "# title"),
@@ -208,7 +208,7 @@ test "plugins can carry rule controls" {
   )
 
   let heading = @markdown.Rule::block(
-    @markdown.RuleName::raw("cm:block:atx_heading"),
+    @markdown.RuleName::commonmark("block:atx_heading"),
     priority=60,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
@@ -231,7 +231,7 @@ test "plugins can carry rule controls" {
 ///|
 test "plugin override applies to later matching rules" {
   let override_rule = @markdown.Rule::block(
-    @markdown.RuleName::raw("cm:block:atx_heading"),
+    @markdown.RuleName::commonmark("block:atx_heading"),
     priority=60,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
@@ -348,7 +348,7 @@ test "ordered list and code block render with balanced tags" {
 ///|
 test "standard rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:block:atx_heading"),
+    @markdown.RuleName::commonmark("block:atx_heading"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -360,8 +360,8 @@ test "standard rule can be disabled" {
 ///|
 test "disabled standard rule can be re-enabled" {
   let plugin = @markdown.commonmark_plugin()
-    .disable(@markdown.RuleName::raw("cm:block:atx_heading"))
-    .enable(@markdown.RuleName::raw("cm:block:atx_heading"))
+    .disable(@markdown.RuleName::commonmark("block:atx_heading"))
+    .enable(@markdown.RuleName::commonmark("block:atx_heading"))
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
     "# heading",
@@ -372,7 +372,7 @@ test "disabled standard rule can be re-enabled" {
 ///|
 test "setext heading rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:block:setext_heading"),
+    @markdown.RuleName::commonmark("block:setext_heading"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -384,7 +384,7 @@ test "setext heading rule can be disabled" {
 ///|
 test "list rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:block:list"),
+    @markdown.RuleName::commonmark("block:list"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -396,7 +396,7 @@ test "list rule can be disabled" {
 ///|
 test "paragraph rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:block:paragraph"),
+    @markdown.RuleName::commonmark("block:paragraph"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -408,7 +408,7 @@ test "paragraph rule can be disabled" {
 ///|
 test "paragraph rule can be overridden" {
   let override_rule = @markdown.Rule::block(
-    @markdown.RuleName::raw("cm:block:paragraph"),
+    @markdown.RuleName::commonmark("block:paragraph"),
     priority=0,
     fn(ctx, sink) {
       sink.emit(Enter(@markdown.element(@markdown.Tag::raw("x:paragraph"))))
@@ -428,7 +428,7 @@ test "paragraph rule can be overridden" {
 ///|
 test "reference definition core rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:core:reference_definitions"),
+    @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -440,7 +440,7 @@ test "reference definition core rule can be disabled" {
 ///|
 test "reference definition continuation core rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:core:reference_definitions"),
+    @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -452,7 +452,7 @@ test "reference definition continuation core rule can be disabled" {
 ///|
 test "reference definition core rule can be disabled for images" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:core:reference_definitions"),
+    @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -464,7 +464,7 @@ test "reference definition core rule can be disabled for images" {
 ///|
 test "reference definition core rule can be overridden" {
   let override_rule = @markdown.Rule::core(
-    @markdown.RuleName::raw("cm:core:reference_definitions"),
+    @markdown.RuleName::commonmark("core:reference_definitions"),
     priority=100,
     fn(events) { events },
   )
@@ -479,7 +479,7 @@ test "reference definition core rule can be overridden" {
 ///|
 test "hard break rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:inline:hard_break"),
+    @markdown.RuleName::commonmark("inline:hard_break"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -510,7 +510,7 @@ test "soft break rule emits event and can be disabled" {
     _ => abort("expected soft break")
   }
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:inline:soft_break"),
+    @markdown.RuleName::commonmark("inline:soft_break"),
   )
   let disabled = @markdown.Processor::new()
     .with_plugin(plugin)
@@ -525,7 +525,7 @@ test "soft break rule emits event and can be disabled" {
 ///|
 test "entity rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:inline:entity"),
+    @markdown.RuleName::commonmark("inline:entity"),
   )
   let html = render_html(
     @markdown.Processor::new().with_plugin(plugin),
@@ -542,7 +542,7 @@ test "entity rule emits text event and can be disabled" {
     _ => abort("expected decoded entity text")
   }
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:inline:entity"),
+    @markdown.RuleName::commonmark("inline:entity"),
   )
   let disabled = @markdown.Processor::new()
     .with_plugin(plugin)
@@ -561,7 +561,7 @@ test "entity rule emits text event and can be disabled" {
 ///|
 test "standard rule can be overridden" {
   let override_rule = @markdown.Rule::block(
-    @markdown.RuleName::raw("cm:block:atx_heading"),
+    @markdown.RuleName::commonmark("block:atx_heading"),
     priority=100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
@@ -585,7 +585,7 @@ test "standard rule can be overridden" {
 ///|
 test "overridden disabled rule stays disabled until enabled" {
   let override_rule = @markdown.Rule::block(
-    @markdown.RuleName::raw("cm:block:atx_heading"),
+    @markdown.RuleName::commonmark("block:atx_heading"),
     priority=100,
     fn(ctx, sink) {
       if ctx.current_line().has_prefix("# ") {
@@ -599,7 +599,7 @@ test "overridden disabled rule stays disabled until enabled" {
     },
   )
   let disabled_plugin = @markdown.commonmark_plugin()
-    .disable(@markdown.RuleName::raw("cm:block:atx_heading"))
+    .disable(@markdown.RuleName::commonmark("block:atx_heading"))
     .override_rule(override_rule)
   let disabled_html = render_html(
     @markdown.Processor::new().with_plugin(disabled_plugin),
@@ -607,9 +607,9 @@ test "overridden disabled rule stays disabled until enabled" {
   )
   assert_eq(disabled_html, "<p># hello</p>\n")
   let enabled_plugin = @markdown.commonmark_plugin()
-    .disable(@markdown.RuleName::raw("cm:block:atx_heading"))
+    .disable(@markdown.RuleName::commonmark("block:atx_heading"))
     .override_rule(override_rule)
-    .enable(@markdown.RuleName::raw("cm:block:atx_heading"))
+    .enable(@markdown.RuleName::commonmark("block:atx_heading"))
   let enabled_html = render_html(
     @markdown.Processor::new().with_plugin(enabled_plugin),
     "# hello",
@@ -620,7 +620,7 @@ test "overridden disabled rule stays disabled until enabled" {
 ///|
 test "standard delimiter rule can be overridden" {
   let override_rule = @markdown.Rule::delimiter(
-    @markdown.RuleName::raw("cm:delimiter:emphasis"),
+    @markdown.RuleName::commonmark("delimiter:emphasis"),
     priority=100,
     fn(ctx, sink) {
       let scanner = ctx.scanner()
@@ -654,7 +654,7 @@ test "standard delimiter rule can be overridden" {
 ///|
 test "standard inline rule can be overridden" {
   let override_rule = @markdown.Rule::inline(
-    @markdown.RuleName::raw("cm:inline:code_span"),
+    @markdown.RuleName::commonmark("inline:code_span"),
     priority=100,
     fn(ctx, sink) {
       let scanner = ctx.scanner()
@@ -688,7 +688,7 @@ test "standard inline rule can be overridden" {
 ///|
 test "standard text inline rule can be overridden" {
   let override_rule = @markdown.Rule::inline(
-    @markdown.RuleName::raw("cm:inline:text"),
+    @markdown.RuleName::commonmark("inline:text"),
     priority=-1000,
     fn(ctx, sink) {
       if ctx.scanner().has_prefix("abc") {
@@ -712,7 +712,7 @@ test "standard text inline rule can be disabled" {
     _ => abort("expected text")
   }
   let plugin = @markdown.commonmark_plugin().disable(
-    @markdown.RuleName::raw("cm:inline:text"),
+    @markdown.RuleName::commonmark("inline:text"),
   )
   let disabled = @markdown.Processor::new()
     .with_plugin(plugin)
@@ -1918,20 +1918,20 @@ test "html renderer preserves raw html events" {
 test "html renderer preserves extension attrs on standard tags" {
   let events : Array[@markdown.Event] = [
     Enter(
-      @markdown.element_with_attrs(@markdown.Tag::raw("cm:paragraph"), [
+      @markdown.element_with_attrs(@markdown.Tag::commonmark("paragraph"), [
         @markdown.attr(@markdown.AttrName::raw("class"), "lead"),
       ]),
     ),
     Enter(
-      @markdown.element_with_attrs(@markdown.Tag::raw("cm:link"), [
-        @markdown.attr(@markdown.AttrName::raw("destination"), "/url"),
-        @markdown.attr(@markdown.AttrName::raw("title"), "Title"),
+      @markdown.element_with_attrs(@markdown.Tag::commonmark("link"), [
+        @markdown.attr(@markdown.AttrName::commonmark("destination"), "/url"),
+        @markdown.attr(@markdown.AttrName::commonmark("title"), "Title"),
         @markdown.attr(@markdown.AttrName::raw("data-kind"), "xref"),
       ]),
     ),
     Text("link"),
-    Exit(@markdown.Tag::raw("cm:link")),
-    Exit(@markdown.Tag::raw("cm:paragraph")),
+    Exit(@markdown.Tag::commonmark("link")),
+    Exit(@markdown.Tag::commonmark("paragraph")),
   ]
   assert_eq(
     @markdown.HtmlRenderer::new().render(events),
@@ -1943,19 +1943,23 @@ test "html renderer preserves extension attrs on standard tags" {
 test "html renderer preserves extension attrs on standard void tags" {
   let events : Array[@markdown.Event] = [
     Enter(
-      @markdown.element_with_attrs(@markdown.Tag::raw("cm:image"), [
-        @markdown.attr(@markdown.AttrName::raw("destination"), "/img.png"),
-        @markdown.attr(@markdown.AttrName::raw("alt"), "alt"),
+      @markdown.element_with_attrs(@markdown.Tag::commonmark("image"), [
+        @markdown.attr(
+          @markdown.AttrName::commonmark("destination"),
+          "/img.png",
+        ),
+        @markdown.attr(@markdown.AttrName::commonmark("alt"), "alt"),
         @markdown.attr(@markdown.AttrName::raw("data-size"), "small"),
       ]),
     ),
-    Exit(@markdown.Tag::raw("cm:image")),
+    Exit(@markdown.Tag::commonmark("image")),
     Enter(
-      @markdown.element_with_attrs(@markdown.Tag::raw("cm:thematic_break"), [
-        @markdown.attr(@markdown.AttrName::raw("class"), "cut"),
-      ]),
+      @markdown.element_with_attrs(
+        @markdown.Tag::commonmark("thematic_break"),
+        [@markdown.attr(@markdown.AttrName::raw("class"), "cut")],
+      ),
     ),
-    Exit(@markdown.Tag::raw("cm:thematic_break")),
+    Exit(@markdown.Tag::commonmark("thematic_break")),
   ]
   assert_eq(
     @markdown.HtmlRenderer::new().render(events),
