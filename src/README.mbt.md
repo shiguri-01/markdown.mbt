@@ -1,4 +1,4 @@
-# username/markdown
+# shiguri/markdown
 
 An event-driven Markdown parser for MoonBit. The main API is a pull parser that
 emits Markdown events, with HTML rendering, event transforms, and AST building

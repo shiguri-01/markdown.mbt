@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/markdown/bench"
+package "shiguri/markdown/bench"
 
 // Values
 pub fn keep_imports_used() -> Unit
