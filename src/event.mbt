@@ -238,3 +238,29 @@ fn copy_attrs(attrs : Array[Attr]) -> Array[Attr] {
   }
   copied
 }
+
+///|
+fn copy_element(el : Element) -> Element {
+  { tag: el.tag, attrs: copy_attrs(el.attrs), range: el.range }
+}
+
+///|
+fn copy_event(event : Event) -> Event {
+  match event {
+    Enter(el) => Enter(copy_element(el))
+    Exit(tag) => Exit(tag)
+    Text(text) => Text(text)
+    SoftBreak => SoftBreak
+    HardBreak => HardBreak
+    Html(raw) => Html(raw)
+  }
+}
+
+///|
+fn copy_events(events : Array[Event]) -> Array[Event] {
+  let copied : Array[Event] = []
+  for event in events {
+    copied.push(copy_event(event))
+  }
+  copied
+}

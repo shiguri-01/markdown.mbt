@@ -1490,6 +1490,16 @@ test "parser attaches block source ranges" {
 }
 
 ///|
+test "parser collect does not expose internal event arrays" {
+  let parser = @markdown.Processor::commonmark().parse("hello")
+  let events = parser.collect()
+  assert_eq(events.length(), 3)
+  ignore(events.pop())
+  assert_eq(events.length(), 2)
+  assert_eq(parser.collect().length(), 3)
+}
+
+///|
 test "parser attaches list source ranges" {
   let events = @markdown.Processor::commonmark()
     .parse("- one\n  continued\n- two")
@@ -1900,6 +1910,17 @@ test "event transform and ast conversion keep extension tags" {
     }
     Err(_) => abort("expected ast")
   }
+}
+
+///|
+test "transform keeps event arrays isolated" {
+  let events : Array[@markdown.Event] = [Text("a"), Text("b")]
+  let transform = @markdown.Transform::new(events)
+  ignore(events.pop())
+  assert_eq(transform.collect().length(), 2)
+  let collected = transform.collect()
+  ignore(collected.pop())
+  assert_eq(transform.collect().length(), 2)
 }
 
 ///|

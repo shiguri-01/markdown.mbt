@@ -79,7 +79,7 @@ pub fn Parser::next(self : Parser) -> Event? {
 ///|
 /// Returns the parser's event array.
 pub fn Parser::collect(self : Parser) -> Array[Event] {
-  self.events
+  copy_events(self.events)
 }
 
 ///|

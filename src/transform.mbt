@@ -7,7 +7,7 @@ pub struct Transform {
 ///|
 /// Creates a transform from an event array.
 pub fn Transform::new(events : Array[Event]) -> Transform {
-  { events, }
+  { events: copy_events(events) }
 }
 
 ///|
@@ -95,14 +95,14 @@ pub fn Transform::inject_attr(
 ///|
 /// Returns the transformed event array.
 pub fn Transform::collect(self : Transform) -> Array[Event] {
-  self.events
+  copy_events(self.events)
 }
 
 ///|
 fn Transform::map(self : Transform, f : (Event) -> Event) -> Transform {
   let next : Array[Event] = []
   for event in self.events {
-    next.push(f(event))
+    next.push(copy_event(f(event)))
   }
   { events: next }
 }
