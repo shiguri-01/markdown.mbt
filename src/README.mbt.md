@@ -34,7 +34,9 @@ test {
 ## Add an Inline Extension
 
 Extensions use the same `Plugin` and `Rule` mechanism as the built-in
-CommonMark syntax. Rule functions receive a context, scanner, and event sink.
+CommonMark syntax. Plugins are composable, so larger presets can be built from
+smaller syntax plugins. Rule functions receive a context, scanner, and event
+sink.
 
 ```mbt check
 ///|
@@ -67,6 +69,20 @@ test {
     .collect()
   let html = events |> @markdown.to_html
   assert_eq(html, "<p>Euler: <x:math>x + y</x:math></p>\n")
+}
+```
+
+```mbt check
+///|
+test {
+  let no_raw_html = @markdown.Plugin::new("no-raw-html")
+    .disable(@markdown.RuleName::raw("cm:block:html"))
+    .disable(@markdown.RuleName::raw("cm:inline:raw_html"))
+  let configured = @markdown.commonmark_plugin().with_plugin(no_raw_html)
+  let html = @markdown.Processor::new()
+    .with_plugin(configured)
+    .render_html("<span>raw</span>")
+  assert_eq(html, "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }
 ```
 

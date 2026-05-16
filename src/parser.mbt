@@ -2,7 +2,7 @@
 /// A configured Markdown processor.
 ///
 /// A processor owns the rule registry used to turn Markdown input into events.
-/// Add plugins or rule controls before calling `parse`.
+/// Add plugins before calling `parse`.
 pub struct Processor {
   priv registry : RuleRegistry
 }
@@ -50,31 +50,10 @@ pub fn parse(source : String) -> Array[Event] {
 ///|
 /// Registers all rules from `plugin` on this processor.
 ///
-/// Rules are ordered by priority, registration order, and same-chain
-/// `before`/`after` edges.
+/// Plugin operations are applied in order. Registered rules are ordered by
+/// priority, registration order, and same-chain `before`/`after` edges.
 pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
   ignore(self.registry.use_plugin(plugin))
-  self
-}
-
-///|
-/// Re-enables a rule by name for future parses.
-pub fn Processor::enable(self : Processor, name : RuleName) -> Processor {
-  ignore(self.registry.enable(name))
-  self
-}
-
-///|
-/// Disables a rule by name for future parses.
-pub fn Processor::disable(self : Processor, name : RuleName) -> Processor {
-  ignore(self.registry.disable(name))
-  self
-}
-
-///|
-/// Replaces any registered rule with the same name, then registers `rule`.
-pub fn Processor::replace(self : Processor, rule : Rule) -> Processor {
-  ignore(self.registry.replace(rule))
   self
 }
 

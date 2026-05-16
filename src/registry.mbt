@@ -1,5 +1,5 @@
 ///|
-enum RuleChain {
+priv enum RuleChain {
   BlockContinue
   BlockStart
   Inline
@@ -203,16 +203,29 @@ pub struct Rule {
 }
 
 ///|
-/// A collection of rules that can be installed on a processor.
-pub struct Plugin {
-  priv name : String
-  priv rules : Array[Rule]
+priv enum PluginOp {
+  AddRule(Rule)
+  DisableRule(RuleName)
+  EnableRule(RuleName)
+  OverrideRule(Rule)
 }
 
 ///|
-struct RuleRegistry {
+/// A composable collection of parser rule operations.
+///
+/// Plugins preserve operation order when composed. This makes a plugin a small
+/// syntax extension, a larger preset such as CommonMark or GFM, or a local
+/// configuration patch that disables or overrides rules from other plugins.
+pub struct Plugin {
+  priv name : String
+  priv ops : Array[PluginOp]
+}
+
+///|
+priv struct RuleRegistry {
   mut rules : Array[Rule]
   mut disabled : Array[RuleName]
+  mut overrides : Array[Rule]
   mut next_order : Int
 }
 
@@ -360,7 +373,7 @@ fn Rule::source_core(
 ///|
 /// Creates an empty plugin.
 pub fn Plugin::new(name : String) -> Plugin {
-  { name, rules: [] }
+  { name, ops: [] }
 }
 
 ///|
@@ -372,17 +385,62 @@ pub fn Plugin::name(self : Plugin) -> String {
 ///|
 /// Adds a rule to the plugin.
 pub fn Plugin::add(self : Plugin, rule : Rule) -> Plugin {
-  self.rules.push(rule)
+  self.ops.push(AddRule(rule))
+  self
+}
+
+///|
+/// Appends all operations from `plugin` to this plugin.
+///
+/// Composition is order preserving: operations already in `self` are applied
+/// before operations from `plugin`.
+pub fn Plugin::with_plugin(self : Plugin, plugin : Plugin) -> Plugin {
+  for op in plugin.ops {
+    self.ops.push(op)
+  }
+  self
+}
+
+///|
+/// Disables a rule by name when this plugin is installed.
+pub fn Plugin::disable(self : Plugin, name : RuleName) -> Plugin {
+  self.ops.push(DisableRule(name))
+  self
+}
+
+///|
+/// Re-enables a rule by name when this plugin is installed.
+pub fn Plugin::enable(self : Plugin, name : RuleName) -> Plugin {
+  self.ops.push(EnableRule(name))
+  self
+}
+
+///|
+/// Overrides rules with the same name.
+///
+/// Overrides are remembered by the registry, so they apply to both current and
+/// later matching rules from composed plugins. If no base rule is ever
+/// registered, the override rule still participates as an ordinary rule.
+pub fn Plugin::override_rule(self : Plugin, rule : Rule) -> Plugin {
+  self.ops.push(OverrideRule(rule))
   self
 }
 
 ///|
 fn RuleRegistry::new() -> RuleRegistry {
-  { rules: [], disabled: [], next_order: 0 }
+  { rules: [], disabled: [], overrides: [], next_order: 0 }
 }
 
 ///|
 fn RuleRegistry::register(self : RuleRegistry, rule : Rule) -> RuleRegistry {
+  match self.override_for(rule.name) {
+    Some(override_rule) => self.override_registered(override_rule)
+    None => self.register_raw(rule)
+  }
+}
+
+///|
+fn RuleRegistry::register_raw(self : RuleRegistry, rule : Rule) -> RuleRegistry {
   let r = {
     name: rule.name,
     chain: rule.chain,
@@ -406,10 +464,23 @@ fn RuleRegistry::use_plugin(
   self : RuleRegistry,
   plugin : Plugin,
 ) -> RuleRegistry {
-  for rule in plugin.rules {
-    ignore(self.register(rule))
+  for op in plugin.ops {
+    ignore(self.apply_plugin_op(op))
   }
   self
+}
+
+///|
+fn RuleRegistry::apply_plugin_op(
+  self : RuleRegistry,
+  op : PluginOp,
+) -> RuleRegistry {
+  match op {
+    AddRule(rule) => self.register(rule)
+    DisableRule(name) => self.disable(name)
+    EnableRule(name) => self.enable(name)
+    OverrideRule(rule) => self.override_rule(rule)
+  }
 }
 
 ///|
@@ -433,7 +504,41 @@ fn RuleRegistry::disable(self : RuleRegistry, name : RuleName) -> RuleRegistry {
 }
 
 ///|
-fn RuleRegistry::replace(self : RuleRegistry, rule : Rule) -> RuleRegistry {
+fn RuleRegistry::override_rule(
+  self : RuleRegistry,
+  rule : Rule,
+) -> RuleRegistry {
+  self.remember_override(rule)
+  self.override_registered(rule)
+}
+
+///|
+fn RuleRegistry::remember_override(self : RuleRegistry, rule : Rule) -> Unit {
+  let next : Array[Rule] = []
+  for old in self.overrides {
+    if old.name != rule.name {
+      next.push(old)
+    }
+  }
+  next.push(rule)
+  self.overrides = next
+}
+
+///|
+fn RuleRegistry::override_for(self : RuleRegistry, name : RuleName) -> Rule? {
+  for rule in self.overrides {
+    if rule.name == name {
+      return Some(rule)
+    }
+  }
+  None
+}
+
+///|
+fn RuleRegistry::override_registered(
+  self : RuleRegistry,
+  rule : Rule,
+) -> RuleRegistry {
   let next : Array[Rule] = []
   for old in self.rules {
     if old.name != rule.name {
@@ -441,7 +546,7 @@ fn RuleRegistry::replace(self : RuleRegistry, rule : Rule) -> RuleRegistry {
     }
   }
   self.rules = next
-  self.register(rule)
+  self.register_raw(rule)
 }
 
 ///|

@@ -21,7 +21,7 @@ pub struct AttrName {
 pub type TextSpan = String
 
 ///|
-/// A rule identifier used for ordering, replacement, enable, and disable.
+/// A rule identifier used for ordering, override, enable, and disable.
 ///
 /// Built-in CommonMark rules use the `cm:` namespace.
 pub struct RuleName {

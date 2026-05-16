@@ -118,18 +118,19 @@ pub struct Plugin {
   // private fields
 }
 pub fn Plugin::add(Self, Rule) -> Self
+pub fn Plugin::disable(Self, RuleName) -> Self
+pub fn Plugin::enable(Self, RuleName) -> Self
 pub fn Plugin::name(Self) -> String
 pub fn Plugin::new(String) -> Self
+pub fn Plugin::override_rule(Self, Rule) -> Self
+pub fn Plugin::with_plugin(Self, Self) -> Self
 
 pub struct Processor {
   // private fields
 }
 pub fn Processor::commonmark() -> Self
-pub fn Processor::disable(Self, RuleName) -> Self
-pub fn Processor::enable(Self, RuleName) -> Self
 pub fn Processor::new() -> Self
 pub fn Processor::parse(Self, String) -> Parser
-pub fn Processor::replace(Self, Rule) -> Self
 pub fn Processor::with_plugin(Self, Plugin) -> Self
 
 pub struct Rule {
@@ -141,8 +142,6 @@ pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? :
 pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 
-type RuleChain derive(Eq)
-
 pub struct RuleName {
   // private fields
 } derive(Eq)
@@ -150,8 +149,6 @@ pub fn RuleName::commonmark(String) -> Self
 pub fn RuleName::custom(String, String) -> Self
 pub fn RuleName::raw(String) -> Self
 pub fn RuleName::to_string(Self) -> String
-
-type RuleRegistry
 
 pub(all) struct SourceRange {
   start : Int
