@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "shiguri/markdown-bench"
+
+import {
+  "moonbitlang/core/bench",
+}
+
+// Values
+pub fn keep_imports_used(@bench.Bench) -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
