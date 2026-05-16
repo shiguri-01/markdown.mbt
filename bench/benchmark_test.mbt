@@ -342,7 +342,7 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  processor.render_to_html(input).length()
+  processor.parse(input).collect() |> @markdown.to_html |> String::length
 }
 
 ///|

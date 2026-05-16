@@ -356,13 +356,13 @@ fn find_link_text_end(text : String, start : Int) -> Int {
 
 ///|
 fn normalize_attribute_text(text : String) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=text.length())
   let mut i = 0
   while i < text.length() {
     if char_at(text, i) == 92 &&
       i + 1 < text.length() &&
       is_ascii_punctuation(char_at(text, i + 1)) {
-      out = out + text[i + 1:i + 2].to_owned()
+      out.write_view(text[i + 1:i + 2])
       i = i + 2
     } else if char_at(text, i) == 38 {
       let end = find_char(text, 59, i + 1)
@@ -370,24 +370,24 @@ fn normalize_attribute_text(text : String) -> String {
         let name = text[i + 1:end].to_owned()
         match decode_entity(name) {
           Some(decoded) => {
-            out = out + decoded
+            out.write_string(decoded)
             i = end + 1
           }
           None => {
-            out = out + text[i:i + 1].to_owned()
+            out.write_view(text[i:i + 1])
             i = i + 1
           }
         }
       } else {
-        out = out + text[i:i + 1].to_owned()
+        out.write_view(text[i:i + 1])
         i = i + 1
       }
     } else {
-      out = out + text[i:i + 1].to_owned()
+      out.write_view(text[i:i + 1])
       i = i + 1
     }
   }
-  out
+  out.to_string()
 }
 
 ///|

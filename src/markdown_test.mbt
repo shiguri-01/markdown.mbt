@@ -15,20 +15,6 @@ test "commonmark block and inline html rendering" {
 }
 
 ///|
-test "commonmark direct html pipeline renders common blocks" {
-  let html = @markdown.Processor::commonmark().render_to_html(
-    "## Hello *MoonBit*\n\n- one\n- two",
-  )
-  assert_eq(
-    html, "<h2>Hello <em>MoonBit</em></h2>\n<ul>\n<li>one</li>\n<li>two</li>\n</ul>\n",
-  )
-  assert_eq(
-    @markdown.Processor::new().render_to_html("# hi"),
-    render_html(@markdown.Processor::new(), "# hi"),
-  )
-}
-
-///|
 test "convenience parser builders are available" {
   assert_eq(@markdown.to_html(@markdown.parse("# hi")), "<h1>hi</h1>\n")
   match @markdown.to_ast(@markdown.parse("# hi")) {

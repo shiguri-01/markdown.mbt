@@ -31,11 +31,7 @@ pub fn HtmlRenderer::render(
   let close_stack : Array[String] = []
   for event in events {
     match event {
-      Enter(el) => {
-        out.write_string(open_html(el))
-        let close = close_html(el)
-        close_stack.push(close)
-      }
+      Enter(el) => close_stack.push(write_open_html(out, el))
       Exit(tag) =>
         if close_stack.length() > 0 {
           let close = close_stack[close_stack.length() - 1]
@@ -53,6 +49,87 @@ pub fn HtmlRenderer::render(
     }
   }
   out.to_string()
+}
+
+///|
+fn write_open_html(out : StringBuilder, el : Element) -> String {
+  match html_tag_name(el.tag) {
+    Some(name) =>
+      if el.tag.value == "cm:paragraph" && el.attrs.length() == 0 {
+        out.write_string("<p>")
+        "</p>\n"
+      } else if el.tag.value == "cm:strong" && el.attrs.length() == 0 {
+        out.write_string("<strong>")
+        "</strong>"
+      } else if el.tag.value == "cm:emphasis" && el.attrs.length() == 0 {
+        out.write_string("<em>")
+        "</em>"
+      } else if el.tag.value == "cm:code_span" && el.attrs.length() == 0 {
+        out.write_string("<code>")
+        "</code>"
+      } else if el.tag.value == "cm:item" && el.attrs.length() == 0 {
+        out.write_string("<li>")
+        "</li>\n"
+      } else if el.tag.value == "cm:block_quote" && el.attrs.length() == 0 {
+        out.write_string("<blockquote>\n")
+        "</blockquote>\n"
+      } else if el.tag.value == "cm:heading" {
+        let level = attr_value(el.attrs, "level", "1")
+        out.write_string("<h")
+        out.write_string(level)
+        out.write_string(attrs_html_except(el.attrs, ["level"]))
+        out.write_string(">")
+        "</h" + level + ">\n"
+      } else if el.tag.value == "cm:list" &&
+        attr_value(el.attrs, "ordered", "false") == "true" {
+        out.write_string("<ol")
+        out.write_string(ordered_start_attr(el.attrs))
+        out.write_string(attrs_html_except(el.attrs, ["ordered", "start"]))
+        out.write_string(">\n")
+        "</ol>\n"
+      } else if el.tag.value == "cm:list" {
+        out.write_string("<ul")
+        out.write_string(attrs_html_except(el.attrs, ["ordered", "start"]))
+        out.write_string(">\n")
+        "</ul>\n"
+      } else if el.tag.value == "cm:code_block" {
+        out.write_string("<pre><code")
+        out.write_string(code_info_attr(el.attrs))
+        out.write_string(attrs_html_except(el.attrs, ["info"]))
+        out.write_string(">")
+        "\n</code></pre>\n"
+      } else if el.tag.value == "cm:link" {
+        out.write_string("<a href=\"")
+        out.write_string(escape_html(attr_value(el.attrs, "destination", "")))
+        out.write_string("\"")
+        out.write_string(title_attr(el.attrs))
+        out.write_string(attrs_html_except(el.attrs, ["destination", "title"]))
+        out.write_string(">")
+        "</a>"
+      } else if el.tag.value == "cm:image" {
+        out.write_string(open_html(el))
+        ""
+      } else if el.tag.value == "cm:thematic_break" {
+        out.write_string(open_html(el))
+        ""
+      } else if is_block_tag(el.tag) {
+        out.write_string("<")
+        out.write_string(name)
+        out.write_string(attrs_html(el.attrs))
+        out.write_string(">")
+        "</" + name + ">\n"
+      } else {
+        out.write_string("<")
+        out.write_string(name)
+        out.write_string(attrs_html(el.attrs))
+        out.write_string(">")
+        "</" + name + ">"
+      }
+    None => {
+      out.write_string(open_html(el))
+      close_html(el)
+    }
+  }
 }
 
 ///|

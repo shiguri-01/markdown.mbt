@@ -70,7 +70,14 @@ fn find_substring(text : String, needle : String, start : Int) -> Int {
   }
   let limit = text.length() - needle.length()
   for i in start..<=limit {
-    if text[i:i + needle.length()].to_owned() == needle {
+    let mut matched = true
+    for j in 0..<needle.length() {
+      if char_at(text, i + j) != char_at(needle, j) {
+        matched = false
+        break
+      }
+    }
+    if matched {
       return i
     }
   }

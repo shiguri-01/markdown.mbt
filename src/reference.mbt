@@ -22,7 +22,12 @@ fn resolve_reference_definitions(input : String) -> String {
   }
   let mut i = 0
   while i < lines.length() {
-    match parse_reference_definition(lines[i]) {
+    let definition = if may_be_reference_definition_line(lines[i]) {
+      parse_reference_definition(lines[i])
+    } else {
+      None
+    }
+    match definition {
       Some(def) => {
         let continuation = if def.title == "" && i + 1 < lines.length() {
           parse_reference_title_continuation(lines[i + 1])
@@ -51,9 +56,97 @@ fn resolve_reference_definitions(input : String) -> String {
   if refs.length() == 0 {
     input
   } else {
+    let has_reference_use = if removed_definition {
+      lines_may_have_matching_reference_use(body_lines, refs)
+    } else {
+      may_have_matching_reference_use(input, refs)
+    }
     let body = if removed_definition { join_lines(body_lines) } else { input }
-    rewrite_reference_links(body, refs)
+    if has_reference_use {
+      rewrite_reference_links(body, refs)
+    } else {
+      body
+    }
   }
+}
+
+///|
+fn lines_may_have_matching_reference_use(
+  lines : Array[String],
+  refs : Array[ReferenceDefinition],
+) -> Bool {
+  let mut in_fence = false
+  for line in lines {
+    let trimmed = trim(line)
+    if fence_marker(trimmed) != "" {
+      in_fence = !in_fence
+    } else if !in_fence && line_may_use_reference(line, refs) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn may_have_matching_reference_use(
+  input : String,
+  refs : Array[ReferenceDefinition],
+) -> Bool {
+  let mut in_fence = false
+  for line in input.split("\n") {
+    let line = line.to_owned()
+    let trimmed = trim(line)
+    if fence_marker(trimmed) != "" {
+      in_fence = !in_fence
+    } else if !in_fence && line_may_use_reference(line, refs) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn line_may_use_reference(
+  line : String,
+  refs : Array[ReferenceDefinition],
+) -> Bool {
+  let mut i = 0
+  while i < line.length() {
+    if char_at(line, i) == 91 {
+      let close_text = find_link_text_end(line, i + 1)
+      if close_text > i {
+        if close_text + 1 < line.length() && char_at(line, close_text + 1) == 91 {
+          let close_label = find_link_text_end(line, close_text + 2)
+          if close_label > close_text {
+            let raw_label = line[close_text + 2:close_label].to_owned()
+            let text = line[i + 1:close_text].to_owned()
+            let label = if raw_label == "" { text } else { raw_label }
+            if find_reference(refs, normalize_reference_label(label)) is Some(_) {
+              return true
+            }
+            i = close_label + 1
+            continue
+          }
+        } else if close_text + 1 >= line.length() ||
+          char_at(line, close_text + 1) != 40 {
+          let text = line[i + 1:close_text].to_owned()
+          if find_reference(refs, normalize_reference_label(text)) is Some(_) {
+            return true
+          }
+          i = close_text + 1
+          continue
+        }
+      }
+    }
+    i = i + 1
+  }
+  false
+}
+
+///|
+fn may_be_reference_definition_line(line : String) -> Bool {
+  let first = first_non_space_index(line)
+  first >= 0 && first <= 3 && char_at(line, first) == 91
 }
 
 ///|
@@ -145,6 +238,7 @@ fn rewrite_reference_links(
 ) -> String {
   let out = StringBuilder::new(size_hint=input.length())
   let mut i = 0
+  let mut chunk_start = 0
   while i < input.length() {
     if i + 1 < input.length() &&
       char_at(input, i) == 33 &&
@@ -159,8 +253,12 @@ fn rewrite_reference_links(
             let label = if raw_label == "" { alt } else { raw_label }
             match find_reference(refs, normalize_reference_label(label)) {
               Some(def) => {
+                if chunk_start < i {
+                  out.write_view(input[chunk_start:i])
+                }
                 out.write_string(reference_rewrite("![", alt, def))
                 i = close_label + 1
+                chunk_start = i
                 continue
               }
               None => ()
@@ -171,8 +269,12 @@ fn rewrite_reference_links(
           let alt = input[i + 2:close_alt].to_owned()
           match find_reference(refs, normalize_reference_label(alt)) {
             Some(definition) => {
+              if chunk_start < i {
+                out.write_view(input[chunk_start:i])
+              }
               out.write_string(reference_rewrite("![", alt, definition))
               i = close_alt + 1
+              chunk_start = i
               continue
             }
             None => ()
@@ -191,8 +293,12 @@ fn rewrite_reference_links(
           let label = if raw_label == "" { text } else { raw_label }
           match find_reference(refs, normalize_reference_label(label)) {
             Some(def) => {
+              if chunk_start < i {
+                out.write_view(input[chunk_start:i])
+              }
               out.write_string(reference_rewrite("[", text, def))
               i = close_label + 1
+              chunk_start = i
               continue
             }
             None => ()
@@ -206,16 +312,22 @@ fn rewrite_reference_links(
         let text = input[i + 1:close_text].to_owned()
         match find_reference(refs, normalize_reference_label(text)) {
           Some(definition) => {
+            if chunk_start < i {
+              out.write_view(input[chunk_start:i])
+            }
             out.write_string(reference_rewrite("[", text, definition))
             i = close_text + 1
+            chunk_start = i
             continue
           }
           None => ()
         }
       }
     }
-    out.write_view(input[i:i + 1])
     i = i + 1
+  }
+  if chunk_start < input.length() {
+    out.write_view(input[chunk_start:])
   }
   out.to_string()
 }
@@ -297,7 +409,14 @@ fn collapse_spaces(input : String) -> String {
 
 ///|
 fn join_lines(lines : Array[String]) -> String {
-  let out = StringBuilder::new()
+  let mut size = 0
+  for line in lines {
+    size = size + line.length()
+  }
+  if lines.length() > 1 {
+    size = size + lines.length() - 1
+  }
+  let out = StringBuilder::new(size_hint=size)
   for i in 0..<lines.length() {
     if i > 0 {
       out.write_string("\n")
