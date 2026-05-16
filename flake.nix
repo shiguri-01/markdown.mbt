@@ -38,6 +38,7 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               git
+              lefthook
               moonbit-bin.moonbit.latest
             ];
           };

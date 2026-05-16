@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    moon-check:
+      run: moon check
