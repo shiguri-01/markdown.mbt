@@ -9,9 +9,34 @@ pub struct HtmlRenderer {
 }
 
 ///|
+/// A streaming HTML sink.
+pub struct HtmlBuffer {
+  priv out : StringBuilder
+  priv close_stack : Array[String]
+}
+
+///|
 /// Creates an HTML renderer.
 pub fn HtmlRenderer::new() -> HtmlRenderer {
   { unit: 0 }
+}
+
+///|
+/// Creates an empty streaming HTML buffer.
+pub fn HtmlBuffer::new() -> HtmlBuffer {
+  { out: StringBuilder::new(), close_stack: [] }
+}
+
+///|
+/// Returns a sink that renders events into this buffer as they arrive.
+pub fn HtmlBuffer::sink(self : HtmlBuffer) -> EventSink {
+  EventSink::new(fn(event) { write_html_event(self, event) })
+}
+
+///|
+/// Returns the rendered HTML.
+pub fn HtmlBuffer::to_string(self : HtmlBuffer) -> String {
+  self.out.to_string()
 }
 
 ///|
@@ -27,28 +52,32 @@ pub fn HtmlRenderer::render(
   events : Array[Event],
 ) -> String {
   ignore(self.unit)
-  let out = StringBuilder::new()
-  let close_stack : Array[String] = []
+  let buffer = HtmlBuffer::new()
   for event in events {
-    match event {
-      Enter(el) => close_stack.push(write_open_html(out, el))
-      Exit(tag) =>
-        if close_stack.length() > 0 {
-          let close = close_stack[close_stack.length() - 1]
-          ignore(close_stack.pop())
-          out.write_string(close)
-        } else {
-          out.write_string("</")
-          out.write_string(escape_html(tag.value))
-          out.write_string(">")
-        }
-      Text(text) => out.write_string(escape_html(text))
-      SoftBreak => out.write_string("\n")
-      HardBreak => out.write_string("<br />\n")
-      Html(raw) => out.write_string(raw)
-    }
+    write_html_event(buffer, event)
   }
-  out.to_string()
+  buffer.to_string()
+}
+
+///|
+fn write_html_event(buffer : HtmlBuffer, event : Event) -> Unit {
+  match event {
+    Enter(el) => buffer.close_stack.push(write_open_html(buffer.out, el))
+    Exit(tag) =>
+      if buffer.close_stack.length() > 0 {
+        let close = buffer.close_stack[buffer.close_stack.length() - 1]
+        ignore(buffer.close_stack.pop())
+        buffer.out.write_string(close)
+      } else {
+        buffer.out.write_string("</")
+        buffer.out.write_string(escape_html(tag.value))
+        buffer.out.write_string(">")
+      }
+    Text(text) => buffer.out.write_string(escape_html(text))
+    SoftBreak => buffer.out.write_string("\n")
+    HardBreak => buffer.out.write_string("<br />\n")
+    Html(raw) => buffer.out.write_string(raw)
+  }
 }
 
 ///|

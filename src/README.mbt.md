@@ -1,16 +1,17 @@
 # shiguri/markdown
 
-An event-driven Markdown parser for MoonBit. The main API is a pull parser that
-emits Markdown events, with HTML rendering, event transforms, and AST building
-provided as downstream helpers.
+An event-driven Markdown parser for MoonBit. The main API pushes Markdown
+events into downstream sinks, with HTML rendering, event transforms, and AST
+building provided as downstream helpers.
 
 ## Design Contract
 
 This package is built around a small, stable event pipeline:
 
-1. `Processor` owns Markdown parsing configuration and produces `Event` values.
-2. `Parser` is a pull view over an already-produced event stream. `next()`
-   consumes one event and `collect()` consumes the remaining events.
+1. `Processor` owns Markdown parsing configuration and pushes `Event` values
+   into an `EventSink`.
+2. `parse_into(source, sink)` is the core pipeline API. `parse(source)` is a
+   convenience that collects the same event stream into an array.
 3. `Transform`, `HtmlRenderer`, and `AstBuilder` consume event streams. They do
    not belong to `Processor`, so output formats stay downstream of parsing.
 4. Extensions are ordinary `Plugin` values that register named `Rule` values.
@@ -45,18 +46,20 @@ test {
 }
 ```
 
-## Pull Events
+## Push Events
 
 ```mbt check
 ///|
 test {
-  let parser = @markdown.Processor::commonmark().parse("hello")
-  match parser.next() {
-    Some(Enter(el)) => assert_eq(el.tag().to_string(), "cm:paragraph")
+  let buffer = @markdown.EventBuffer::new()
+  @markdown.Processor::commonmark().parse_into("hello", buffer.sink())
+  let events = buffer.collect()
+  match events[0] {
+    Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
   }
-  match parser.next() {
-    Some(Text(text)) => assert_eq(text, "hello")
+  match events[1] {
+    Text(text) => assert_eq(text, "hello")
     _ => abort("expected text")
   }
 }
@@ -100,7 +103,6 @@ test {
   let events = @markdown.commonmark()
     .with_plugin(@markdown.Plugin::new("math").add(math))
     .parse("Euler: $x + y$")
-    .collect()
   let html = events |> @markdown.to_html
   assert_eq(html, "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
@@ -116,7 +118,6 @@ test {
   let events = @markdown.Processor::new()
     .with_plugin(configured)
     .parse("<span>raw</span>")
-    .collect()
   let html = events |> @markdown.to_html
   assert_eq(html, "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }

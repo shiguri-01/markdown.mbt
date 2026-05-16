@@ -8,15 +8,31 @@ priv enum RuleChain {
 } derive(Eq)
 
 ///|
-/// A sink used by rules to append parser events.
+/// A downstream event consumer used by parsers, rules, renderers, and transforms.
 pub struct EventSink {
-  priv events : Array[Event]
+  priv emit_event : (Event) -> Unit
+  priv finish_stream : () -> Unit
 }
 
 ///|
-/// Emits an event from a rule.
+/// Creates an event sink.
+pub fn EventSink::new(
+  emit : (Event) -> Unit,
+  finish? : () -> Unit = fn() { () },
+) -> EventSink {
+  { emit_event: emit, finish_stream: finish }
+}
+
+///|
+/// Emits an event downstream.
 pub fn EventSink::emit(self : EventSink, event : Event) -> Unit {
-  self.events.push(event)
+  (self.emit_event)(event)
+}
+
+///|
+/// Finishes the stream and lets downstream consumers flush buffered state.
+pub fn EventSink::finish(self : EventSink) -> Unit {
+  (self.finish_stream)()
 }
 
 ///|
@@ -188,8 +204,8 @@ pub type BlockRuleFn = (BlockContext, EventSink) -> Int
 pub type InlineRuleFn = (InlineContext, EventSink) -> Int
 
 ///|
-/// A core rule transforms a complete event stream.
-pub type CoreRuleFn = (Array[Event]) -> Array[Event]
+/// A core rule wraps a downstream sink with stream transformation behavior.
+pub type CoreRuleFn = (EventSink) -> EventSink
 
 ///|
 type SourceCoreRuleFn = (String) -> String

@@ -312,7 +312,7 @@ fn many_extension_rules_plugin(count : Int) -> @markdown.Plugin {
 
 ///|
 fn parse_event_count(input : String) -> Int {
-  @markdown.Processor::commonmark().parse(input).collect().length()
+  @markdown.Processor::commonmark().parse(input).length()
 }
 
 ///|
@@ -320,7 +320,7 @@ fn parse_event_count_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  processor.parse(input).collect().length()
+  processor.parse(input).length()
 }
 
 ///|
@@ -328,7 +328,6 @@ fn parse_with_extension_event_count(input : String) -> Int {
   @markdown.Processor::commonmark()
   .with_plugin(many_extension_rules_plugin(50))
   .parse(input)
-  .collect()
   .length()
 }
 
@@ -342,7 +341,7 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  processor.parse(input).collect() |> @markdown.to_html |> String::length
+  processor.parse(input) |> @markdown.to_html |> String::length
 }
 
 ///|

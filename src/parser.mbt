@@ -8,12 +8,6 @@ pub struct Processor {
 }
 
 ///|
-/// A pull parser over an already-produced event stream.
-pub struct Parser {
-  priv events : Array[Event]
-  priv mut index : Int
-}
-
 ///|
 /// Creates an empty processor with no registered rules.
 ///
@@ -38,7 +32,13 @@ pub fn commonmark() -> Processor {
 ///|
 /// Parses Markdown input with the built-in CommonMark processor.
 pub fn parse(source : String) -> Array[Event] {
-  commonmark().parse(source).collect()
+  commonmark().parse(source)
+}
+
+///|
+/// Parses Markdown input with the built-in CommonMark processor into `sink`.
+pub fn parse_into(source : String, sink : EventSink) -> Unit {
+  commonmark().parse_into(source, sink)
 }
 
 ///|
@@ -52,74 +52,85 @@ pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
 }
 
 ///|
-/// Parses Markdown input into a pull parser of events.
+/// Parses Markdown input into an event array.
 ///
 /// Source core rules run before block parsing. Core event rules run after block
 /// and inline parsing.
-pub fn Processor::parse(self : Processor, input : String) -> Parser {
+pub fn Processor::parse(self : Processor, input : String) -> Array[Event] {
+  let buffer = EventBuffer::new()
+  self.parse_into(input, buffer.sink())
+  buffer.collect()
+}
+
+///|
+/// Parses Markdown input and pushes events into `sink`.
+///
+/// Source core rules run before block parsing. Core event rules wrap the
+/// downstream sink, so transforms can participate in the parse pipeline.
+pub fn Processor::parse_into(
+  self : Processor,
+  input : String,
+  sink : EventSink,
+) -> Unit {
+  let downstream = apply_core_rules(sink, self.registry)
   if self.registry.has_commonmark_preset_only() &&
     is_plain_single_paragraph(input) {
-    return { events: plain_paragraph_events(input), index: 0 }
+    emit_plain_paragraph(input, downstream)
+    downstream.finish()
+    return
   }
   let source = apply_source_core_rules(input, self.registry)
   if self.registry.has_commonmark_preset_only() && source.length() >= 10_000 {
     match parse_large_commonmark_blocks(source, self.registry) {
-      Some(events) => return { events, index: 0 }
+      Some(events) => {
+        emit_events(events, downstream)
+        downstream.finish()
+        return
+      }
       None => ()
     }
   }
-  {
-    events: apply_core_rules(parse_blocks(source, self.registry), self.registry),
-    index: 0,
-  }
-}
-
-///|
-/// Returns the next event, or `None` after the stream is exhausted.
-pub fn Parser::next(self : Parser) -> Event? {
-  if self.index >= self.events.length() {
-    None
-  } else {
-    let event = self.events[self.index]
-    self.index = self.index + 1
-    Some(event)
-  }
-}
-
-///|
-/// Collects the remaining events and advances the parser to the end.
-pub fn Parser::collect(self : Parser) -> Array[Event] {
-  if self.index == 0 {
-    self.index = self.events.length()
-    return self.events
-  }
-  let remaining : Array[Event] = []
-  while self.index < self.events.length() {
-    remaining.push(self.events[self.index])
-    self.index = self.index + 1
-  }
-  remaining
+  parse_blocks_into(source, self.registry, downstream)
+  downstream.finish()
 }
 
 ///|
 fn parse_blocks(input : String, registry : RuleRegistry) -> Array[Event] {
-  let source = split_lines(input)
-  parse_block_lines(source.lines, source.line_starts, registry)
+  let buffer = EventBuffer::new()
+  parse_blocks_into(input, registry, buffer.sink())
+  buffer.collect()
 }
 
 ///|
-fn plain_paragraph_events(input : String) -> Array[Event] {
-  [
+fn parse_blocks_into(
+  input : String,
+  registry : RuleRegistry,
+  sink : EventSink,
+) -> Unit {
+  let source = split_lines(input)
+  parse_block_lines_into(source.lines, source.line_starts, registry, sink)
+}
+
+///|
+fn emit_plain_paragraph(input : String, sink : EventSink) -> Unit {
+  sink.emit(
     Enter(
       Element::with_attrs(
         tag_name("cm:paragraph"),
         [],
         range=Some(source_range(0, input.length())),
       ),
-    ),
-    Text(input),
-    Exit(tag_name("cm:paragraph")),
-  ]
+    )
+  )
+  sink.emit(Text(input))
+  sink.emit(Exit(tag_name("cm:paragraph")))
+}
+
+///|
+fn emit_events(events : Array[Event], sink : EventSink) -> Unit {
+  for event in events {
+    sink.emit(event)
+  }
 }
 
 ///|
@@ -161,15 +172,16 @@ fn is_plain_single_paragraph(input : String) -> Bool {
 }
 
 ///|
-fn parse_block_lines(
+fn parse_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
   registry : RuleRegistry,
-) -> Array[Event] {
+  sink : EventSink,
+) -> Unit {
   if registry.has_commonmark_block_rules_only() {
-    return parse_commonmark_block_lines(lines, line_starts, registry)
+    parse_commonmark_block_lines_into(lines, line_starts, registry, sink)
+    return
   }
-  let sink : EventSink = { events: [] }
   let mut i = 0
   let inline_rules = registry.inline_parse_rules()
   let block_continue_rules = registry.block_continue_rules()
@@ -198,16 +210,15 @@ fn parse_block_lines(
     }
     i = i + consumed
   }
-  sink.events
 }
 
 ///|
-fn parse_commonmark_block_lines(
+fn parse_commonmark_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
   registry : RuleRegistry,
-) -> Array[Event] {
-  let sink : EventSink = { events: [] }
+  sink : EventSink,
+) -> Unit {
   let mut i = 0
   let inline_rules = registry.inline_parse_rules()
   while i < lines.length() {
@@ -221,7 +232,6 @@ fn parse_commonmark_block_lines(
     }
     i = i + consumed
   }
-  sink.events
 }
 
 ///|
@@ -230,7 +240,8 @@ fn parse_large_commonmark_blocks(
   registry : RuleRegistry,
 ) -> Array[Event]? {
   let source = split_lines(input)
-  let sink : EventSink = { events: [] }
+  let buffer = EventBuffer::new()
+  let sink = buffer.sink()
   let mut i = 0
   while i < source.lines.length() {
     let line = source.lines[i]
@@ -269,7 +280,7 @@ fn parse_large_commonmark_blocks(
       i = fast_paragraph_block(source, i, registry, sink)
     }
   }
-  Some(sink.events)
+  Some(buffer.collect())
 }
 
 ///|
@@ -785,11 +796,13 @@ fn apply_source_core_rules(input : String, registry : RuleRegistry) -> String {
 
 ///|
 fn apply_core_rules(
-  events : Array[Event],
+  sink : EventSink,
   registry : RuleRegistry,
-) -> Array[Event] {
-  let mut current = events
-  for rule in registry.core_rules() {
+) -> EventSink {
+  let mut current = sink
+  let rules = registry.core_rules()
+  for i = rules.length() - 1; i >= 0; i = i - 1 {
+    let rule = rules[i]
     match rule.core {
       Some(f) => current = f(current)
       None => ()

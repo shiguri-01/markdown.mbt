@@ -502,7 +502,8 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
     item_starts.push(item_start)
     item_ends.push(item_end)
   }
-  let list_events : EventSink = { events: [] }
+  let list_buffer = EventBuffer::new()
+  let list_events = list_buffer.sink()
   for n in 0..<item_texts.length() {
     list_events.emit(
       Enter(
@@ -531,7 +532,7 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  for event in list_events.events {
+  for event in list_buffer.collect() {
     sink.emit(event)
   }
   sink.emit(Exit(tag_name("cm:list")))

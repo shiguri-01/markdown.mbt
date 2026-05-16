@@ -315,10 +315,10 @@ fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
 
 ///|
 fn image_alt_text(text : String, registry : RuleRegistry) -> String {
-  let sink : EventSink = { events: [] }
-  parse_inlines(text, registry, sink)
+  let buffer = EventBuffer::new()
+  parse_inlines(text, registry, buffer.sink())
   let mut out = ""
-  for event in sink.events {
+  for event in buffer.collect() {
     match event {
       Text(text) => out = out + text
       SoftBreak => out = out + "\n"
