@@ -57,6 +57,10 @@ pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
 /// Source core rules run before block parsing. Core event rules run after block
 /// and inline parsing.
 pub fn Processor::parse(self : Processor, input : String) -> Parser {
+  if self.registry.has_commonmark_preset_only() &&
+    is_plain_single_paragraph(input) {
+    return { events: plain_paragraph_events(input), index: 0 }
+  }
   let source = apply_source_core_rules(input, self.registry)
   {
     events: apply_core_rules(parse_blocks(source, self.registry), self.registry),
@@ -95,6 +99,59 @@ pub fn Parser::collect(self : Parser) -> Array[Event] {
 fn parse_blocks(input : String, registry : RuleRegistry) -> Array[Event] {
   let source = split_lines(input)
   parse_block_lines(source.lines, source.line_starts, registry)
+}
+
+///|
+fn plain_paragraph_events(input : String) -> Array[Event] {
+  [
+    Enter(
+      Element::with_attrs(
+        tag_name("cm:paragraph"),
+        [],
+        range=Some(source_range(0, input.length())),
+      ),
+    ),
+    Text(input),
+    Exit(tag_name("cm:paragraph")),
+  ]
+}
+
+///|
+fn is_plain_single_paragraph(input : String) -> Bool {
+  if input.length() == 0 {
+    return false
+  }
+  let first = char_at(input, 0)
+  if first == 32 ||
+    first == 9 ||
+    first == 35 ||
+    first == 42 ||
+    first == 43 ||
+    first == 45 ||
+    first == 60 ||
+    first == 62 ||
+    first == 95 ||
+    first == 96 ||
+    first == 126 ||
+    (first >= 48 && first <= 57) {
+    return false
+  }
+  for i in 0..<input.length() {
+    let c = char_at(input, i)
+    if c == 10 ||
+      c == 13 ||
+      c == 33 ||
+      c == 38 ||
+      c == 42 ||
+      c == 60 ||
+      c == 91 ||
+      c == 92 ||
+      c == 95 ||
+      c == 96 {
+      return false
+    }
+  }
+  true
 }
 
 ///|
@@ -164,13 +221,13 @@ fn parse_commonmark_block_lines(
 ///|
 fn commonmark_block_dispatch(ctx : BlockContext, sink : EventSink) -> Int {
   let line = ctx.lines[ctx.index]
-  let trimmed = trim(line)
-  if trimmed == "" {
+  let first = first_non_space_index(line)
+  if first < 0 {
     ignore(sink)
     return 1
   }
   let leading = count_leading_spaces(line)
-  let c = char_at(trimmed, 0)
+  let c = char_at(line, first)
   if leading <= 3 && (c == 96 || c == 126) {
     let consumed = cm_fenced_code_block(ctx, sink)
     if consumed != 0 {
@@ -187,9 +244,9 @@ fn commonmark_block_dispatch(ctx : BlockContext, sink : EventSink) -> Int {
     }
   }
   if ctx.index + 1 < ctx.lines.length() {
-    let next = trim(ctx.lines[ctx.index + 1])
-    if next != "" {
-      let marker = char_at(next, 0)
+    let next_first = first_non_space_index(ctx.lines[ctx.index + 1])
+    if next_first >= 0 {
+      let marker = char_at(ctx.lines[ctx.index + 1], next_first)
       if marker == 45 || marker == 61 {
         let consumed = cm_setext_heading_block(ctx, sink)
         if consumed != 0 {
@@ -260,6 +317,12 @@ priv struct LineSource {
 
 ///|
 fn split_lines(input : String) -> LineSource {
+  if input.length() == 0 {
+    return { lines: [], line_starts: [] }
+  }
+  if find_char(input, 10, 0) < 0 {
+    return { lines: [input], line_starts: [0] }
+  }
   let lines : Array[String] = []
   let line_starts : Array[Int] = []
   let mut offset = 0
@@ -268,9 +331,5 @@ fn split_lines(input : String) -> LineSource {
     line_starts.push(offset)
     offset = offset + line.length() + 1
   }
-  if input.length() == 0 {
-    { lines: [], line_starts: [] }
-  } else {
-    { lines, line_starts }
-  }
+  { lines, line_starts }
 }

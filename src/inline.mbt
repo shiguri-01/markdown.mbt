@@ -50,7 +50,11 @@ fn cm_text_inline(ctx : InlineContext, sink : EventSink) -> Int {
   while end < text.length() && !is_inline_special(text, end) {
     end = end + 1
   }
-  sink.emit(Text(text[start:end].to_owned()))
+  if start == 0 && end == text.length() {
+    sink.emit(Text(text))
+  } else {
+    sink.emit(Text(text[start:end].to_owned()))
+  }
   end - start
 }
 

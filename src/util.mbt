@@ -17,6 +17,26 @@ fn trim(input : String) -> String {
 }
 
 ///|
+fn is_blank(input : String) -> Bool {
+  for i in 0..<input.length() {
+    if !is_space(char_at(input, i)) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn first_non_space_index(input : String) -> Int {
+  for i in 0..<input.length() {
+    if !is_space(char_at(input, i)) {
+      return i
+    }
+  }
+  -1
+}
+
+///|
 fn is_space(c : Int) -> Bool {
   c == 32 || c == 9 || c == 10 || c == 13
 }

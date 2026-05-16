@@ -2,7 +2,7 @@
 fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
   let mut i = ctx.index
   while i < ctx.lines.length() &&
-        trim(ctx.lines[i]) != "" &&
+        !is_blank(ctx.lines[i]) &&
         (i == ctx.index || !is_paragraph_interrupt(ctx.lines[i])) {
     i = i + 1
   }
@@ -59,7 +59,7 @@ fn paragraph_line(line : String) -> String {
 
 ///|
 fn cm_blank_block(ctx : BlockContext, _sink : EventSink) -> Int {
-  if trim(ctx.lines[ctx.index]) == "" {
+  if is_blank(ctx.lines[ctx.index]) {
     1
   } else {
     0

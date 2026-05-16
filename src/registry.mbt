@@ -638,6 +638,38 @@ fn RuleRegistry::has_commonmark_block_rules_only(self : RuleRegistry) -> Bool {
 }
 
 ///|
+fn RuleRegistry::has_commonmark_preset_only(self : RuleRegistry) -> Bool {
+  if self.overrides.length() > 0 || self.disabled.length() > 0 {
+    return false
+  }
+  let mut count = 0
+  for rule in self.rules {
+    if !is_commonmark_rule_name(rule.name) {
+      return false
+    }
+    count = count + 1
+  }
+  count == 22
+}
+
+///|
+fn is_commonmark_rule_name(name : RuleName) -> Bool {
+  name.value == "cm:core:reference_definitions" ||
+  is_commonmark_block_rule_name(name) ||
+  name.value == "cm:inline:image" ||
+  name.value == "cm:inline:link" ||
+  name.value == "cm:inline:autolink" ||
+  name.value == "cm:inline:raw_html" ||
+  name.value == "cm:inline:entity" ||
+  name.value == "cm:inline:code_span" ||
+  name.value == "cm:delimiter:emphasis" ||
+  name.value == "cm:inline:hard_break" ||
+  name.value == "cm:inline:escape" ||
+  name.value == "cm:inline:soft_break" ||
+  name.value == "cm:inline:text"
+}
+
+///|
 fn is_commonmark_block_rule_name(name : RuleName) -> Bool {
   name.value == "cm:block:blank" ||
   name.value == "cm:block:fenced_code" ||
