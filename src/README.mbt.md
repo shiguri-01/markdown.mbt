@@ -18,6 +18,8 @@ This package is built around a small, stable event pipeline:
    original value unchanged.
 5. Public constructors and accessors copy mutable arrays at API boundaries.
    Callers can mutate returned arrays without mutating parser-owned state.
+   Use typed accessors such as `Element::attr` before falling back to raw array
+   traversal.
 
 Event streams use a tree-shaped contract. `Enter(element)` opens an element,
 `Exit(tag)` closes the most recent open element with the same tag, and text,

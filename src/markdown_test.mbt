@@ -71,6 +71,11 @@ test "public element and attr accessors preserve extension data" {
   assert_eq(el.attrs().length(), 1)
   assert_eq(el.attrs()[0].name().to_string(), "x:role")
   assert_eq(el.attrs()[0].value(), "tip")
+  match el.attr(@markdown.AttrName::custom("x", "role")) {
+    Some(value) => assert_eq(value, "tip")
+    None => abort("expected role attr")
+  }
+  assert_true(el.attr(@markdown.AttrName::raw("missing")) is None)
   match el.range() {
     Some(actual) => {
       assert_eq(actual.start(), 2)

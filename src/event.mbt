@@ -225,6 +225,17 @@ pub fn Element::attrs(self : Element) -> Array[Attr] {
 }
 
 ///|
+/// Returns the first attribute value for `name`, if present.
+pub fn Element::attr(self : Element, name : AttrName) -> String? {
+  for attr in self.attrs {
+    if attr.name == name {
+      return Some(attr.value)
+    }
+  }
+  None
+}
+
+///|
 /// Returns the source range attached to the element, if any.
 pub fn Element::range(self : Element) -> SourceRange? {
   self.range

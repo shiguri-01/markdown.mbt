@@ -66,6 +66,7 @@ pub fn BlockContext::line_index(Self) -> Int
 pub struct Element {
   // private fields
 }
+pub fn Element::attr(Self, AttrName) -> String?
 pub fn Element::attrs(Self) -> Array[Attr]
 pub fn Element::range(Self) -> SourceRange?
 pub fn Element::tag(Self) -> Tag
