@@ -2228,7 +2228,10 @@ test "ast builder rejects mismatched closing tag" {
     Exit(@markdown.Tag::raw("x:other")),
   ])
   match result {
-    Err(UnexpectedExit(tag)) => assert_eq(tag.to_string(), "x:other")
+    Err(MismatchedExit(expected, actual)) => {
+      assert_eq(expected.to_string(), "x:open")
+      assert_eq(actual.to_string(), "x:other")
+    }
     _ => abort("expected mismatched tag error")
   }
 }

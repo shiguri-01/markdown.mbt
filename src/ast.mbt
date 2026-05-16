@@ -13,7 +13,11 @@ pub struct AstNode {
 ///|
 /// An error returned when an event stream cannot form a balanced tree.
 pub(all) enum AstError {
+  /// An `Exit` appeared with no matching open element.
   UnexpectedExit(Tag)
+  /// An `Exit` closed a different tag than the currently open element.
+  MismatchedExit(Tag, Tag)
+  /// The event stream ended while an element was still open.
   UnclosedTag(Tag)
 }
 
@@ -72,7 +76,8 @@ pub fn AstNode::range(self : AstNode) -> SourceRange? {
 /// Converts events into a tree.
 ///
 /// `Enter` and `Exit` events must be balanced and must close the same tag that
-/// was opened. The returned root node has no element.
+/// was opened. The returned root node has no element. Mismatched close events
+/// report the expected open tag first and the actual close tag second.
 pub fn AstBuilder::build(
   self : AstBuilder,
   events : Array[Event],
@@ -95,7 +100,10 @@ pub fn AstBuilder::build(
         }
         let node = stack[stack.length() - 1]
         match node.element {
-          Some(el) => if el.tag != tag { return Err(UnexpectedExit(tag)) }
+          Some(el) =>
+            if el.tag != tag {
+              return Err(MismatchedExit(el.tag, tag))
+            }
           None => return Err(UnexpectedExit(tag))
         }
         ignore(stack.pop())

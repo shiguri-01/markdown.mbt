@@ -21,9 +21,10 @@ This package is built around a small, stable event pipeline:
 Event streams use a tree-shaped contract. `Enter(element)` opens an element,
 `Exit(tag)` closes the most recent open element with the same tag, and text,
 break, and raw HTML events are leaves. `AstBuilder::build` validates this
-contract and returns `AstError` for unbalanced streams. `HtmlRenderer` is a
-renderer for event streams; callers that need validation should run
-`to_ast(events)` before rendering.
+contract and returns `UnexpectedExit`, `MismatchedExit`, or `UnclosedTag` for
+unbalanced streams. `MismatchedExit(expected, actual)` reports the open tag
+first and the close tag second. `HtmlRenderer` is a renderer for event streams;
+callers that need validation should run `to_ast(events)` before rendering.
 
 Rule functions return the amount of input they consumed. Returning `0` means the
 rule did not match and lets later rules try the same source position. Positive

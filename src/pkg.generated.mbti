@@ -29,6 +29,7 @@ pub fn AstBuilder::new() -> Self
 
 pub(all) enum AstError {
   UnexpectedExit(Tag)
+  MismatchedExit(Tag, Tag)
   UnclosedTag(Tag)
 }
 
