@@ -179,7 +179,5 @@ pub type CoreRuleFn = (Array[Event]) -> Array[Event]
 
 pub type InlineRuleFn = (InlineContext, EventSink) -> Int
 
-pub type TextSpan = String
-
 // Traits
 

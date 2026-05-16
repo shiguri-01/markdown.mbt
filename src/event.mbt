@@ -17,10 +17,6 @@ pub struct AttrName {
 } derive(Eq)
 
 ///|
-/// Text payload carried by `Event::Text`.
-pub type TextSpan = String
-
-///|
 /// A rule identifier used for ordering, override, enable, and disable.
 ///
 /// Built-in CommonMark rules use the `cm:` namespace.
@@ -181,7 +177,7 @@ pub struct Element {
 pub(all) enum Event {
   Enter(Element)
   Exit(Tag)
-  Text(TextSpan)
+  Text(String)
   SoftBreak
   HardBreak
   Html(String)
