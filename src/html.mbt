@@ -240,15 +240,56 @@ fn code_info_attr(attrs : Array[Attr]) -> String {
 
 ///|
 fn escape_html(input : String) -> String {
-  let out = StringBuilder::new(size_hint=input.length())
+  let mut first = -1
   for i in 0..<input.length() {
-    match char_at(input, i) {
-      38 => out.write_string("&amp;")
-      60 => out.write_string("&lt;")
-      62 => out.write_string("&gt;")
-      34 => out.write_string("&quot;")
-      _ => out.write_view(input[i:i + 1])
+    let c = char_at(input, i)
+    if c == 38 || c == 60 || c == 62 || c == 34 {
+      first = i
+      break
     }
+  }
+  if first < 0 {
+    return input
+  }
+  let out = StringBuilder::new(size_hint=input.length())
+  let mut start = 0
+  let mut i = first
+  while i < input.length() {
+    match char_at(input, i) {
+      38 => {
+        if start < i {
+          out.write_view(input[start:i])
+        }
+        out.write_string("&amp;")
+        start = i + 1
+      }
+      60 => {
+        if start < i {
+          out.write_view(input[start:i])
+        }
+        out.write_string("&lt;")
+        start = i + 1
+      }
+      62 => {
+        if start < i {
+          out.write_view(input[start:i])
+        }
+        out.write_string("&gt;")
+        start = i + 1
+      }
+      34 => {
+        if start < i {
+          out.write_view(input[start:i])
+        }
+        out.write_string("&quot;")
+        start = i + 1
+      }
+      _ => ()
+    }
+    i = i + 1
+  }
+  if start < input.length() {
+    out.write_view(input[start:])
   }
   out.to_string()
 }
