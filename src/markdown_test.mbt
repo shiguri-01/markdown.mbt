@@ -120,7 +120,10 @@ test "element attributes are isolated from mutable arrays" {
 test "plugin and inline scanner public helpers have stable behavior" {
   let plugin = @markdown.Plugin::new("contract")
   assert_eq(plugin.name(), "contract")
-  let scanner = @markdown.InlineScanner::new("abcdef", 2)
+  let scanner = match @markdown.InlineScanner::new("abcdef", 2) {
+    Some(scanner) => scanner
+    None => abort("expected valid scanner")
+  }
   assert_true(scanner.has_prefix("cd"))
   assert_true(!scanner.has_prefix("bc"))
   match scanner.char() {
@@ -142,6 +145,20 @@ test "plugin and inline scanner public helpers have stable behavior" {
     None => abort("expected char offset")
   }
   assert_true(scanner.find_char(120) is None)
+}
+
+///|
+test "inline scanner constructor rejects invalid offsets" {
+  assert_true(@markdown.InlineScanner::new("abc", -1) is None)
+  assert_true(@markdown.InlineScanner::new("abc", 4) is None)
+  match @markdown.InlineScanner::new("abc", 3) {
+    Some(scanner) => {
+      assert_true(scanner.char() is None)
+      assert_true(scanner.has_prefix(""))
+      assert_true(!scanner.has_prefix("x"))
+    }
+    None => abort("expected end-position scanner")
+  }
 }
 
 ///|

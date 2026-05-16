@@ -17,7 +17,7 @@ fn parse_inlines(
   let mut i = 0
   while i < text.length() {
     let mut consumed = 0
-    let ctx = { text, index: i, scanner: InlineScanner::new(text, i), registry }
+    let ctx = { text, index: i, scanner: inline_scanner(text, i), registry }
     for rule in rules {
       match rule.inline {
         Some(f) => if consumed == 0 { consumed = f(ctx, sink) }

@@ -100,13 +100,23 @@ pub struct InlineScanner {
 
 ///|
 /// Creates an inline scanner positioned at `index`.
-pub fn InlineScanner::new(text : String, index : Int) -> InlineScanner {
+pub fn InlineScanner::new(text : String, index : Int) -> InlineScanner? {
+  if index < 0 || index > text.length() {
+    None
+  } else {
+    Some(inline_scanner(text, index))
+  }
+}
+
+///|
+fn inline_scanner(text : String, index : Int) -> InlineScanner {
   { text, index }
 }
 
 ///|
 /// Returns whether the scanner position starts with `prefix`.
 pub fn InlineScanner::has_prefix(self : InlineScanner, prefix : String) -> Bool {
+  self.index >= 0 &&
   self.index + prefix.length() <= self.text.length() &&
   self.text[self.index:self.index + prefix.length()].to_owned() == prefix
 }
@@ -114,7 +124,7 @@ pub fn InlineScanner::has_prefix(self : InlineScanner, prefix : String) -> Bool 
 ///|
 /// Returns the character code at the scanner position.
 pub fn InlineScanner::char(self : InlineScanner) -> Int? {
-  if self.index < self.text.length() {
+  if self.index >= 0 && self.index < self.text.length() {
     Some(self.text[self.index].to_int())
   } else {
     None
