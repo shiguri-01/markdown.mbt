@@ -7,6 +7,9 @@ priv struct ReferenceDefinition {
 
 ///|
 fn resolve_reference_definitions(input : String) -> String {
+  if find_char(input, 91, 0) < 0 {
+    return input
+  }
   if !may_have_reference_definition(input) {
     return input
   }
