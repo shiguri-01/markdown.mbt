@@ -826,7 +826,18 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 
 ///|
 fn render_commonmark(markdown : String) -> String {
-  @markdown.to_html(@markdown.parse(markdown))
+  let html = @markdown.HtmlBuffer::new()
+  @markdown.parse_into(markdown, html.sink())
+  html.to_string()
+}
+
+///|
+fn ast_from_commonmark(
+  markdown : String,
+) -> Result[@markdown.AstNode, @markdown.AstError] {
+  let ast = @markdown.AstBuffer::new()
+  @markdown.parse_into(markdown, ast.sink())
+  ast.result()
 }
 
 ///|
@@ -901,8 +912,7 @@ test "CommonMark subset pass rate is available by category" {
 ///|
 test "CommonMark subset parser events build AST" {
   for example in commonmark_subset_examples() {
-    let events = @markdown.Processor::commonmark().parse(example.markdown)
-    match @markdown.AstBuilder::new().build(events) {
+    match ast_from_commonmark(example.markdown) {
       Ok(_) => ()
       Err(_) => abort("parser-generated events should build AST")
     }

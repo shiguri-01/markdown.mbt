@@ -1,114 +1,11 @@
 ///|
-/// A chainable event stream transformer.
-pub struct Transform {
-  priv events : Array[Event]
-}
-
-///|
-/// Creates a transform from an event array.
-pub fn Transform::new(events : Array[Event]) -> Transform {
-  { events: copy_events(events) }
-}
-
-///|
-/// Merges adjacent `Text` events.
-pub fn Transform::text_merge(self : Transform) -> Transform {
-  let merged : Array[Event] = []
-  for event in self.events {
-    match event {
-      Text(text) =>
-        if merged.length() > 0 {
-          match merged[merged.length() - 1] {
-            Text(prev) => merged[merged.length() - 1] = Text(prev + text)
-            _ => merged.push(event)
-          }
-        } else {
-          merged.push(event)
-        }
-      _ => merged.push(event)
-    }
-  }
-  { events: merged }
-}
-
-///|
-/// Rewrites every `SoftBreak` event to `HardBreak`.
-pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
-  self.map(fn(event) {
-    match event {
-      SoftBreak => HardBreak
-      _ => event
-    }
-  })
-}
-
-///|
-/// Renames matching `Enter` and `Exit` tags.
-///
-/// Element attributes and source ranges are preserved.
-pub fn Transform::rename_tag(
-  self : Transform,
-  from : Tag,
-  to : Tag,
-) -> Transform {
-  self.map(fn(event) {
-    match event {
-      Enter(el) =>
-        if el.tag == from {
-          Enter({ tag: to, attrs: el.attrs, range: el.range })
-        } else {
-          event
-        }
-      Exit(tag) => if tag == from { Exit(to) } else { event }
-      _ => event
-    }
-  })
-}
-
-///|
-/// Appends an attribute to matching `Enter` elements.
-///
-/// Existing attributes and source ranges are preserved.
-pub fn Transform::inject_attr(
-  self : Transform,
-  tag : Tag,
-  attr : Attr,
-) -> Transform {
-  self.map(fn(event) {
-    match event {
-      Enter(el) =>
-        if el.tag == tag {
-          let attrs : Array[Attr] = []
-          for old in el.attrs {
-            attrs.push(old)
-          }
-          attrs.push(attr)
-          Enter({ tag: el.tag, attrs, range: el.range })
-        } else {
-          event
-        }
-      _ => event
-    }
-  })
-}
-
-///|
-/// Returns the transformed event array.
-pub fn Transform::collect(self : Transform) -> Array[Event] {
-  copy_events(self.events)
-}
-
-///|
-/// Creates a sink that appends `suffix` after upstream parsing finishes.
-pub fn EventSink::with_suffix(
+/// Creates a sink that runs `f` before finishing downstream.
+pub fn EventSink::on_finish(
   self : EventSink,
-  suffix : Array[Event],
+  f : (EventSink) -> Unit,
 ) -> EventSink {
-  let copied = copy_events(suffix)
   EventSink::new(fn(event) { self.emit(event) }, finish=fn() {
-    for event in copied {
-      self.emit(event)
-    }
+    f(self)
     self.finish()
   })
 }
@@ -155,10 +52,58 @@ pub fn EventSink::text_merge(self : EventSink) -> EventSink {
 }
 
 ///|
-fn Transform::map(self : Transform, f : (Event) -> Event) -> Transform {
-  let next : Array[Event] = []
-  for event in self.events {
-    next.push(copy_event(f(event)))
-  }
-  { events: next }
+/// Creates a sink that rewrites every `SoftBreak` event to `HardBreak`.
+pub fn EventSink::softbreak_to_hardbreak(self : EventSink) -> EventSink {
+  self.map(fn(event) {
+    match event {
+      SoftBreak => HardBreak
+      _ => event
+    }
+  })
+}
+
+///|
+/// Creates a sink that renames matching `Enter` and `Exit` tags.
+pub fn EventSink::rename_tag(
+  self : EventSink,
+  from : Tag,
+  to : Tag,
+) -> EventSink {
+  self.map(fn(event) {
+    match event {
+      Enter(el) =>
+        if el.tag == from {
+          Enter({ tag: to, attrs: el.attrs, range: el.range })
+        } else {
+          event
+        }
+      Exit(tag) => if tag == from { Exit(to) } else { event }
+      _ => event
+    }
+  })
+}
+
+///|
+/// Creates a sink that appends an attribute to matching `Enter` elements.
+pub fn EventSink::inject_attr(
+  self : EventSink,
+  tag : Tag,
+  attr : Attr,
+) -> EventSink {
+  self.map(fn(event) {
+    match event {
+      Enter(el) =>
+        if el.tag == tag {
+          let attrs : Array[Attr] = []
+          for old in el.attrs {
+            attrs.push(old)
+          }
+          attrs.push(attr)
+          Enter({ tag: el.tag, attrs, range: el.range })
+        } else {
+          event
+        }
+      _ => event
+    }
+  })
 }

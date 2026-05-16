@@ -6,13 +6,7 @@ pub fn commonmark() -> Processor
 
 pub fn commonmark_plugin() -> Plugin
 
-pub fn parse(String) -> Array[Event]
-
 pub fn parse_into(String, EventSink) -> Unit
-
-pub fn to_ast(Array[Event]) -> Result[AstNode, AstError]
-
-pub fn to_html(Array[Event]) -> String
 
 // Errors
 
@@ -23,12 +17,6 @@ pub struct AstBuffer {
 pub fn AstBuffer::new() -> Self
 pub fn AstBuffer::result(Self) -> Result[AstNode, AstError]
 pub fn AstBuffer::sink(Self) -> EventSink
-
-pub struct AstBuilder {
-  // private fields
-}
-pub fn AstBuilder::build(Self, Array[Event]) -> Result[AstNode, AstError]
-pub fn AstBuilder::new() -> Self
 
 pub(all) enum AstError {
   UnexpectedExit(Tag)
@@ -98,10 +86,13 @@ pub struct EventSink {
 }
 pub fn EventSink::emit(Self, Event) -> Unit
 pub fn EventSink::finish(Self) -> Unit
+pub fn EventSink::inject_attr(Self, Tag, Attr) -> Self
 pub fn EventSink::map(Self, (Event) -> Event) -> Self
 pub fn EventSink::new((Event) -> Unit, finish? : () -> Unit) -> Self
+pub fn EventSink::on_finish(Self, (Self) -> Unit) -> Self
+pub fn EventSink::rename_tag(Self, Tag, Tag) -> Self
+pub fn EventSink::softbreak_to_hardbreak(Self) -> Self
 pub fn EventSink::text_merge(Self) -> Self
-pub fn EventSink::with_suffix(Self, Array[Event]) -> Self
 
 pub struct HtmlBuffer {
   // private fields
@@ -109,12 +100,6 @@ pub struct HtmlBuffer {
 pub fn HtmlBuffer::new() -> Self
 pub fn HtmlBuffer::sink(Self) -> EventSink
 pub fn HtmlBuffer::to_string(Self) -> String
-
-pub struct HtmlRenderer {
-  // private fields
-}
-pub fn HtmlRenderer::new() -> Self
-pub fn HtmlRenderer::render(Self, Array[Event]) -> String
 
 pub struct InlineContext {
   // private fields
@@ -149,7 +134,6 @@ pub struct Processor {
 }
 pub fn Processor::commonmark() -> Self
 pub fn Processor::new() -> Self
-pub fn Processor::parse(Self, String) -> Array[Event]
 pub fn Processor::parse_into(Self, String, EventSink) -> Unit
 pub fn Processor::with_plugin(Self, Plugin) -> Self
 
@@ -184,16 +168,6 @@ pub fn Tag::commonmark(String) -> Self
 pub fn Tag::custom(String, String) -> Self
 pub fn Tag::raw(String) -> Self
 pub fn Tag::to_string(Self) -> String
-
-pub struct Transform {
-  // private fields
-}
-pub fn Transform::collect(Self) -> Array[Event]
-pub fn Transform::inject_attr(Self, Tag, Attr) -> Self
-pub fn Transform::new(Array[Event]) -> Self
-pub fn Transform::rename_tag(Self, Tag, Tag) -> Self
-pub fn Transform::softbreak_to_hardbreak(Self) -> Self
-pub fn Transform::text_merge(Self) -> Self
 
 // Type aliases
 pub type BlockRuleFn = (BlockContext, EventSink) -> Int

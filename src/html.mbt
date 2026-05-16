@@ -1,24 +1,12 @@
 ///|
-/// Renders Markdown events as HTML.
+/// A streaming HTML sink.
 ///
 /// CommonMark tags are mapped to their HTML representation. Unknown extension
 /// tags are rendered with their tag value, with tag and attribute text escaped.
 /// Raw HTML events are passed through unchanged.
-pub struct HtmlRenderer {
-  priv unit : Int
-}
-
-///|
-/// A streaming HTML sink.
 pub struct HtmlBuffer {
   priv out : StringBuilder
   priv close_stack : Array[String]
-}
-
-///|
-/// Creates an HTML renderer.
-pub fn HtmlRenderer::new() -> HtmlRenderer {
-  { unit: 0 }
 }
 
 ///|
@@ -37,26 +25,6 @@ pub fn HtmlBuffer::sink(self : HtmlBuffer) -> EventSink {
 /// Returns the rendered HTML.
 pub fn HtmlBuffer::to_string(self : HtmlBuffer) -> String {
   self.out.to_string()
-}
-
-///|
-/// Renders an event stream as HTML.
-pub fn to_html(events : Array[Event]) -> String {
-  HtmlRenderer::new().render(events)
-}
-
-///|
-/// Renders an event stream as HTML.
-pub fn HtmlRenderer::render(
-  self : HtmlRenderer,
-  events : Array[Event],
-) -> String {
-  ignore(self.unit)
-  let buffer = HtmlBuffer::new()
-  for event in events {
-    write_html_event(buffer, event)
-  }
-  buffer.to_string()
 }
 
 ///|

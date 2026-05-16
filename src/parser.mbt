@@ -29,12 +29,6 @@ pub fn commonmark() -> Processor {
 }
 
 ///|
-/// Parses Markdown input with the built-in CommonMark processor.
-pub fn parse(source : String) -> Array[Event] {
-  commonmark().parse(source)
-}
-
-///|
 /// Parses Markdown input with the built-in CommonMark processor into `sink`.
 pub fn parse_into(source : String, sink : EventSink) -> Unit {
   commonmark().parse_into(source, sink)
@@ -48,17 +42,6 @@ pub fn parse_into(source : String, sink : EventSink) -> Unit {
 pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
   let registry = self.registry.copy().use_plugin(plugin)
   { registry, }
-}
-
-///|
-/// Parses Markdown input into an event array.
-///
-/// Source core rules run before block parsing. Core event rules run after block
-/// and inline parsing.
-pub fn Processor::parse(self : Processor, input : String) -> Array[Event] {
-  let buffer = EventBuffer::new()
-  self.parse_into(input, buffer.sink())
-  buffer.collect()
 }
 
 ///|
@@ -89,13 +72,6 @@ pub fn Processor::parse_into(
   }
   parse_blocks_into(source, self.registry, downstream)
   downstream.finish()
-}
-
-///|
-fn parse_blocks(input : String, registry : RuleRegistry) -> Array[Event] {
-  let buffer = EventBuffer::new()
-  parse_blocks_into(input, registry, buffer.sink())
-  buffer.collect()
 }
 
 ///|

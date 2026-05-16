@@ -30,22 +30,10 @@ pub(all) enum AstError {
 }
 
 ///|
-/// Builds an AST from a balanced event stream.
-pub struct AstBuilder {
-  priv unit : Int
-}
-
-///|
 /// A streaming AST builder sink.
 pub struct AstBuffer {
   priv stack : Array[AstNode]
   priv mut result : Result[AstNode, AstError]?
-}
-
-///|
-/// Creates an AST builder.
-pub fn AstBuilder::new() -> AstBuilder {
-  { unit: 0 }
 }
 
 ///|
@@ -67,12 +55,6 @@ pub fn AstBuffer::result(self : AstBuffer) -> Result[AstNode, AstError] {
     Some(result) => copy_ast_result(result)
     None => self.finish_and_result()
   }
-}
-
-///|
-/// Converts events into an AST.
-pub fn to_ast(events : Array[Event]) -> Result[AstNode, AstError] {
-  AstBuilder::new().build(events)
 }
 
 ///|
@@ -136,24 +118,6 @@ pub fn AstNode::range(self : AstNode) -> SourceRange? {
 ///|
 fn root_ast_node() -> AstNode {
   { kind: RootNode, element: None, children: [], text: "", range: None }
-}
-
-///|
-/// Converts events into a tree.
-///
-/// `Enter` and `Exit` events must be balanced and must close the same tag that
-/// was opened. The returned root node has no element. Mismatched close events
-/// report the expected open tag first and the actual close tag second.
-pub fn AstBuilder::build(
-  self : AstBuilder,
-  events : Array[Event],
-) -> Result[AstNode, AstError] {
-  ignore(self.unit)
-  let buffer = AstBuffer::new()
-  for event in events {
-    buffer.accept(event)
-  }
-  buffer.finish_and_result()
 }
 
 ///|

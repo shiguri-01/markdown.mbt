@@ -10,10 +10,10 @@ This package is built around a small, stable event pipeline:
 
 1. `Processor` owns Markdown parsing configuration and pushes `Event` values
    into an `EventSink`.
-2. `parse_into(source, sink)` is the core pipeline API. `parse(source)` is a
-   convenience that collects the same event stream into an array.
-3. `Transform`, `HtmlRenderer`, and `AstBuilder` consume event streams. They do
-   not belong to `Processor`, so output formats stay downstream of parsing.
+2. `parse_into(source, sink)` is the core pipeline API.
+3. `EventBuffer`, `HtmlBuffer`, `AstBuffer`, and sink transforms are downstream
+   consumers. They do not belong to `Processor`, so output formats stay
+   downstream of parsing.
 4. Extensions are ordinary `Plugin` values that register named `Rule` values.
    Plugin builders and processor builders return new values and leave the
    original value unchanged.
@@ -24,11 +24,11 @@ This package is built around a small, stable event pipeline:
 
 Event streams use a tree-shaped contract. `Enter(element)` opens an element,
 `Exit(tag)` closes the most recent open element with the same tag, and text,
-break, and raw HTML events are leaves. `AstBuilder::build` validates this
+break, and raw HTML events are leaves. `AstBuffer` validates this
 contract and returns `UnexpectedExit`, `MismatchedExit`, or `UnclosedTag` for
 unbalanced streams. `MismatchedExit(expected, actual)` reports the open tag
-first and the close tag second. `HtmlRenderer` is a renderer for event streams;
-callers that need validation should run `to_ast(events)` before rendering.
+first and the close tag second. `HtmlBuffer` is a renderer for event streams;
+callers that need validation should feed the same stream into `AstBuffer`.
 
 Rule functions return the amount of input they consumed. Returning `0` means the
 rule did not match and lets later rules try the same source position. Positive
@@ -101,11 +101,11 @@ test {
       end + 1
     },
   )
-  let events = @markdown.commonmark()
-    .with_plugin(@markdown.Plugin::new("math").add(math))
-    .parse("Euler: $x + y$")
-  let html = events |> @markdown.to_html
-  assert_eq(html, "<p>Euler: <x:math>x + y</x:math></p>\n")
+  let html = @markdown.HtmlBuffer::new()
+  @markdown.commonmark()
+  .with_plugin(@markdown.Plugin::new("math").add(math))
+  .parse_into("Euler: $x + y$", html.sink())
+  assert_eq(html.to_string(), "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
 ```
 
@@ -116,27 +116,27 @@ test {
     .disable(@markdown.RuleName::commonmark("block:html"))
     .disable(@markdown.RuleName::commonmark("inline:raw_html"))
   let configured = @markdown.commonmark_plugin().with_plugin(no_raw_html)
-  let events = @markdown.Processor::new()
-    .with_plugin(configured)
-    .parse("<span>raw</span>")
-  let html = events |> @markdown.to_html
-  assert_eq(html, "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
+  let html = @markdown.HtmlBuffer::new()
+  @markdown.Processor::new()
+  .with_plugin(configured)
+  .parse_into("<span>raw</span>", html.sink())
+  assert_eq(html.to_string(), "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }
 ```
 
-## Transform and AST Helpers
+## Sink Transforms and AST Helpers
 
 ```mbt check
 ///|
 test {
-  let events : Array[@markdown.Event] = [
-    Enter(@markdown.Element::new(@markdown.Tag::raw("x:note"))),
-    Text("a"),
-    Text("b"),
-    Exit(@markdown.Tag::raw("x:note")),
-  ]
-  let transformed = @markdown.Transform::new(events).text_merge().collect()
-  match @markdown.to_ast(transformed) {
+  let ast = @markdown.AstBuffer::new()
+  let sink = ast.sink().text_merge()
+  sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:note"))))
+  sink.emit(Text("a"))
+  sink.emit(Text("b"))
+  sink.emit(Exit(@markdown.Tag::raw("x:note")))
+  sink.finish()
+  match ast.result() {
     Ok(root) =>
       match root.children()[0].children()[0].text() {
         Some(text) => assert_eq(text, "ab")

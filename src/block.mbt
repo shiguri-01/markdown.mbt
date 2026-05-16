@@ -396,10 +396,7 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
     parse_inlines_with_rules(inner_text, ctx.registry, ctx.inline_rules, sink)
     sink.emit(Exit(tag_name("cm:paragraph")))
   } else {
-    let events = parse_blocks(inner_text, ctx.registry)
-    for event in events {
-      sink.emit(event)
-    }
+    parse_blocks_into(inner_text, ctx.registry, sink)
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   i - ctx.index
@@ -502,10 +499,17 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
     item_starts.push(item_start)
     item_ends.push(item_end)
   }
-  let list_buffer = EventBuffer::new()
-  let list_events = list_buffer.sink()
+  sink.emit(
+    Enter(
+      Element::with_attrs(
+        tag_name("cm:list"),
+        list_attrs,
+        range=Some(block_source_range(ctx, ctx.index, i)),
+      ),
+    ),
+  )
   for n in 0..<item_texts.length() {
-    list_events.emit(
+    sink.emit(
       Enter(
         Element::with_attrs(
           tag_name("cm:item"),
@@ -518,22 +522,10 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
       item_texts[n],
       ctx.registry,
       ctx.inline_rules,
-      list_events,
+      sink,
       loose~,
     )
-    list_events.emit(Exit(tag_name("cm:item")))
-  }
-  sink.emit(
-    Enter(
-      Element::with_attrs(
-        tag_name("cm:list"),
-        list_attrs,
-        range=Some(block_source_range(ctx, ctx.index, i)),
-      ),
-    ),
-  )
-  for event in list_buffer.collect() {
-    sink.emit(event)
+    sink.emit(Exit(tag_name("cm:item")))
   }
   sink.emit(Exit(tag_name("cm:list")))
   i - ctx.index
@@ -554,7 +546,9 @@ fn emit_list_item_content(
     parse_inlines_with_rules(item_text, registry, inline_rules, sink)
     return
   }
-  let events = parse_blocks(item_text, registry)
+  let buffer = EventBuffer::new()
+  parse_blocks_into(item_text, registry, buffer.sink())
+  let events = buffer.collect()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {
       sink.emit(events[i])
