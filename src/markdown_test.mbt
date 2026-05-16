@@ -556,9 +556,7 @@ test "soft break rule emits event and can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
     @markdown.RuleName::commonmark("inline:soft_break"),
   )
-  let disabled = @markdown.Processor::new()
-    .with_plugin(plugin)
-    .parse("a\nb")
+  let disabled = @markdown.Processor::new().with_plugin(plugin).parse("a\nb")
   match disabled[2] {
     Text(text) => assert_eq(text, "\n")
     _ => abort("expected text newline")
@@ -587,9 +585,7 @@ test "entity rule emits text event and can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
     @markdown.RuleName::commonmark("inline:entity"),
   )
-  let disabled = @markdown.Processor::new()
-    .with_plugin(plugin)
-    .parse("&amp;")
+  let disabled = @markdown.Processor::new().with_plugin(plugin).parse("&amp;")
   match disabled[1] {
     Text(text) => assert_eq(text, "&")
     _ => abort("expected raw ampersand text")
@@ -766,9 +762,7 @@ test "standard text inline rule can be disabled" {
   let plugin = @markdown.commonmark_plugin().disable(
     @markdown.RuleName::commonmark("inline:text"),
   )
-  let disabled = @markdown.Processor::new()
-    .with_plugin(plugin)
-    .parse("abc")
+  let disabled = @markdown.Processor::new().with_plugin(plugin).parse("abc")
   match disabled[1] {
     Text(text) => assert_eq(text, "a")
     _ => abort("expected fallback text")
@@ -1539,6 +1533,29 @@ test "parser can push into a sink" {
 }
 
 ///|
+test "parser can render html downstream while parsing" {
+  let html = @markdown.HtmlBuffer::new()
+  @markdown.Processor::commonmark().parse_into("# Hello *MoonBit*", html.sink())
+  assert_eq(html.to_string(), "<h1>Hello <em>MoonBit</em></h1>\n")
+}
+
+///|
+test "parser can build ast downstream while parsing" {
+  let ast = @markdown.AstBuffer::new()
+  @markdown.Processor::commonmark().parse_into("hello", ast.sink())
+  match ast.result() {
+    Ok(root) => {
+      assert_eq(root.children().length(), 1)
+      match root.children()[0].children()[0].text() {
+        Some(text) => assert_eq(text, "hello")
+        None => abort("expected paragraph text")
+      }
+    }
+    Err(_) => abort("expected ast")
+  }
+}
+
+///|
 test "parser attaches block source ranges" {
   let events = @markdown.Processor::commonmark().parse("# hi\n\ntext")
   match events[0] {
@@ -1598,8 +1615,9 @@ test "event buffer collect returns a copy" {
 
 ///|
 test "parser attaches list source ranges" {
-  let events = @markdown.Processor::commonmark()
-    .parse("- one\n  continued\n- two")
+  let events = @markdown.Processor::commonmark().parse(
+    "- one\n  continued\n- two",
+  )
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1628,8 +1646,9 @@ test "parser attaches list source ranges" {
 
 ///|
 test "parser attaches loose list source ranges across blank continuation" {
-  let events = @markdown.Processor::commonmark()
-    .parse("- one\n\n  two\n- three")
+  let events = @markdown.Processor::commonmark().parse(
+    "- one\n\n  two\n- three",
+  )
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1658,8 +1677,9 @@ test "parser attaches loose list source ranges across blank continuation" {
 
 ///|
 test "parser attaches blockquote source ranges" {
-  let events = @markdown.Processor::commonmark()
-    .parse("> quote\n> more\n\ntext")
+  let events = @markdown.Processor::commonmark().parse(
+    "> quote\n> more\n\ntext",
+  )
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1676,8 +1696,7 @@ test "parser attaches blockquote source ranges" {
 
 ///|
 test "parser attaches fenced code source ranges" {
-  let events = @markdown.Processor::commonmark()
-    .parse("```\ncode\n```\n\ntext")
+  let events = @markdown.Processor::commonmark().parse("```\ncode\n```\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1711,8 +1730,7 @@ test "parser attaches unclosed fenced code source ranges" {
 
 ///|
 test "parser attaches indented code source ranges" {
-  let events = @markdown.Processor::commonmark()
-    .parse("    code\n\ntext")
+  let events = @markdown.Processor::commonmark().parse("    code\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1815,8 +1833,7 @@ test "four space indented html block marker is code" {
 
 ///|
 test "four space indented list marker does not interrupt paragraph" {
-  let events = @markdown.Processor::commonmark()
-    .parse("paragraph\n    - item")
+  let events = @markdown.Processor::commonmark().parse("paragraph\n    - item")
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
@@ -1851,8 +1868,9 @@ test "parser attaches thematic break source ranges" {
 
 ///|
 test "parser normalizes image alt text" {
-  let events = @markdown.Processor::commonmark()
-    .parse("![a\\*b &amp; c](/img.png)")
+  let events = @markdown.Processor::commonmark().parse(
+    "![a\\*b &amp; c](/img.png)",
+  )
   match events[1] {
     Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:image")
@@ -1866,8 +1884,9 @@ test "parser normalizes image alt text" {
 
 ///|
 test "parser flattens image alt inline markup" {
-  let events = @markdown.Processor::commonmark()
-    .parse("![*em* **strong** `code`](/img.png)")
+  let events = @markdown.Processor::commonmark().parse(
+    "![*em* **strong** `code`](/img.png)",
+  )
   match events[1] {
     Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:image")
@@ -1880,8 +1899,9 @@ test "parser flattens image alt inline markup" {
 
 ///|
 test "parser normalizes link destination and title attributes" {
-  let events = @markdown.Processor::commonmark()
-    .parse("[link](/a\\*b?x=&amp; \"a\\*b &amp; c\")")
+  let events = @markdown.Processor::commonmark().parse(
+    "[link](/a\\*b?x=&amp; \"a\\*b &amp; c\")",
+  )
   match events[1] {
     Enter(el) => {
       assert_eq(el.tag().to_string(), "cm:link")

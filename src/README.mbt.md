@@ -41,8 +41,9 @@ for extensions.
 ```mbt check
 ///|
 test {
-  let html = "# Hello *MoonBit*" |> @markdown.parse |> @markdown.to_html
-  assert_eq(html, "<h1>Hello <em>MoonBit</em></h1>\n")
+  let html = @markdown.HtmlBuffer::new()
+  @markdown.parse_into("# Hello *MoonBit*", html.sink())
+  assert_eq(html.to_string(), "<h1>Hello <em>MoonBit</em></h1>\n")
 }
 ```
 
@@ -141,6 +142,18 @@ test {
         Some(text) => assert_eq(text, "ab")
         None => abort("expected text node")
       }
+    Err(_) => abort("expected AST")
+  }
+}
+```
+
+```mbt check
+///|
+test {
+  let ast = @markdown.AstBuffer::new()
+  @markdown.parse_into("hello", ast.sink())
+  match ast.result() {
+    Ok(root) => assert_eq(root.children().length(), 1)
     Err(_) => abort("expected AST")
   }
 }

@@ -36,9 +36,37 @@ pub struct AstBuilder {
 }
 
 ///|
+/// A streaming AST builder sink.
+pub struct AstBuffer {
+  priv stack : Array[AstNode]
+  priv mut result : Result[AstNode, AstError]?
+}
+
+///|
 /// Creates an AST builder.
 pub fn AstBuilder::new() -> AstBuilder {
   { unit: 0 }
+}
+
+///|
+/// Creates an empty streaming AST buffer.
+pub fn AstBuffer::new() -> AstBuffer {
+  { stack: [root_ast_node()], result: None }
+}
+
+///|
+/// Returns a sink that builds an AST as events arrive.
+pub fn AstBuffer::sink(self : AstBuffer) -> EventSink {
+  EventSink::new(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
+}
+
+///|
+/// Returns the AST result after the stream has finished.
+pub fn AstBuffer::result(self : AstBuffer) -> Result[AstNode, AstError] {
+  match self.result {
+    Some(result) => copy_ast_result(result)
+    None => self.finish_and_result()
+  }
 }
 
 ///|
@@ -73,21 +101,41 @@ pub fn AstNode::text(self : AstNode) -> String? {
 fn copy_ast_nodes(nodes : Array[AstNode]) -> Array[AstNode] {
   let copied : Array[AstNode] = []
   for node in nodes {
-    copied.push({
-      kind: node.kind,
-      element: node.element,
-      children: copy_ast_nodes(node.children),
-      text: node.text,
-      range: node.range,
-    })
+    copied.push(copy_ast_node(node))
   }
   copied
+}
+
+///|
+fn copy_ast_node(node : AstNode) -> AstNode {
+  {
+    kind: node.kind,
+    element: node.element,
+    children: copy_ast_nodes(node.children),
+    text: node.text,
+    range: node.range,
+  }
+}
+
+///|
+fn copy_ast_result(
+  result : Result[AstNode, AstError],
+) -> Result[AstNode, AstError] {
+  match result {
+    Ok(node) => Ok(copy_ast_node(node))
+    Err(err) => Err(err)
+  }
 }
 
 ///|
 /// Returns the source range attached to the node, if any.
 pub fn AstNode::range(self : AstNode) -> SourceRange? {
   self.range
+}
+
+///|
+fn root_ast_node() -> AstNode {
+  { kind: RootNode, element: None, children: [], text: "", range: None }
 }
 
 ///|
@@ -101,87 +149,110 @@ pub fn AstBuilder::build(
   events : Array[Event],
 ) -> Result[AstNode, AstError] {
   ignore(self.unit)
-  let root : AstNode = {
-    kind: RootNode,
-    element: None,
-    children: [],
-    text: "",
-    range: None,
-  }
-  let stack : Array[AstNode] = [root]
+  let buffer = AstBuffer::new()
   for event in events {
-    match event {
-      Enter(el) =>
-        stack.push({
-          kind: ElementNode,
-          element: Some(el),
-          children: [],
-          text: "",
-          range: el.range,
-        })
-      Exit(tag) => {
-        if stack.length() <= 1 {
-          return Err(UnexpectedExit(tag))
-        }
-        let node = stack[stack.length() - 1]
-        match node.element {
-          Some(el) =>
-            if el.tag != tag {
-              return Err(MismatchedExit(el.tag, tag))
-            }
-          None => return Err(UnexpectedExit(tag))
-        }
-        ignore(stack.pop())
-        stack[stack.length() - 1].children.push(node)
-      }
-      Text(text) =>
-        stack[stack.length() - 1].children.push({
-          kind: TextNode,
-          element: None,
-          children: [],
-          text,
-          range: None,
-        })
-      SoftBreak =>
-        stack[stack.length() - 1].children.push({
-          kind: TextNode,
-          element: None,
-          children: [],
-          text: "\n",
-          range: None,
-        })
-      HardBreak =>
-        stack[stack.length() - 1].children.push({
-          kind: ElementNode,
-          element: Some(Element::new(tag_name("cm:hard_break"))),
-          children: [],
-          text: "",
-          range: None,
-        })
-      Html(raw) =>
-        stack[stack.length() - 1].children.push({
-          kind: ElementNode,
-          element: Some(Element::new(tag_name("cm:html"))),
-          children: [
-            {
-              kind: TextNode,
-              element: None,
-              children: [],
-              text: raw,
-              range: None,
-            },
-          ],
-          text: "",
-          range: None,
-        })
-    }
+    buffer.accept(event)
   }
-  if stack.length() != 1 {
-    match stack[stack.length() - 1].element {
+  buffer.finish_and_result()
+}
+
+///|
+fn AstBuffer::accept(self : AstBuffer, event : Event) -> Unit {
+  match self.result {
+    Some(_) => return
+    None => ()
+  }
+  match event {
+    Enter(el) =>
+      self.stack.push({
+        kind: ElementNode,
+        element: Some(el),
+        children: [],
+        text: "",
+        range: el.range,
+      })
+    Exit(tag) => {
+      if self.stack.length() <= 1 {
+        self.result = Some(Err(UnexpectedExit(tag)))
+        return
+      }
+      let node = self.stack[self.stack.length() - 1]
+      match node.element {
+        Some(el) =>
+          if el.tag != tag {
+            self.result = Some(Err(MismatchedExit(el.tag, tag)))
+            return
+          }
+        None => {
+          self.result = Some(Err(UnexpectedExit(tag)))
+          return
+        }
+      }
+      ignore(self.stack.pop())
+      self.stack[self.stack.length() - 1].children.push(node)
+    }
+    Text(text) =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: TextNode,
+        element: None,
+        children: [],
+        text,
+        range: None,
+      })
+    SoftBreak =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: TextNode,
+        element: None,
+        children: [],
+        text: "\n",
+        range: None,
+      })
+    HardBreak =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: ElementNode,
+        element: Some(Element::new(tag_name("cm:hard_break"))),
+        children: [],
+        text: "",
+        range: None,
+      })
+    Html(raw) =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: ElementNode,
+        element: Some(Element::new(tag_name("cm:html"))),
+        children: [
+          {
+            kind: TextNode,
+            element: None,
+            children: [],
+            text: raw,
+            range: None,
+          },
+        ],
+        text: "",
+        range: None,
+      })
+  }
+}
+
+///|
+fn AstBuffer::finish(self : AstBuffer) -> Unit {
+  ignore(self.finish_and_result())
+}
+
+///|
+fn AstBuffer::finish_and_result(self : AstBuffer) -> Result[AstNode, AstError] {
+  match self.result {
+    Some(result) => return copy_ast_result(result)
+    None => ()
+  }
+  let result = if self.stack.length() != 1 {
+    match self.stack[self.stack.length() - 1].element {
       Some(el) => Err(UnclosedTag(el.tag))
       None => Err(UnclosedTag(tag_name("<root>")))
     }
   } else {
-    Ok(stack[0])
+    Ok(copy_ast_node(self.stack[0]))
   }
+  self.result = Some(result)
+  copy_ast_result(result)
 }

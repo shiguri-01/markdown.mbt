@@ -901,8 +901,7 @@ test "CommonMark subset pass rate is available by category" {
 ///|
 test "CommonMark subset parser events build AST" {
   for example in commonmark_subset_examples() {
-    let events = @markdown.Processor::commonmark()
-      .parse(example.markdown)
+    let events = @markdown.Processor::commonmark().parse(example.markdown)
     match @markdown.AstBuilder::new().build(events) {
       Ok(_) => ()
       Err(_) => abort("parser-generated events should build AST")

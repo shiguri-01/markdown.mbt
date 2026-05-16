@@ -8,7 +8,6 @@ pub struct Processor {
 }
 
 ///|
-///|
 /// Creates an empty processor with no registered rules.
 ///
 /// Parsing with an empty processor still emits a fallback paragraph for plain
@@ -80,14 +79,12 @@ pub fn Processor::parse_into(
     return
   }
   let source = apply_source_core_rules(input, self.registry)
-  if self.registry.has_commonmark_preset_only() && source.length() >= 10_000 {
-    match parse_large_commonmark_blocks(source, self.registry) {
-      Some(events) => {
-        emit_events(events, downstream)
-        downstream.finish()
-        return
-      }
-      None => ()
+  if self.registry.has_commonmark_preset_only() &&
+    source.length() >= 10_000 &&
+    can_fast_parse_large_commonmark(source) {
+    if parse_large_commonmark_blocks_into(source, self.registry, downstream) {
+      downstream.finish()
+      return
     }
   }
   parse_blocks_into(source, self.registry, downstream)
@@ -120,17 +117,10 @@ fn emit_plain_paragraph(input : String, sink : EventSink) -> Unit {
         [],
         range=Some(source_range(0, input.length())),
       ),
-    )
+    ),
   )
   sink.emit(Text(input))
   sink.emit(Exit(tag_name("cm:paragraph")))
-}
-
-///|
-fn emit_events(events : Array[Event], sink : EventSink) -> Unit {
-  for event in events {
-    sink.emit(event)
-  }
 }
 
 ///|
@@ -235,13 +225,12 @@ fn parse_commonmark_block_lines_into(
 }
 
 ///|
-fn parse_large_commonmark_blocks(
+fn parse_large_commonmark_blocks_into(
   input : String,
   registry : RuleRegistry,
-) -> Array[Event]? {
+  sink : EventSink,
+) -> Bool {
   let source = split_lines(input)
-  let buffer = EventBuffer::new()
-  let sink = buffer.sink()
   let mut i = 0
   while i < source.lines.length() {
     let line = source.lines[i]
@@ -255,7 +244,7 @@ fn parse_large_commonmark_blocks(
     if leading <= 3 && fence_marker(trimmed) != "" {
       i = fast_fenced_code_block(source, i, sink)
     } else if leading >= 4 {
-      return None
+      return false
     } else if is_atx_heading_start(trimmed) {
       fast_atx_heading_block(source, i, trimmed, registry, sink)
       i = i + 1
@@ -280,7 +269,19 @@ fn parse_large_commonmark_blocks(
       i = fast_paragraph_block(source, i, registry, sink)
     }
   }
-  Some(buffer.collect())
+  true
+}
+
+///|
+fn can_fast_parse_large_commonmark(input : String) -> Bool {
+  let source = split_lines(input)
+  for line in source.lines {
+    let first = first_non_space_index(line)
+    if first >= 0 && count_leading_spaces(line) >= 4 {
+      return false
+    }
+  }
+  true
 }
 
 ///|
@@ -795,10 +796,7 @@ fn apply_source_core_rules(input : String, registry : RuleRegistry) -> String {
 }
 
 ///|
-fn apply_core_rules(
-  sink : EventSink,
-  registry : RuleRegistry,
-) -> EventSink {
+fn apply_core_rules(sink : EventSink, registry : RuleRegistry) -> EventSink {
   let mut current = sink
   let rules = registry.core_rules()
   for i = rules.length() - 1; i >= 0; i = i - 1 {

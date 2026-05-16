@@ -105,24 +105,20 @@ pub fn EventSink::with_suffix(
   suffix : Array[Event],
 ) -> EventSink {
   let copied = copy_events(suffix)
-  EventSink::new(
-    fn(event) { self.emit(event) },
-    finish=fn() {
-      for event in copied {
-        self.emit(event)
-      }
-      self.finish()
-    },
-  )
+  EventSink::new(fn(event) { self.emit(event) }, finish=fn() {
+    for event in copied {
+      self.emit(event)
+    }
+    self.finish()
+  })
 }
 
 ///|
 /// Creates a sink that maps every event before forwarding it downstream.
 pub fn EventSink::map(self : EventSink, f : (Event) -> Event) -> EventSink {
-  EventSink::new(
-    fn(event) { self.emit(copy_event(f(event))) },
-    finish=fn() { self.finish() },
-  )
+  EventSink::new(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
+    self.finish()
+  })
 }
 
 ///|

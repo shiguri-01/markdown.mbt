@@ -8,6 +8,8 @@ pub fn commonmark_plugin() -> Plugin
 
 pub fn parse(String) -> Array[Event]
 
+pub fn parse_into(String, EventSink) -> Unit
+
 pub fn to_ast(Array[Event]) -> Result[AstNode, AstError]
 
 pub fn to_html(Array[Event]) -> String
@@ -15,6 +17,13 @@ pub fn to_html(Array[Event]) -> String
 // Errors
 
 // Types and methods
+pub struct AstBuffer {
+  // private fields
+}
+pub fn AstBuffer::new() -> Self
+pub fn AstBuffer::result(Self) -> Result[AstNode, AstError]
+pub fn AstBuffer::sink(Self) -> EventSink
+
 pub struct AstBuilder {
   // private fields
 }
@@ -77,10 +86,29 @@ pub(all) enum Event {
   Html(String)
 }
 
+pub struct EventBuffer {
+  // private fields
+}
+pub fn EventBuffer::collect(Self) -> Array[Event]
+pub fn EventBuffer::new() -> Self
+pub fn EventBuffer::sink(Self) -> EventSink
+
 pub struct EventSink {
   // private fields
 }
 pub fn EventSink::emit(Self, Event) -> Unit
+pub fn EventSink::finish(Self) -> Unit
+pub fn EventSink::map(Self, (Event) -> Event) -> Self
+pub fn EventSink::new((Event) -> Unit, finish? : () -> Unit) -> Self
+pub fn EventSink::text_merge(Self) -> Self
+pub fn EventSink::with_suffix(Self, Array[Event]) -> Self
+
+pub struct HtmlBuffer {
+  // private fields
+}
+pub fn HtmlBuffer::new() -> Self
+pub fn HtmlBuffer::sink(Self) -> EventSink
+pub fn HtmlBuffer::to_string(Self) -> String
 
 pub struct HtmlRenderer {
   // private fields
@@ -105,12 +133,6 @@ pub fn InlineScanner::has_prefix(Self, String) -> Bool
 pub fn InlineScanner::new(String, Int) -> Self?
 pub fn InlineScanner::slice(Self, Int, Int) -> String?
 
-pub struct Parser {
-  // private fields
-}
-pub fn Parser::collect(Self) -> Array[Event]
-pub fn Parser::next(Self) -> Event?
-
 pub struct Plugin {
   // private fields
 }
@@ -127,7 +149,8 @@ pub struct Processor {
 }
 pub fn Processor::commonmark() -> Self
 pub fn Processor::new() -> Self
-pub fn Processor::parse(Self, String) -> Parser
+pub fn Processor::parse(Self, String) -> Array[Event]
+pub fn Processor::parse_into(Self, String, EventSink) -> Unit
 pub fn Processor::with_plugin(Self, Plugin) -> Self
 
 pub struct Rule {
@@ -135,7 +158,7 @@ pub struct Rule {
 }
 pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, EventSink) -> Int) -> Self
 pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, EventSink) -> Int) -> Self
-pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Array[Event]) -> Array[Event]) -> Self
+pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (EventSink) -> EventSink) -> Self
 pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
 
@@ -175,7 +198,7 @@ pub fn Transform::text_merge(Self) -> Self
 // Type aliases
 pub type BlockRuleFn = (BlockContext, EventSink) -> Int
 
-pub type CoreRuleFn = (Array[Event]) -> Array[Event]
+pub type CoreRuleFn = (EventSink) -> EventSink
 
 pub type InlineRuleFn = (InlineContext, EventSink) -> Int
 
