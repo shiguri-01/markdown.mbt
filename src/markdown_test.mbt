@@ -1984,7 +1984,10 @@ test "event transform and ast conversion keep extension tags" {
         }
         None => abort("expected element")
       }
-      assert_eq(node.children()[0].children()[0].text(), "ab")
+      match node.children()[0].children()[0].text() {
+        Some(text) => assert_eq(text, "ab")
+        None => abort("expected text")
+      }
     }
     Err(_) => abort("expected ast")
   }
@@ -2098,8 +2101,14 @@ test "ast builder converts break and raw html events" {
   match result {
     Ok(node) => {
       assert_eq(node.children().length(), 4)
-      assert_eq(node.children()[0].text(), "a")
-      assert_eq(node.children()[1].text(), "\n")
+      match node.children()[0].text() {
+        Some(text) => assert_eq(text, "a")
+        None => abort("expected first text")
+      }
+      match node.children()[1].text() {
+        Some(text) => assert_eq(text, "\n")
+        None => abort("expected soft break text")
+      }
       match node.children()[2].element() {
         Some(el) => assert_eq(el.tag().to_string(), "cm:hard_break")
         None => abort("expected hard break element")
@@ -2108,7 +2117,10 @@ test "ast builder converts break and raw html events" {
         Some(el) => assert_eq(el.tag().to_string(), "cm:html")
         None => abort("expected html element")
       }
-      assert_eq(node.children()[3].children()[0].text(), "<span>raw</span>")
+      match node.children()[3].children()[0].text() {
+        Some(text) => assert_eq(text, "<span>raw</span>")
+        None => abort("expected html text")
+      }
     }
     Err(_) => abort("expected ast")
   }

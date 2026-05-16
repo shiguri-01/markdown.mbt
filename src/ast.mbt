@@ -1,9 +1,17 @@
 ///|
+priv enum AstNodeKind {
+  RootNode
+  ElementNode
+  TextNode
+}
+
+///|
 /// A node in the event-derived Markdown tree.
 ///
 /// Element nodes have `Some(element)` and may have children. Text nodes have no
 /// element and carry text.
 pub struct AstNode {
+  priv kind : AstNodeKind
   priv element : Element?
   priv children : Array[AstNode]
   priv text : String
@@ -53,15 +61,25 @@ pub fn AstNode::children(self : AstNode) -> Array[AstNode] {
 
 ///|
 /// Returns the text carried by a text node.
-pub fn AstNode::text(self : AstNode) -> String {
-  self.text
+pub fn AstNode::text(self : AstNode) -> String? {
+  match self.kind {
+    TextNode => Some(self.text)
+    RootNode => None
+    ElementNode => None
+  }
 }
 
 ///|
 fn copy_ast_nodes(nodes : Array[AstNode]) -> Array[AstNode] {
   let copied : Array[AstNode] = []
   for node in nodes {
-    copied.push(node)
+    copied.push({
+      kind: node.kind,
+      element: node.element,
+      children: copy_ast_nodes(node.children),
+      text: node.text,
+      range: node.range,
+    })
   }
   copied
 }
@@ -83,12 +101,19 @@ pub fn AstBuilder::build(
   events : Array[Event],
 ) -> Result[AstNode, AstError] {
   ignore(self.unit)
-  let root : AstNode = { element: None, children: [], text: "", range: None }
+  let root : AstNode = {
+    kind: RootNode,
+    element: None,
+    children: [],
+    text: "",
+    range: None,
+  }
   let stack : Array[AstNode] = [root]
   for event in events {
     match event {
       Enter(el) =>
         stack.push({
+          kind: ElementNode,
           element: Some(el),
           children: [],
           text: "",
@@ -111,6 +136,7 @@ pub fn AstBuilder::build(
       }
       Text(text) =>
         stack[stack.length() - 1].children.push({
+          kind: TextNode,
           element: None,
           children: [],
           text,
@@ -118,6 +144,7 @@ pub fn AstBuilder::build(
         })
       SoftBreak =>
         stack[stack.length() - 1].children.push({
+          kind: TextNode,
           element: None,
           children: [],
           text: "\n",
@@ -125,6 +152,7 @@ pub fn AstBuilder::build(
         })
       HardBreak =>
         stack[stack.length() - 1].children.push({
+          kind: ElementNode,
           element: Some(element(tag_name("cm:hard_break"))),
           children: [],
           text: "",
@@ -132,8 +160,17 @@ pub fn AstBuilder::build(
         })
       Html(raw) =>
         stack[stack.length() - 1].children.push({
+          kind: ElementNode,
           element: Some(element(tag_name("cm:html"))),
-          children: [{ element: None, children: [], text: raw, range: None }],
+          children: [
+            {
+              kind: TextNode,
+              element: None,
+              children: [],
+              text: raw,
+              range: None,
+            },
+          ],
           text: "",
           range: None,
         })

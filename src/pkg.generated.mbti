@@ -39,7 +39,7 @@ pub struct AstNode {
 pub fn AstNode::children(Self) -> Array[Self]
 pub fn AstNode::element(Self) -> Element?
 pub fn AstNode::range(Self) -> SourceRange?
-pub fn AstNode::text(Self) -> String
+pub fn AstNode::text(Self) -> String?
 
 pub struct Attr {
   // private fields

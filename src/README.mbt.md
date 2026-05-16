@@ -130,7 +130,11 @@ test {
   ]
   let transformed = @markdown.Transform::new(events).text_merge().collect()
   match @markdown.to_ast(transformed) {
-    Ok(root) => assert_eq(root.children()[0].children()[0].text(), "ab")
+    Ok(root) =>
+      match root.children()[0].children()[0].text() {
+        Some(text) => assert_eq(text, "ab")
+        None => abort("expected text node")
+      }
     Err(_) => abort("expected AST")
   }
 }
