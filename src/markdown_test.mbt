@@ -153,6 +153,39 @@ test "plugins compose in order" {
 }
 
 ///|
+test "plugin builders leave the original plugin unchanged" {
+  let rule = @markdown.Rule::inline(
+    @markdown.RuleName::raw("x:inline:marker"),
+    fn(ctx, sink) {
+      if ctx.scanner().has_prefix("#") {
+        sink.emit(Text("marker"))
+        1
+      } else {
+        0
+      }
+    },
+  )
+  let base = @markdown.Plugin::new("base")
+  let configured = base.add(rule)
+  assert_eq(
+    @markdown.Processor::new().with_plugin(base).render_html("#"),
+    "<p>#</p>\n",
+  )
+  assert_eq(
+    @markdown.Processor::new().with_plugin(configured).render_html("#"),
+    "<p>marker</p>\n",
+  )
+}
+
+///|
+test "processor builders leave the original processor unchanged" {
+  let base = @markdown.Processor::new()
+  let configured = base.with_plugin(@markdown.commonmark_plugin())
+  assert_eq(base.render_html("# hi"), "<p># hi</p>\n")
+  assert_eq(configured.render_html("# hi"), "<h1>hi</h1>\n")
+}
+
+///|
 test "plugins can carry rule controls" {
   let no_heading = @markdown.Plugin::new("no-heading")
     .disable(@markdown.RuleName::raw("cm:block:atx_heading"))

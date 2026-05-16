@@ -241,8 +241,8 @@ pub fn Rule::block(
   {
     name,
     chain: BlockStart,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: Some(f),
@@ -266,8 +266,8 @@ pub fn Rule::block_continue(
   {
     name,
     chain: BlockContinue,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: Some(f),
@@ -289,8 +289,8 @@ pub fn Rule::inline(
   {
     name,
     chain: Inline,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: None,
@@ -314,8 +314,8 @@ pub fn Rule::delimiter(
   {
     name,
     chain: Delimiter,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: None,
@@ -337,8 +337,8 @@ pub fn Rule::core(
   {
     name,
     chain: Core,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: None,
@@ -359,8 +359,8 @@ fn Rule::source_core(
   {
     name,
     chain: Core,
-    before,
-    after,
+    before: copy_rule_names(before),
+    after: copy_rule_names(after),
     priority,
     order: 0,
     block: None,
@@ -385,8 +385,9 @@ pub fn Plugin::name(self : Plugin) -> String {
 ///|
 /// Adds a rule to the plugin.
 pub fn Plugin::add(self : Plugin, rule : Rule) -> Plugin {
-  self.ops.push(AddRule(rule))
-  self
+  let ops = copy_plugin_ops(self.ops)
+  ops.push(AddRule(rule))
+  { name: self.name, ops }
 }
 
 ///|
@@ -395,24 +396,27 @@ pub fn Plugin::add(self : Plugin, rule : Rule) -> Plugin {
 /// Composition is order preserving: operations already in `self` are applied
 /// before operations from `plugin`.
 pub fn Plugin::with_plugin(self : Plugin, plugin : Plugin) -> Plugin {
+  let ops = copy_plugin_ops(self.ops)
   for op in plugin.ops {
-    self.ops.push(op)
+    ops.push(op)
   }
-  self
+  { name: self.name, ops }
 }
 
 ///|
 /// Disables a rule by name when this plugin is installed.
 pub fn Plugin::disable(self : Plugin, name : RuleName) -> Plugin {
-  self.ops.push(DisableRule(name))
-  self
+  let ops = copy_plugin_ops(self.ops)
+  ops.push(DisableRule(name))
+  { name: self.name, ops }
 }
 
 ///|
 /// Re-enables a rule by name when this plugin is installed.
 pub fn Plugin::enable(self : Plugin, name : RuleName) -> Plugin {
-  self.ops.push(EnableRule(name))
-  self
+  let ops = copy_plugin_ops(self.ops)
+  ops.push(EnableRule(name))
+  { name: self.name, ops }
 }
 
 ///|
@@ -422,13 +426,24 @@ pub fn Plugin::enable(self : Plugin, name : RuleName) -> Plugin {
 /// later matching rules from composed plugins. If no base rule is ever
 /// registered, the override rule still participates as an ordinary rule.
 pub fn Plugin::override_rule(self : Plugin, rule : Rule) -> Plugin {
-  self.ops.push(OverrideRule(rule))
-  self
+  let ops = copy_plugin_ops(self.ops)
+  ops.push(OverrideRule(rule))
+  { name: self.name, ops }
 }
 
 ///|
 fn RuleRegistry::new() -> RuleRegistry {
   { rules: [], disabled: [], overrides: [], next_order: 0 }
+}
+
+///|
+fn RuleRegistry::copy(self : RuleRegistry) -> RuleRegistry {
+  {
+    rules: copy_rules(self.rules),
+    disabled: copy_rule_names(self.disabled),
+    overrides: copy_rules(self.overrides),
+    next_order: self.next_order,
+  }
 }
 
 ///|
@@ -444,8 +459,8 @@ fn RuleRegistry::register_raw(self : RuleRegistry, rule : Rule) -> RuleRegistry 
   let r = {
     name: rule.name,
     chain: rule.chain,
-    before: rule.before,
-    after: rule.after,
+    before: copy_rule_names(rule.before),
+    after: copy_rule_names(rule.after),
     priority: rule.priority,
     order: self.next_order,
     block: rule.block,
@@ -682,4 +697,42 @@ fn array_contains_string(items : Array[RuleName], needle : RuleName) -> Bool {
     }
   }
   false
+}
+
+///|
+fn copy_rule_names(names : Array[RuleName]) -> Array[RuleName] {
+  let copied : Array[RuleName] = []
+  for name in names {
+    copied.push(name)
+  }
+  copied
+}
+
+///|
+fn copy_rules(rules : Array[Rule]) -> Array[Rule] {
+  let copied : Array[Rule] = []
+  for rule in rules {
+    copied.push({
+      name: rule.name,
+      chain: rule.chain,
+      before: copy_rule_names(rule.before),
+      after: copy_rule_names(rule.after),
+      priority: rule.priority,
+      order: rule.order,
+      block: rule.block,
+      inline: rule.inline,
+      core: rule.core,
+      source_core: rule.source_core,
+    })
+  }
+  copied
+}
+
+///|
+fn copy_plugin_ops(ops : Array[PluginOp]) -> Array[PluginOp] {
+  let copied : Array[PluginOp] = []
+  for op in ops {
+    copied.push(op)
+  }
+  copied
 }

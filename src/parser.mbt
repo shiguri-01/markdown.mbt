@@ -47,8 +47,8 @@ pub fn parse(source : String) -> Array[Event] {
 /// Plugin operations are applied in order. Registered rules are ordered by
 /// priority, registration order, and same-chain `before`/`after` edges.
 pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
-  ignore(self.registry.use_plugin(plugin))
-  self
+  let registry = self.registry.copy().use_plugin(plugin)
+  { registry, }
 }
 
 ///|
