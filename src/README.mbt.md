@@ -9,7 +9,7 @@ provided as downstream helpers.
 ```mbt check
 ///|
 test {
-  let html = @markdown.commonmark().render_html("# Hello *MoonBit*")
+  let html = "# Hello *MoonBit*" |> @markdown.parse |> @markdown.to_html
   assert_eq(html, "<h1>Hello <em>MoonBit</em></h1>\n")
 }
 ```
@@ -61,9 +61,11 @@ test {
       end + 1
     },
   )
-  let html = @markdown.commonmark()
+  let events = @markdown.commonmark()
     .with_plugin(@markdown.Plugin::new("math").add(math))
-    .render_html("Euler: $x + y$")
+    .parse("Euler: $x + y$")
+    .collect()
+  let html = events |> @markdown.to_html
   assert_eq(html, "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
 ```
@@ -80,7 +82,7 @@ test {
     Exit(@markdown.Tag::raw("x:note")),
   ]
   let transformed = @markdown.Transform::new(events).text_merge().collect()
-  match @markdown.AstBuilder::new().build(transformed) {
+  match @markdown.to_ast(transformed) {
     Ok(root) => assert_eq(root.children()[0].children()[0].text(), "ab")
     Err(_) => abort("expected AST")
   }

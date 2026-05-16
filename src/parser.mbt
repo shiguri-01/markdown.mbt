@@ -2,7 +2,7 @@
 /// A configured Markdown processor.
 ///
 /// A processor owns the rule registry used to turn Markdown input into events.
-/// Add plugins or rule controls before calling `parse` or `render_html`.
+/// Add plugins or rule controls before calling `parse`.
 pub struct Processor {
   priv registry : RuleRegistry
 }
@@ -39,6 +39,12 @@ pub fn Processor::commonmark() -> Processor {
 /// Creates a processor with the built-in CommonMark plugin installed.
 pub fn commonmark() -> Processor {
   Processor::commonmark()
+}
+
+///|
+/// Parses Markdown input with the built-in CommonMark processor.
+pub fn parse(source : String) -> Array[Event] {
+  commonmark().parse(source).collect()
 }
 
 ///|
@@ -83,12 +89,6 @@ pub fn Processor::parse(self : Processor, input : String) -> Parser {
     events: apply_core_rules(parse_blocks(source, self.registry), self.registry),
     index: 0,
   }
-}
-
-///|
-/// Parses Markdown input and renders the resulting events as HTML.
-pub fn Processor::render_html(self : Processor, input : String) -> String {
-  HtmlRenderer::new().render(self.parse(input).collect())
 }
 
 ///|

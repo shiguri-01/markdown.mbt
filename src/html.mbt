@@ -16,6 +16,12 @@ pub fn HtmlRenderer::new() -> HtmlRenderer {
 
 ///|
 /// Renders an event stream as HTML.
+pub fn to_html(events : Array[Event]) -> String {
+  HtmlRenderer::new().render(events)
+}
+
+///|
+/// Renders an event stream as HTML.
 pub fn HtmlRenderer::render(
   self : HtmlRenderer,
   events : Array[Event],

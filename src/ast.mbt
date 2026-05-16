@@ -30,6 +30,12 @@ pub fn AstBuilder::new() -> AstBuilder {
 }
 
 ///|
+/// Converts events into an AST.
+pub fn to_ast(events : Array[Event]) -> Result[AstNode, AstError] {
+  AstBuilder::new().build(events)
+}
+
+///|
 /// Returns the node element, or `None` for text nodes and the root node.
 pub fn AstNode::element(self : AstNode) -> Element? {
   self.element

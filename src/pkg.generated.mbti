@@ -14,6 +14,12 @@ pub fn element_with_attrs(Tag, Array[Attr], range? : SourceRange?) -> Element
 
 pub fn new() -> Processor
 
+pub fn parse(String) -> Array[Event]
+
+pub fn to_ast(Array[Event]) -> Result[AstNode, AstError]
+
+pub fn to_html(Array[Event]) -> String
+
 // Errors
 
 // Types and methods
@@ -123,7 +129,6 @@ pub fn Processor::disable(Self, RuleName) -> Self
 pub fn Processor::enable(Self, RuleName) -> Self
 pub fn Processor::new() -> Self
 pub fn Processor::parse(Self, String) -> Parser
-pub fn Processor::render_html(Self, String) -> String
 pub fn Processor::replace(Self, Rule) -> Self
 pub fn Processor::with_plugin(Self, Plugin) -> Self
 

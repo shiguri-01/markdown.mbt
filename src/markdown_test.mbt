@@ -1,4 +1,12 @@
 ///|
+fn @markdown.Processor::render_html(
+  self : @markdown.Processor,
+  source : String,
+) -> String {
+  @markdown.to_html(self.parse(source).collect())
+}
+
+///|
 test "commonmark block and inline html rendering" {
   let html = @markdown.Processor::commonmark().render_html(
     "## Hello *MoonBit*\n\n- one\n- two",
@@ -10,7 +18,11 @@ test "commonmark block and inline html rendering" {
 
 ///|
 test "top-level parser builders are available" {
-  assert_eq(@markdown.commonmark().render_html("# hi"), "<h1>hi</h1>\n")
+  assert_eq(@markdown.to_html(@markdown.parse("# hi")), "<h1>hi</h1>\n")
+  match @markdown.to_ast(@markdown.parse("# hi")) {
+    Ok(root) => assert_eq(root.children().length(), 1)
+    Err(_) => abort("expected AST")
+  }
   assert_eq(@markdown.new().render_html("# hi"), "<p># hi</p>\n")
 }
 

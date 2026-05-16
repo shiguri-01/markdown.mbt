@@ -958,7 +958,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 
 ///|
 fn render_commonmark(markdown : String) -> String {
-  @markdown.Processor::commonmark().render_html(markdown)
+  @markdown.to_html(@markdown.parse(markdown))
 }
 
 ///|
