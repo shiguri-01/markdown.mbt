@@ -27,12 +27,12 @@ pub fn HtmlRenderer::render(
   events : Array[Event],
 ) -> String {
   ignore(self.unit)
-  let mut out = ""
+  let out = StringBuilder::new()
   let close_stack : Array[String] = []
   for event in events {
     match event {
       Enter(el) => {
-        out = out + open_html(el)
+        out.write_string(open_html(el))
         let close = close_html(el)
         close_stack.push(close)
       }
@@ -40,17 +40,19 @@ pub fn HtmlRenderer::render(
         if close_stack.length() > 0 {
           let close = close_stack[close_stack.length() - 1]
           ignore(close_stack.pop())
-          out = out + close
+          out.write_string(close)
         } else {
-          out = out + "</" + escape_html(tag.value) + ">"
+          out.write_string("</")
+          out.write_string(escape_html(tag.value))
+          out.write_string(">")
         }
-      Text(text) => out = out + escape_html(text)
-      SoftBreak => out = out + "\n"
-      HardBreak => out = out + "<br />\n"
-      Html(raw) => out = out + raw
+      Text(text) => out.write_string(escape_html(text))
+      SoftBreak => out.write_string("\n")
+      HardBreak => out.write_string("<br />\n")
+      Html(raw) => out.write_string(raw)
     }
   }
-  out
+  out.to_string()
 }
 
 ///|
@@ -160,32 +162,30 @@ fn needs_open_newline(tag : Tag) -> Bool {
 
 ///|
 fn attrs_html(attrs : Array[Attr]) -> String {
-  let mut out = ""
+  let out = StringBuilder::new()
   for attr in attrs {
-    out = out +
-      " " +
-      escape_html(attr.name.value) +
-      "=\"" +
-      escape_html(attr.value) +
-      "\""
+    out.write_string(" ")
+    out.write_string(escape_html(attr.name.value))
+    out.write_string("=\"")
+    out.write_string(escape_html(attr.value))
+    out.write_string("\"")
   }
-  out
+  out.to_string()
 }
 
 ///|
 fn attrs_html_except(attrs : Array[Attr], excluded : Array[String]) -> String {
-  let mut out = ""
+  let out = StringBuilder::new()
   for attr in attrs {
     if !attr_name_in(excluded, attr.name.value) {
-      out = out +
-        " " +
-        escape_html(attr.name.value) +
-        "=\"" +
-        escape_html(attr.value) +
-        "\""
+      out.write_string(" ")
+      out.write_string(escape_html(attr.name.value))
+      out.write_string("=\"")
+      out.write_string(escape_html(attr.value))
+      out.write_string("\"")
     }
   }
-  out
+  out.to_string()
 }
 
 ///|
@@ -240,15 +240,15 @@ fn code_info_attr(attrs : Array[Attr]) -> String {
 
 ///|
 fn escape_html(input : String) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=input.length())
   for i in 0..<input.length() {
     match char_at(input, i) {
-      38 => out = out + "&amp;"
-      60 => out = out + "&lt;"
-      62 => out = out + "&gt;"
-      34 => out = out + "&quot;"
-      _ => out = out + input[i:i + 1].to_owned()
+      38 => out.write_string("&amp;")
+      60 => out.write_string("&lt;")
+      62 => out.write_string("&gt;")
+      34 => out.write_string("&quot;")
+      _ => out.write_view(input[i:i + 1])
     }
   }
-  out
+  out.to_string()
 }

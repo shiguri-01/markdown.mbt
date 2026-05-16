@@ -1,14 +1,14 @@
 ///|
 fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
   let mut i = ctx.index
-  let mut text = ""
+  let text = StringBuilder::new()
   while i < ctx.lines.length() &&
         trim(ctx.lines[i]) != "" &&
         (i == ctx.index || !is_paragraph_interrupt(ctx.lines[i])) {
     if i > ctx.index {
-      text = text + "\n"
+      text.write_string("\n")
     }
-    text = text + paragraph_line(ctx.lines[i])
+    text.write_string(paragraph_line(ctx.lines[i]))
     i = i + 1
   }
   if i == ctx.index {
@@ -23,7 +23,12 @@ fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
         ),
       ),
     )
-    parse_inlines(text, ctx.registry, sink)
+    parse_inlines_with_rules(
+      text.to_string(),
+      ctx.registry,
+      ctx.inline_rules,
+      sink,
+    )
     sink.emit(Exit(tag_name("cm:paragraph")))
     i - ctx.index
   }
@@ -84,7 +89,7 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  parse_inlines(content, ctx.registry, sink)
+  parse_inlines_with_rules(content, ctx.registry, ctx.inline_rules, sink)
   sink.emit(Exit(tag_name("cm:heading")))
   1
 }
@@ -112,7 +117,7 @@ fn cm_setext_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  parse_inlines(trim(content), ctx.registry, sink)
+  parse_inlines_with_rules(trim(content), ctx.registry, ctx.inline_rules, sink)
   sink.emit(Exit(tag_name("cm:heading")))
   2
 }
@@ -186,16 +191,17 @@ fn cm_html_block(ctx : BlockContext, sink : EventSink) -> Int {
   match html_block_terminator(line) {
     Some(terminator) => {
       let mut i = ctx.index
-      let mut raw = ""
+      let raw = StringBuilder::new()
       while i < ctx.lines.length() {
-        raw = raw + ctx.lines[i] + "\n"
+        raw.write_string(ctx.lines[i])
+        raw.write_string("\n")
         if find_substring(ctx.lines[i], terminator, 0) >= 0 {
-          sink.emit(Html(raw))
+          sink.emit(Html(raw.to_string()))
           return i - ctx.index + 1
         }
         i = i + 1
       }
-      sink.emit(Html(raw))
+      sink.emit(Html(raw.to_string()))
       return i - ctx.index
     }
     None => ()
@@ -204,12 +210,13 @@ fn cm_html_block(ctx : BlockContext, sink : EventSink) -> Int {
     return 0
   }
   let mut i = ctx.index
-  let mut raw = ""
+  let raw = StringBuilder::new()
   while i < ctx.lines.length() && trim(ctx.lines[i]) != "" {
-    raw = raw + ctx.lines[i] + "\n"
+    raw.write_string(ctx.lines[i])
+    raw.write_string("\n")
     i = i + 1
   }
-  sink.emit(Html(raw))
+  sink.emit(Html(raw.to_string()))
   i - ctx.index
 }
 
@@ -245,7 +252,7 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
     return 0
   }
   let mut i = ctx.index + 1
-  let mut code = ""
+  let code = StringBuilder::new()
   while i < ctx.lines.length() {
     if is_closing_fence_line(ctx.lines[i], fence) {
       sink.emit(
@@ -257,14 +264,14 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
           ),
         ),
       )
-      sink.emit(Text(code))
+      sink.emit(Text(code.to_string()))
       sink.emit(Exit(tag_name("cm:code_block")))
       return i - ctx.index + 1
     }
     if i > ctx.index + 1 {
-      code = code + "\n"
+      code.write_string("\n")
     }
-    code = code + strip_fenced_code_indent(ctx.lines[i], opening_indent)
+    code.write_string(strip_fenced_code_indent(ctx.lines[i], opening_indent))
     i = i + 1
   }
   sink.emit(
@@ -276,7 +283,7 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  sink.emit(Text(code))
+  sink.emit(Text(code.to_string()))
   sink.emit(Exit(tag_name("cm:code_block")))
   i - ctx.index
 }
@@ -295,12 +302,12 @@ fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
     return 0
   }
   let mut i = ctx.index
-  let mut code = ""
+  let code = StringBuilder::new()
   while i < ctx.lines.length() {
     if trim(ctx.lines[i]) == "" {
       if next_nonblank_is_indented_code(ctx.lines, i + 1) {
         if i > ctx.index {
-          code = code + "\n"
+          code.write_string("\n")
         }
         i = i + 1
         continue
@@ -312,9 +319,9 @@ fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
       break
     }
     if i > ctx.index {
-      code = code + "\n"
+      code.write_string("\n")
     }
-    code = code + ctx.lines[i][4:].to_owned()
+    code.write_view(ctx.lines[i][4:])
     i = i + 1
   }
   sink.emit(
@@ -326,7 +333,7 @@ fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  sink.emit(Text(code))
+  sink.emit(Text(code.to_string()))
   sink.emit(Exit(tag_name("cm:code_block")))
   i - ctx.index
 }
@@ -349,18 +356,19 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
     return 0
   }
   let mut i = ctx.index
-  let mut inner = ""
+  let inner = StringBuilder::new()
   while i < ctx.lines.length() && is_blockquote_marker_line(ctx.lines[i]) {
     if i > ctx.index {
-      inner = inner + "\n"
+      inner.write_string("\n")
     }
-    inner = inner + strip_blockquote_marker(ctx.lines[i])
+    inner.write_string(strip_blockquote_marker(ctx.lines[i]))
     i = i + 1
     while i < ctx.lines.length() &&
           trim(ctx.lines[i]) != "" &&
           !trim(ctx.lines[i]).has_prefix(">") &&
           !is_paragraph_interrupt(ctx.lines[i]) {
-      inner = inner + "\n" + paragraph_line(ctx.lines[i])
+      inner.write_string("\n")
+      inner.write_string(paragraph_line(ctx.lines[i]))
       i = i + 1
     }
   }
@@ -373,9 +381,18 @@ fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
       ),
     ),
   )
-  let events = parse_blocks(inner, ctx.registry)
-  for event in events {
-    sink.emit(event)
+  let inner_text = inner.to_string()
+  if inner_text != "" &&
+    !contains_char(inner_text, 10) &&
+    !is_paragraph_interrupt(inner_text) {
+    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+    parse_inlines_with_rules(inner_text, ctx.registry, ctx.inline_rules, sink)
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else {
+    let events = parse_blocks(inner_text, ctx.registry)
+    for event in events {
+      sink.emit(event)
+    }
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   i - ctx.index
@@ -489,7 +506,13 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
         ),
       ),
     )
-    emit_list_item_content(item_texts[n], ctx.registry, list_events, loose~)
+    emit_list_item_content(
+      item_texts[n],
+      ctx.registry,
+      ctx.inline_rules,
+      list_events,
+      loose~,
+    )
     list_events.emit(Exit(tag_name("cm:item")))
   }
   sink.emit(
@@ -512,9 +535,17 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
 fn emit_list_item_content(
   item_text : String,
   registry : RuleRegistry,
+  inline_rules : Array[Rule],
   sink : EventSink,
   loose? : Bool = false,
 ) -> Unit {
+  if !loose &&
+    item_text != "" &&
+    !contains_char(item_text, 10) &&
+    !is_paragraph_interrupt(item_text) {
+    parse_inlines_with_rules(item_text, registry, inline_rules, sink)
+    return
+  }
   let events = parse_blocks(item_text, registry)
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {
@@ -540,22 +571,24 @@ fn collect_list_continuation(
   allow_lazy : Bool,
 ) -> ListContinuation {
   let mut i = start
-  let mut text = ""
+  let text = StringBuilder::new()
   while i < lines.length() &&
         trim(lines[i]) != "" &&
         !is_ordered_list_marker(trim(lines[i])) &&
         !is_unordered_list_marker(trim(lines[i])) {
     if count_leading_spaces(lines[i]) >= 2 {
-      text = text + "\n" + lines[i][2:].to_owned()
+      text.write_string("\n")
+      text.write_view(lines[i][2:])
       i = i + 1
     } else if allow_lazy && !is_paragraph_interrupt(lines[i]) {
-      text = text + "\n" + paragraph_line(lines[i])
+      text.write_string("\n")
+      text.write_string(paragraph_line(lines[i]))
       i = i + 1
     } else {
       break
     }
   }
-  { text, next_index: i }
+  { text: text.to_string(), next_index: i }
 }
 
 ///|

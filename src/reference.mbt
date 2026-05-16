@@ -7,8 +7,12 @@ priv struct ReferenceDefinition {
 
 ///|
 fn resolve_reference_definitions(input : String) -> String {
+  if !may_have_reference_definition(input) {
+    return input
+  }
   let refs : Array[ReferenceDefinition] = []
   let body_lines : Array[String] = []
+  let mut removed_definition = false
   let lines : Array[String] = []
   for line in input.split("\n") {
     lines.push(line.to_owned())
@@ -25,10 +29,12 @@ fn resolve_reference_definitions(input : String) -> String {
         match continuation {
           Some(title) => {
             refs.push({ label: def.label, destination: def.destination, title })
+            removed_definition = true
             i = i + 2
           }
           None => {
             refs.push(def)
+            removed_definition = true
             i = i + 1
           }
         }
@@ -39,7 +45,39 @@ fn resolve_reference_definitions(input : String) -> String {
       }
     }
   }
-  rewrite_reference_links(join_lines(body_lines), refs)
+  if refs.length() == 0 {
+    input
+  } else {
+    let body = if removed_definition { join_lines(body_lines) } else { input }
+    rewrite_reference_links(body, refs)
+  }
+}
+
+///|
+fn may_have_reference_definition(input : String) -> Bool {
+  let mut line_start = 0
+  while line_start < input.length() {
+    let mut i = line_start
+    let mut spaces = 0
+    while i < input.length() && spaces < 4 && char_at(input, i) == 32 {
+      i = i + 1
+      spaces = spaces + 1
+    }
+    if spaces <= 3 && i < input.length() && char_at(input, i) == 91 {
+      let close = find_link_text_end(input, i + 1)
+      if close > i &&
+        close + 1 < input.length() &&
+        char_at(input, close + 1) == 58 {
+        return true
+      }
+    }
+    let next = find_char(input, 10, line_start)
+    if next < 0 {
+      return false
+    }
+    line_start = next + 1
+  }
+  false
 }
 
 ///|
@@ -102,7 +140,7 @@ fn rewrite_reference_links(
   input : String,
   refs : Array[ReferenceDefinition],
 ) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=input.length())
   let mut i = 0
   while i < input.length() {
     if i + 1 < input.length() &&
@@ -118,7 +156,7 @@ fn rewrite_reference_links(
             let label = if raw_label == "" { alt } else { raw_label }
             match find_reference(refs, normalize_reference_label(label)) {
               Some(def) => {
-                out = out + reference_rewrite("![", alt, def)
+                out.write_string(reference_rewrite("![", alt, def))
                 i = close_label + 1
                 continue
               }
@@ -130,7 +168,7 @@ fn rewrite_reference_links(
           let alt = input[i + 2:close_alt].to_owned()
           match find_reference(refs, normalize_reference_label(alt)) {
             Some(definition) => {
-              out = out + reference_rewrite("![", alt, definition)
+              out.write_string(reference_rewrite("![", alt, definition))
               i = close_alt + 1
               continue
             }
@@ -150,7 +188,7 @@ fn rewrite_reference_links(
           let label = if raw_label == "" { text } else { raw_label }
           match find_reference(refs, normalize_reference_label(label)) {
             Some(def) => {
-              out = out + reference_rewrite("[", text, def)
+              out.write_string(reference_rewrite("[", text, def))
               i = close_label + 1
               continue
             }
@@ -165,7 +203,7 @@ fn rewrite_reference_links(
         let text = input[i + 1:close_text].to_owned()
         match find_reference(refs, normalize_reference_label(text)) {
           Some(definition) => {
-            out = out + reference_rewrite("[", text, definition)
+            out.write_string(reference_rewrite("[", text, definition))
             i = close_text + 1
             continue
           }
@@ -173,10 +211,10 @@ fn rewrite_reference_links(
         }
       }
     }
-    out = out + input[i:i + 1].to_owned()
+    out.write_view(input[i:i + 1])
     i = i + 1
   }
-  out
+  out.to_string()
 }
 
 ///|
@@ -223,45 +261,45 @@ fn normalize_reference_label(label : String) -> String {
 
 ///|
 fn ascii_lower(input : String) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=input.length())
   for i in 0..<input.length() {
     let c = char_at(input, i)
     if c >= 65 && c <= 90 {
-      out = out + ascii_char(c + 32)
+      out.write_string(ascii_char(c + 32))
     } else {
-      out = out + input[i:i + 1].to_owned()
+      out.write_view(input[i:i + 1])
     }
   }
-  out
+  out.to_string()
 }
 
 ///|
 fn collapse_spaces(input : String) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=input.length())
   let mut in_space = false
   for i in 0..<input.length() {
     let c = char_at(input, i)
     if is_space(c) {
       if !in_space {
-        out = out + " "
+        out.write_string(" ")
       }
       in_space = true
     } else {
-      out = out + input[i:i + 1].to_owned()
+      out.write_view(input[i:i + 1])
       in_space = false
     }
   }
-  out
+  out.to_string()
 }
 
 ///|
 fn join_lines(lines : Array[String]) -> String {
-  let mut out = ""
+  let out = StringBuilder::new()
   for i in 0..<lines.length() {
     if i > 0 {
-      out = out + "\n"
+      out.write_string("\n")
     }
-    out = out + lines[i]
+    out.write_string(lines[i])
   }
-  out
+  out.to_string()
 }

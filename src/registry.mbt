@@ -26,6 +26,7 @@ pub struct BlockContext {
   priv line_starts : Array[Int]
   priv index : Int
   priv registry : RuleRegistry
+  priv inline_rules : Array[Rule]
 }
 
 ///|
@@ -596,6 +597,15 @@ fn RuleRegistry::core_rules(self : RuleRegistry) -> Array[Rule] {
 }
 
 ///|
+fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[Rule] {
+  let rules = self.delimiter_rules()
+  for rule in self.inline_rules() {
+    rules.push(rule)
+  }
+  rules
+}
+
+///|
 fn RuleRegistry::has_enabled_block_rules(self : RuleRegistry) -> Bool {
   for rule in self.rules {
     if rule.chain == BlockStart &&
@@ -604,6 +614,41 @@ fn RuleRegistry::has_enabled_block_rules(self : RuleRegistry) -> Bool {
     }
   }
   false
+}
+
+///|
+fn RuleRegistry::has_commonmark_block_rules_only(self : RuleRegistry) -> Bool {
+  if self.overrides.length() > 0 {
+    return false
+  }
+  let mut count = 0
+  for rule in self.rules {
+    if rule.chain == BlockContinue {
+      return false
+    }
+    if rule.chain == BlockStart {
+      if array_contains_string(self.disabled, rule.name) ||
+        !is_commonmark_block_rule_name(rule.name) {
+        return false
+      }
+      count = count + 1
+    }
+  }
+  count == 10
+}
+
+///|
+fn is_commonmark_block_rule_name(name : RuleName) -> Bool {
+  name.value == "cm:block:blank" ||
+  name.value == "cm:block:fenced_code" ||
+  name.value == "cm:block:indented_code" ||
+  name.value == "cm:block:thematic_break" ||
+  name.value == "cm:block:setext_heading" ||
+  name.value == "cm:block:html" ||
+  name.value == "cm:block:atx_heading" ||
+  name.value == "cm:block:block_quote" ||
+  name.value == "cm:block:list" ||
+  name.value == "cm:block:paragraph"
 }
 
 ///|

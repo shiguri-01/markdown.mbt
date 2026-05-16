@@ -130,6 +130,11 @@ fn parse_event_count(input : String) -> Int {
 }
 
 ///|
+fn parse_event_count_with(processor : @markdown.Processor, input : String) -> Int {
+  processor.parse(input).collect().length()
+}
+
+///|
 fn parse_with_extension_event_count(input : String) -> Int {
   @markdown.Processor::commonmark()
   .with_plugin(many_extension_rules_plugin(50))
@@ -141,6 +146,14 @@ fn parse_with_extension_event_count(input : String) -> Int {
 ///|
 fn parse_render_length(input : String) -> Int {
   input |> @markdown.parse |> @markdown.to_html |> String::length
+}
+
+///|
+fn parse_render_length_with(
+  processor : @markdown.Processor,
+  input : String,
+) -> Int {
+  processor.parse(input).collect() |> @markdown.to_html |> String::length
 }
 
 ///|
@@ -191,55 +204,60 @@ test "markdown processing speed" (b : @bench.T) {
   let mixed = mixed_document()
   let large_mixed = large_mixed_document()
   let huge_mixed = huge_mixed_document()
+  let commonmark = @markdown.Processor::commonmark()
+  let commonmark_with_extensions = @markdown.Processor::commonmark()
+    .with_plugin(many_extension_rules_plugin(50))
   let mixed_events = @markdown.parse(mixed)
   b.bench(
     name="parse/paragraphs_inline_markup",
-    fn() { b.keep(parse_event_count(paragraph)) },
+    fn() { b.keep(parse_event_count_with(commonmark, paragraph)) },
     count=5,
   )
   b.bench(
     name="parse/lists_links_code_spans",
-    fn() { b.keep(parse_event_count(list)) },
+    fn() { b.keep(parse_event_count_with(commonmark, list)) },
     count=5,
   )
   b.bench(
     name="parse/long_delimiter_runs",
-    fn() { b.keep(parse_event_count(delimiter)) },
+    fn() { b.keep(parse_event_count_with(commonmark, delimiter)) },
     count=5,
   )
   b.bench(
     name="parse/reference_definitions",
-    fn() { b.keep(parse_event_count(references)) },
+    fn() { b.keep(parse_event_count_with(commonmark, references)) },
     count=5,
   )
   b.bench(
     name="parse/mixed_commonmark_document",
-    fn() { b.keep(parse_event_count(mixed)) },
+    fn() { b.keep(parse_event_count_with(commonmark, mixed)) },
     count=5,
   )
   b.bench(
     name="parse/large_mixed_commonmark_document",
-    fn() { b.keep(parse_event_count(large_mixed)) },
+    fn() { b.keep(parse_event_count_with(commonmark, large_mixed)) },
     count=3,
   )
   b.bench(
     name="parse/huge_mixed_commonmark_document",
-    fn() { b.keep(parse_event_count(huge_mixed)) },
+    fn() { b.keep(parse_event_count_with(commonmark, huge_mixed)) },
     count=3,
   )
   b.bench(
     name="parse/many_extension_rules",
-    fn() { b.keep(parse_with_extension_event_count(paragraph)) },
+    fn() {
+      b.keep(parse_event_count_with(commonmark_with_extensions, paragraph))
+    },
     count=5,
   )
   b.bench(
     name="pipeline/parse_to_html",
-    fn() { b.keep(parse_render_length(mixed)) },
+    fn() { b.keep(parse_render_length_with(commonmark, mixed)) },
     count=5,
   )
   b.bench(
     name="pipeline/large_parse_to_html",
-    fn() { b.keep(parse_render_length(large_mixed)) },
+    fn() { b.keep(parse_render_length_with(commonmark, large_mixed)) },
     count=3,
   )
   b.bench(

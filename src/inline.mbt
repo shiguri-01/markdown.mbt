@@ -4,10 +4,16 @@ fn parse_inlines(
   registry : RuleRegistry,
   sink : EventSink,
 ) -> Unit {
-  let rules = registry.delimiter_rules()
-  for rule in registry.inline_rules() {
-    rules.push(rule)
-  }
+  parse_inlines_with_rules(text, registry, registry.inline_parse_rules(), sink)
+}
+
+///|
+fn parse_inlines_with_rules(
+  text : String,
+  registry : RuleRegistry,
+  rules : Array[Rule],
+  sink : EventSink,
+) -> Unit {
   if rules.length() == 0 {
     if text.length() > 0 {
       sink.emit(Text(text))

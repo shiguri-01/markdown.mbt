@@ -99,13 +99,17 @@ fn parse_block_lines(
   line_starts : Array[Int],
   registry : RuleRegistry,
 ) -> Array[Event] {
+  if registry.has_commonmark_block_rules_only() {
+    return parse_commonmark_block_lines(lines, line_starts, registry)
+  }
   let sink : EventSink = { events: [] }
   let mut i = 0
+  let inline_rules = registry.inline_parse_rules()
   let block_continue_rules = registry.block_continue_rules()
   let block_start_rules = registry.block_rules()
   while i < lines.length() {
     let mut consumed = 0
-    let ctx = { lines, line_starts, index: i, registry }
+    let ctx = { lines, line_starts, index: i, registry, inline_rules }
     for rule in block_continue_rules {
       match rule.block {
         Some(f) => if consumed == 0 { consumed = f(ctx, sink) }
@@ -128,6 +132,92 @@ fn parse_block_lines(
     i = i + consumed
   }
   sink.events
+}
+
+///|
+fn parse_commonmark_block_lines(
+  lines : Array[String],
+  line_starts : Array[Int],
+  registry : RuleRegistry,
+) -> Array[Event] {
+  let sink : EventSink = { events: [] }
+  let mut i = 0
+  let inline_rules = registry.inline_parse_rules()
+  while i < lines.length() {
+    let ctx = { lines, line_starts, index: i, registry, inline_rules }
+    let mut consumed = commonmark_block_dispatch(ctx, sink)
+    if consumed == 0 {
+      consumed = cm_paragraph_block(ctx, sink)
+    }
+    if consumed <= 0 {
+      consumed = 1
+    }
+    i = i + consumed
+  }
+  sink.events
+}
+
+///|
+fn commonmark_block_dispatch(ctx : BlockContext, sink : EventSink) -> Int {
+  let line = ctx.lines[ctx.index]
+  let trimmed = trim(line)
+  if trimmed == "" {
+    return cm_blank_block(ctx, sink)
+  }
+  let leading = count_leading_spaces(line)
+  let c = char_at(trimmed, 0)
+  if leading <= 3 && (c == 96 || c == 126) {
+    let consumed = cm_fenced_code_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  if leading >= 4 {
+    return cm_indented_code_block(ctx, sink)
+  }
+  if c == 45 || c == 42 || c == 95 {
+    let consumed = cm_thematic_break_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  if ctx.index + 1 < ctx.lines.length() {
+    let next = trim(ctx.lines[ctx.index + 1])
+    if next != "" {
+      let marker = char_at(next, 0)
+      if marker == 45 || marker == 61 {
+        let consumed = cm_setext_heading_block(ctx, sink)
+        if consumed != 0 {
+          return consumed
+        }
+      }
+    }
+  }
+  if c == 60 {
+    let consumed = cm_html_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  if c == 35 {
+    let consumed = cm_atx_heading_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  if c == 62 {
+    let consumed = cm_blockquote_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  if c == 45 || c == 42 || c == 43 || (c >= 48 && c <= 57) {
+    let consumed = cm_list_block(ctx, sink)
+    if consumed != 0 {
+      return consumed
+    }
+  }
+  0
 }
 
 ///|
