@@ -61,7 +61,7 @@ test "typed keys expose stable string contracts" {
 
 ///|
 test "public element and attr accessors preserve extension data" {
-  let range : @markdown.SourceRange = { start: 2, end: 8 }
+  let range = @markdown.SourceRange::new(2, 8)
   let attr = @markdown.attr(@markdown.AttrName::custom("x", "role"), "tip")
   let el = @markdown.element_with_attrs(
     @markdown.Tag::custom("x", "note"),
@@ -74,8 +74,8 @@ test "public element and attr accessors preserve extension data" {
   assert_eq(el.attrs()[0].value(), "tip")
   match el.range() {
     Some(actual) => {
-      assert_eq(actual.start, 2)
-      assert_eq(actual.end, 8)
+      assert_eq(actual.start(), 2)
+      assert_eq(actual.end(), 8)
     }
     None => abort("expected source range")
   }
@@ -803,7 +803,7 @@ test "external block plugin can consume multiline admonition" {
                 line[4:].to_owned(),
               ),
             ],
-            range=Some({ start, end: start + line.length() }),
+            range=Some(@markdown.SourceRange::new(start, start + line.length())),
           ),
         ),
       )
@@ -822,8 +822,8 @@ test "external block plugin can consume multiline admonition" {
       assert_eq(el.attrs()[0].value(), "note")
       match el.range() {
         Some(range) => {
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 8)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 8)
         }
         None => abort("expected admonition range")
       }
@@ -1428,8 +1428,8 @@ test "parser attaches block source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:heading")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 4)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 4)
         }
         None => abort("expected heading range")
       }
@@ -1442,8 +1442,8 @@ test "parser attaches block source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:paragraph")
-          assert_eq(range.start, 6)
-          assert_eq(range.end, 10)
+          assert_eq(range.start(), 6)
+          assert_eq(range.end(), 10)
         }
         None => abort("expected paragraph range")
       }
@@ -1461,8 +1461,8 @@ test "parser attaches list source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:list")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 23)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 23)
         }
         None => abort("expected list range")
       }
@@ -1473,8 +1473,8 @@ test "parser attaches list source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:item")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 17)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 17)
         }
         None => abort("expected item range")
       }
@@ -1492,8 +1492,8 @@ test "parser attaches loose list source ranges across blank continuation" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:list")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 20)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 20)
         }
         None => abort("expected loose list range")
       }
@@ -1504,8 +1504,8 @@ test "parser attaches loose list source ranges across blank continuation" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:item")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 12)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 12)
         }
         None => abort("expected loose item range")
       }
@@ -1523,8 +1523,8 @@ test "parser attaches blockquote source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:block_quote")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 14)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 14)
         }
         None => abort("expected blockquote range")
       }
@@ -1542,8 +1542,8 @@ test "parser attaches fenced code source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 12)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 12)
         }
         None => abort("expected fenced code range")
       }
@@ -1559,8 +1559,8 @@ test "parser attaches unclosed fenced code source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 8)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 8)
         }
         None => abort("expected unclosed fence range")
       }
@@ -1578,8 +1578,8 @@ test "parser attaches indented code source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 8)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 8)
         }
         None => abort("expected indented code range")
       }
@@ -1595,8 +1595,8 @@ test "four space indented blockquote marker is code" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 11)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 11)
         }
         None => abort("expected code range")
       }
@@ -1612,8 +1612,8 @@ test "four space indented heading marker is code" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 9)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 9)
         }
         None => abort("expected code range")
       }
@@ -1629,8 +1629,8 @@ test "four space indented thematic break marker is code" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 7)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 7)
         }
         None => abort("expected code range")
       }
@@ -1664,8 +1664,8 @@ test "four space indented html block marker is code" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:code_block")
-          assert_eq(range.start, 0)
-          assert_eq(range.end, 9)
+          assert_eq(range.start(), 0)
+          assert_eq(range.end(), 9)
         }
         None => abort("expected code range")
       }
@@ -1701,8 +1701,8 @@ test "parser attaches thematic break source ranges" {
       match el.range() {
         Some(range) => {
           assert_eq(el.tag().to_string(), "cm:thematic_break")
-          assert_eq(range.start, 6)
-          assert_eq(range.end, 9)
+          assert_eq(range.start(), 6)
+          assert_eq(range.end(), 9)
         }
         None => abort("expected thematic break range")
       }
@@ -1895,7 +1895,7 @@ test "ast builder preserves extension attributes" {
 
 ///|
 test "ast builder preserves element source range" {
-  let range : @markdown.SourceRange = { start: 2, end: 9 }
+  let range = @markdown.SourceRange::new(2, 9)
   let result = @markdown.AstBuilder::new().build([
     Enter(
       @markdown.element_with_attrs(
@@ -1911,8 +1911,8 @@ test "ast builder preserves element source range" {
     Ok(root) => {
       match root.children()[0].range() {
         Some(r) => {
-          assert_eq(r.start, 2)
-          assert_eq(r.end, 9)
+          assert_eq(r.start(), 2)
+          assert_eq(r.end(), 9)
         }
         None => abort("expected ast node range")
       }
@@ -1920,8 +1920,8 @@ test "ast builder preserves element source range" {
         Some(el) =>
           match el.range() {
             Some(r) => {
-              assert_eq(r.start, 2)
-              assert_eq(r.end, 9)
+              assert_eq(r.start(), 2)
+              assert_eq(r.end(), 9)
             }
             None => abort("expected element range")
           }
@@ -1961,7 +1961,7 @@ test "ast builder converts break and raw html events" {
 
 ///|
 test "transform preserves source range while renaming and injecting attrs" {
-  let range : @markdown.SourceRange = { start: 1, end: 4 }
+  let range = @markdown.SourceRange::new(1, 4)
   let events : Array[@markdown.Event] = [
     Enter(
       @markdown.element_with_attrs(
@@ -1985,8 +1985,8 @@ test "transform preserves source range while renaming and injecting attrs" {
       assert_eq(el.attrs().length(), 1)
       match el.range() {
         Some(r) => {
-          assert_eq(r.start, 1)
-          assert_eq(r.end, 4)
+          assert_eq(r.start(), 1)
+          assert_eq(r.end(), 4)
         }
         None => abort("expected range")
       }

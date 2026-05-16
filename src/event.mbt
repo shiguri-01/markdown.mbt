@@ -119,10 +119,30 @@ fn rule_name(value : String) -> RuleName {
 }
 
 ///|
-/// An offset range in the original Markdown source.
-pub(all) struct SourceRange {
-  start : Int
-  end : Int
+/// A byte offset range in the original Markdown source.
+///
+/// `start` is inclusive and `end` is exclusive.
+pub struct SourceRange {
+  priv start : Int
+  priv end : Int
+}
+
+///|
+/// Creates a source range from inclusive `start` and exclusive `end` offsets.
+pub fn SourceRange::new(start : Int, end : Int) -> SourceRange {
+  { start, end }
+}
+
+///|
+/// Returns the inclusive start byte offset.
+pub fn SourceRange::start(self : SourceRange) -> Int {
+  self.start
+}
+
+///|
+/// Returns the exclusive end byte offset.
+pub fn SourceRange::end(self : SourceRange) -> Int {
+  self.end
 }
 
 ///|

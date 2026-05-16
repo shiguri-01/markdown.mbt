@@ -150,10 +150,12 @@ pub fn RuleName::custom(String, String) -> Self
 pub fn RuleName::raw(String) -> Self
 pub fn RuleName::to_string(Self) -> String
 
-pub(all) struct SourceRange {
-  start : Int
-  end : Int
+pub struct SourceRange {
+  // private fields
 }
+pub fn SourceRange::end(Self) -> Int
+pub fn SourceRange::new(Int, Int) -> Self
+pub fn SourceRange::start(Self) -> Int
 
 pub struct Tag {
   // private fields
