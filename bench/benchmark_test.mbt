@@ -1,10 +1,24 @@
 ///|
 fn repeat_text(text : String, count : Int) -> String {
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=text.length() * count)
   for _ in 0..<count {
-    out = out + text
+    out.write_string(text)
   }
-  out
+  out.to_string()
+}
+
+///|
+fn repeat_text_to_size(text : String, size : Int) -> String {
+  let out = StringBuilder::new(size_hint=size)
+  let mut remaining = size
+  while remaining >= text.length() {
+    out.write_string(text)
+    remaining = remaining - text.length()
+  }
+  if remaining > 0 {
+    out.write_view(text[:remaining])
+  }
+  out.to_string()
 }
 
 ///|
@@ -28,6 +42,22 @@ fn single_paragraph_throughput_document() -> String {
   repeat_text(
     "MoonBit markdown parser benchmark text without inline markup. ",
     1000,
+  )
+}
+
+///|
+fn one_mb_single_paragraph_document() -> String {
+  repeat_text_to_size(
+    "MoonBit markdown parser benchmark text without inline markup. ",
+    1_000_000,
+  )
+}
+
+///|
+fn ten_mb_single_paragraph_document() -> String {
+  repeat_text_to_size(
+    "MoonBit markdown parser benchmark text without inline markup. ",
+    10_000_000,
   )
 }
 
@@ -199,6 +229,8 @@ test "benchmark fixtures produce work" {
   assert_true(parse_event_count(paragraph_document()) > 0)
   assert_true(parse_event_count(plain_throughput_document()) > 0)
   assert_true(parse_event_count(single_paragraph_throughput_document()) > 0)
+  assert_eq(one_mb_single_paragraph_document().length(), 1_000_000)
+  assert_eq(ten_mb_single_paragraph_document().length(), 10_000_000)
   assert_true(parse_event_count(list_document()) > 0)
   assert_true(parse_event_count(delimiter_document()) > 0)
   assert_true(parse_event_count(reference_document()) > 0)
@@ -218,6 +250,8 @@ test "markdown processing speed" (b : @bench.T) {
   let paragraph = paragraph_document()
   let plain_throughput = plain_throughput_document()
   let single_paragraph_throughput = single_paragraph_throughput_document()
+  let one_mb_single_paragraph = one_mb_single_paragraph_document()
+  let ten_mb_single_paragraph = ten_mb_single_paragraph_document()
   let list = list_document()
   let delimiter = delimiter_document()
   let references = reference_document()
@@ -244,6 +278,16 @@ test "markdown processing speed" (b : @bench.T) {
       b.keep(parse_event_count_with(commonmark, single_paragraph_throughput))
     },
     count=3,
+  )
+  b.bench(
+    name="parse/single_paragraph_1mb",
+    fn() { b.keep(parse_event_count_with(commonmark, one_mb_single_paragraph)) },
+    count=3,
+  )
+  b.bench(
+    name="parse/single_paragraph_10mb",
+    fn() { b.keep(parse_event_count_with(commonmark, ten_mb_single_paragraph)) },
+    count=1,
   )
   b.bench(
     name="parse/lists_links_code_spans",
