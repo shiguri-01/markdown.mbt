@@ -1,0 +1,13 @@
+{
+  "name": "markdown-compare",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "markdown-compare": "run.mjs"
+  },
+  "dependencies": {
+    "markdown-it": "14.1.0"
+  }
+}
+

@@ -33,12 +33,37 @@
         system:
         let
           pkgs = pkgsFor system;
+          markdown-compare = pkgs.buildNpmPackage {
+            pname = "markdown-compare";
+            version = "0.1.0";
+            src = ./bench/compare;
+            npmDepsHash = "sha256-/svFFUs9DK0knLzAm2GabSEBLfw26Bt3h5fnJ7j08xA=";
+            dontNpmBuild = true;
+            nativeBuildInputs = [
+              pkgs.makeBinaryWrapper
+            ];
+            postInstall = ''
+              rm $out/bin/markdown-compare
+              makeWrapper ${pkgs.bun}/bin/bun $out/bin/markdown-compare \
+                --add-flags $out/lib/node_modules/markdown-compare/run.mjs \
+                --prefix PATH : ${
+                  pkgs.lib.makeBinPath [
+                    pkgs.bun
+                    pkgs.cmark
+                    pkgs.moonbit-bin.moonbit.latest
+                  ]
+                }
+            '';
+          };
         in
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              bun
+              cmark
               git
               lefthook
+              markdown-compare
               moonbit-bin.moonbit.latest
               why3
               z3
