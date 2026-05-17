@@ -138,21 +138,51 @@ fn parse_block_lines_into(
     let ctx = { lines, line_starts, index: i, registry, inline_rules }
     for rule in block_continue_rules {
       match rule.block {
-        Some(f) => if consumed == 0 { consumed = f(ctx, sink) }
+        Some(f) =>
+          if consumed == 0 {
+            match f(ctx) {
+              Match(lines, fragment) => {
+                emit_fragment(sink, fragment)
+                consumed = lines.to_int()
+              }
+              NoMatch => ()
+            }
+          }
         None => ()
       }
     }
     for rule in block_start_rules {
       match rule.block {
-        Some(f) => if consumed == 0 { consumed = f(ctx, sink) }
+        Some(f) =>
+          if consumed == 0 {
+            match f(ctx) {
+              Match(lines, fragment) => {
+                emit_fragment(sink, fragment)
+                consumed = lines.to_int()
+              }
+              NoMatch => ()
+            }
+          }
         None => ()
       }
     }
     if consumed <= 0 {
       consumed = if registry.has_enabled_block_rules() {
-        emit_fallback_text(ctx, sink)
+        match emit_fallback_text(ctx) {
+          Match(lines, fragment) => {
+            emit_fragment(sink, fragment)
+            lines.to_int()
+          }
+          NoMatch => 1
+        }
       } else {
-        cm_paragraph_block(ctx, sink)
+        match cm_paragraph_block(ctx) {
+          Match(lines, fragment) => {
+            emit_fragment(sink, fragment)
+            lines.to_int()
+          }
+          NoMatch => 1
+        }
       }
     }
     i = i + consumed
@@ -170,12 +200,22 @@ fn parse_commonmark_block_lines_into(
   let inline_rules = registry.inline_parse_rules()
   while i < lines.length() {
     let ctx = { lines, line_starts, index: i, registry, inline_rules }
-    let mut consumed = commonmark_block_dispatch(ctx, sink)
-    if consumed == 0 {
-      consumed = cm_paragraph_block(ctx, sink)
+    let mut consumed = 0
+    match commonmark_block_dispatch(ctx) {
+      Match(lines, fragment) => {
+        emit_fragment(sink, fragment)
+        consumed = lines.to_int()
+      }
+      NoMatch => ()
     }
-    if consumed <= 0 {
-      consumed = 1
+    if consumed == 0 {
+      match cm_paragraph_block(ctx) {
+        Match(lines, fragment) => {
+          emit_fragment(sink, fragment)
+          consumed = lines.to_int()
+        }
+        NoMatch => consumed = 1
+      }
     }
     i = i + consumed
   }

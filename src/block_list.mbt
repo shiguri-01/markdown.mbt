@@ -1,13 +1,13 @@
 ///|
-fn cm_list_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return 0
+    return NoMatch
   }
   let line = trim(ctx.lines[ctx.index])
   let ordered = is_ordered_list_marker(line)
   let unordered = is_unordered_list_marker(line)
   if !ordered && !unordered {
-    return 0
+    return NoMatch
   }
   let ordered_delimiter = if ordered { ordered_list_delimiter(line) } else { 0 }
   let unordered_delimiter = if unordered { char_at(line, 0) } else { 0 }
@@ -71,6 +71,8 @@ fn cm_list_block(ctx : BlockContext, sink : Sink) -> Int {
     item_starts.push(item_start)
     item_ends.push(item_end)
   }
+  let buffer = Events::new()
+  let sink = buffer.sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -100,7 +102,7 @@ fn cm_list_block(ctx : BlockContext, sink : Sink) -> Int {
     sink.emit(Exit(tag_name("cm:item")))
   }
   sink.emit(Exit(tag_name("cm:list")))
-  i - ctx.index
+  block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
 }
 
 ///|

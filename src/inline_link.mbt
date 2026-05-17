@@ -1,58 +1,61 @@
 ///|
-fn cm_link_inline(ctx : InlineContext, sink : Sink) -> Int {
+fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 91 {
-    return 0
+    return NoMatch
   }
   let close_text = find_link_text_end(text, i + 1)
   if close_text < 0 ||
     close_text + 1 >= text.length() ||
     char_at(text, close_text + 1) != 40 {
-    return 0
+    return NoMatch
   }
   let close_dest = find_link_destination_end(text, close_text + 2)
   if close_dest < 0 {
-    return 0
+    return NoMatch
   }
   let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
   if attrs.length() == 0 {
-    return 0
+    return NoMatch
   }
+  let buffer = Events::new()
+  let sink = buffer.sink()
   sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
   parse_inlines(text[i + 1:close_text].to_owned(), ctx.registry, sink)
   sink.emit(Exit(tag_name("cm:link")))
-  close_dest - i + 1
+  inline_match(close_dest - i + 1, event_fragment_from_events(buffer.collect()))
 }
 
 ///|
-fn cm_image_inline(ctx : InlineContext, sink : Sink) -> Int {
+fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if i + 1 >= text.length() ||
     char_at(text, i) != 33 ||
     char_at(text, i + 1) != 91 {
-    return 0
+    return NoMatch
   }
   let close_text = find_link_text_end(text, i + 2)
   if close_text < 0 ||
     close_text + 1 >= text.length() ||
     char_at(text, close_text + 1) != 40 {
-    return 0
+    return NoMatch
   }
   let close_dest = find_link_destination_end(text, close_text + 2)
   if close_dest < 0 {
-    return 0
+    return NoMatch
   }
   let alt = image_alt_text(text[i + 2:close_text].to_owned(), ctx.registry)
   let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
   if attrs.length() == 0 {
-    return 0
+    return NoMatch
   }
   attrs.push({ name: attr_name("alt"), value: alt })
-  sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), attrs)))
-  sink.emit(Exit(tag_name("cm:image")))
-  close_dest - i + 1
+  inline_match(
+    close_dest - i + 1,
+    EventFragment::element(Element::with_attrs(tag_name("cm:image"), attrs)),
+  )
 }
 
 ///|

@@ -1,5 +1,5 @@
 ///|
-fn cm_paragraph_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
   let mut i = ctx.index
   while i < ctx.lines.length() &&
         !is_blank(ctx.lines[i]) &&
@@ -7,8 +7,10 @@ fn cm_paragraph_block(ctx : BlockContext, sink : Sink) -> Int {
     i = i + 1
   }
   if i == ctx.index {
-    1
+    block_match(1, EventFragment::empty())
   } else {
+    let buffer = Events::new()
+    let sink = buffer.sink()
     sink.emit(
       Enter(
         Element::with_attrs(
@@ -25,7 +27,7 @@ fn cm_paragraph_block(ctx : BlockContext, sink : Sink) -> Int {
     }
     parse_inlines_with_rules(inline_text, ctx.registry, ctx.inline_rules, sink)
     sink.emit(Exit(tag_name("cm:paragraph")))
-    i - ctx.index
+    block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
   }
 }
 
@@ -42,9 +44,8 @@ fn paragraph_text(ctx : BlockContext, end : Int) -> String {
 }
 
 ///|
-fn emit_fallback_text(ctx : BlockContext, sink : Sink) -> Int {
-  sink.emit(Text(ctx.lines[ctx.index]))
-  1
+fn emit_fallback_text(ctx : BlockContext) -> BlockRuleResult {
+  block_match(1, EventFragment::text(ctx.lines[ctx.index]))
 }
 
 ///|
@@ -58,18 +59,18 @@ fn paragraph_line(line : String) -> String {
 }
 
 ///|
-fn cm_blank_block(ctx : BlockContext, _sink : Sink) -> Int {
+fn cm_blank_block(ctx : BlockContext) -> BlockRuleResult {
   if is_blank(ctx.lines[ctx.index]) {
-    1
+    block_match(1, EventFragment::empty())
   } else {
-    0
+    NoMatch
   }
 }
 
 ///|
-fn cm_atx_heading_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return 0
+    return NoMatch
   }
   let line = trim(ctx.lines[ctx.index])
   let mut level = 0
@@ -77,16 +78,18 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : Sink) -> Int {
     level = level + 1
   }
   if level == 0 {
-    return 0
+    return NoMatch
   }
   if level < line.length() && !is_space(char_at(line, level)) {
-    return 0
+    return NoMatch
   }
   let content = if level >= line.length() {
     ""
   } else {
     trim(strip_closing_hashes(line[level:].to_owned()))
   }
+  let buffer = Events::new()
+  let sink = buffer.sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -98,23 +101,25 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : Sink) -> Int {
   )
   parse_inlines_with_rules(content, ctx.registry, ctx.inline_rules, sink)
   sink.emit(Exit(tag_name("cm:heading")))
-  1
+  block_match(1, event_fragment_from_events(buffer.collect()))
 }
 
 ///|
-fn cm_setext_heading_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
   if ctx.index + 1 >= ctx.lines.length() {
-    return 0
+    return NoMatch
   }
   if count_leading_spaces(ctx.lines[ctx.index + 1]) > 3 {
-    return 0
+    return NoMatch
   }
   let content = paragraph_line(ctx.lines[ctx.index])
   let underline = trim(ctx.lines[ctx.index + 1])
   let level = setext_heading_level(underline)
   if trim(content) == "" || level == 0 {
-    return 0
+    return NoMatch
   }
+  let buffer = Events::new()
+  let sink = buffer.sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -126,18 +131,19 @@ fn cm_setext_heading_block(ctx : BlockContext, sink : Sink) -> Int {
   )
   parse_inlines_with_rules(trim(content), ctx.registry, ctx.inline_rules, sink)
   sink.emit(Exit(tag_name("cm:heading")))
-  2
+  block_match(2, event_fragment_from_events(buffer.collect()))
 }
 
 ///|
-fn cm_thematic_break_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return 0
+    return NoMatch
   }
   let line = trim(ctx.lines[ctx.index])
   if is_thematic_break(line) {
-    sink.emit(
-      Enter(
+    block_match(
+      1,
+      EventFragment::element(
         Element::with_attrs(
           tag_name("cm:thematic_break"),
           [],
@@ -145,10 +151,8 @@ fn cm_thematic_break_block(ctx : BlockContext, sink : Sink) -> Int {
         ),
       ),
     )
-    sink.emit(Exit(tag_name("cm:thematic_break")))
-    1
   } else {
-    0
+    NoMatch
   }
 }
 
@@ -190,9 +194,9 @@ fn first_non_space_char(line : String) -> Int {
 }
 
 ///|
-fn cm_html_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return 0
+    return NoMatch
   }
   let line = trim(ctx.lines[ctx.index])
   match html_block_terminator(line) {
@@ -203,18 +207,19 @@ fn cm_html_block(ctx : BlockContext, sink : Sink) -> Int {
         raw.write_string(ctx.lines[i])
         raw.write_string("\n")
         if find_substring(ctx.lines[i], terminator, 0) >= 0 {
-          sink.emit(Html(raw.to_string()))
-          return i - ctx.index + 1
+          return block_match(
+            i - ctx.index + 1,
+            EventFragment::html(raw.to_string()),
+          )
         }
         i = i + 1
       }
-      sink.emit(Html(raw.to_string()))
-      return i - ctx.index
+      return block_match(i - ctx.index, EventFragment::html(raw.to_string()))
     }
     None => ()
   }
   if !looks_like_html_block_start(line) {
-    return 0
+    return NoMatch
   }
   let mut i = ctx.index
   let raw = StringBuilder::new()
@@ -223,8 +228,7 @@ fn cm_html_block(ctx : BlockContext, sink : Sink) -> Int {
     raw.write_string("\n")
     i = i + 1
   }
-  sink.emit(Html(raw.to_string()))
-  i - ctx.index
+  block_match(i - ctx.index, EventFragment::html(raw.to_string()))
 }
 
 ///|
@@ -243,37 +247,36 @@ fn html_block_terminator(line : String) -> String? {
 }
 
 ///|
-fn cm_fenced_code_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
   let line = ctx.lines[ctx.index]
   let opening_indent = count_leading_spaces(line)
   if opening_indent > 3 {
-    return 0
+    return NoMatch
   }
   let trimmed = trim(line)
   let fence = fence_marker(trimmed)
   if fence == "" {
-    return 0
+    return NoMatch
   }
   let info = fence_info(trimmed, fence)
   if char_at(fence, 0) == 96 && contains_char(info, 96) {
-    return 0
+    return NoMatch
   }
   let mut i = ctx.index + 1
   let code = StringBuilder::new()
   while i < ctx.lines.length() {
     if is_closing_fence_line(ctx.lines[i], fence) {
-      sink.emit(
-        Enter(
+      return block_match(
+        i - ctx.index + 1,
+        EventFragment::element(
           Element::with_attrs(
             tag_name("cm:code_block"),
             code_block_attrs(info),
             range=Some(block_source_range(ctx, ctx.index, i + 1)),
           ),
+          children=[EventFragment::text(code.to_string())],
         ),
       )
-      sink.emit(Text(code.to_string()))
-      sink.emit(Exit(tag_name("cm:code_block")))
-      return i - ctx.index + 1
     }
     if i > ctx.index + 1 {
       code.write_string("\n")
@@ -281,18 +284,17 @@ fn cm_fenced_code_block(ctx : BlockContext, sink : Sink) -> Int {
     code.write_string(strip_fenced_code_indent(ctx.lines[i], opening_indent))
     i = i + 1
   }
-  sink.emit(
-    Enter(
+  block_match(
+    i - ctx.index,
+    EventFragment::element(
       Element::with_attrs(
         tag_name("cm:code_block"),
         code_block_attrs(info),
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
+      children=[EventFragment::text(code.to_string())],
     ),
   )
-  sink.emit(Text(code.to_string()))
-  sink.emit(Exit(tag_name("cm:code_block")))
-  i - ctx.index
 }
 
 ///|
@@ -303,10 +305,10 @@ fn strip_fenced_code_indent(line : String, indent : Int) -> String {
 }
 
 ///|
-fn cm_indented_code_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
   let line = ctx.lines[ctx.index]
   if count_leading_spaces(line) < 4 {
-    return 0
+    return NoMatch
   }
   let mut i = ctx.index
   let code = StringBuilder::new()
@@ -331,18 +333,17 @@ fn cm_indented_code_block(ctx : BlockContext, sink : Sink) -> Int {
     code.write_view(ctx.lines[i][4:])
     i = i + 1
   }
-  sink.emit(
-    Enter(
+  block_match(
+    i - ctx.index,
+    EventFragment::element(
       Element::with_attrs(
         tag_name("cm:code_block"),
         [],
         range=Some(block_source_range(ctx, ctx.index, i)),
       ),
+      children=[EventFragment::text(code.to_string())],
     ),
   )
-  sink.emit(Text(code.to_string()))
-  sink.emit(Exit(tag_name("cm:code_block")))
-  i - ctx.index
 }
 
 ///|
@@ -358,9 +359,9 @@ fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
 }
 
 ///|
-fn cm_blockquote_block(ctx : BlockContext, sink : Sink) -> Int {
+fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   if !is_blockquote_marker_line(ctx.lines[ctx.index]) {
-    return 0
+    return NoMatch
   }
   let mut i = ctx.index
   let inner = StringBuilder::new()
@@ -379,6 +380,8 @@ fn cm_blockquote_block(ctx : BlockContext, sink : Sink) -> Int {
       i = i + 1
     }
   }
+  let buffer = Events::new()
+  let sink = buffer.sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -399,7 +402,7 @@ fn cm_blockquote_block(ctx : BlockContext, sink : Sink) -> Int {
     parse_blocks_into(inner_text, ctx.registry, sink)
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
-  i - ctx.index
+  block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
 }
 
 ///|

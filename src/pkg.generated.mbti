@@ -55,6 +55,23 @@ pub fn BlockContext::current_line_start(Self) -> Int
 pub fn BlockContext::line_at(Self, Int) -> String?
 pub fn BlockContext::line_index(Self) -> Int
 
+pub(all) enum BlockRuleResult {
+  NoMatch
+  Match(ConsumedLines, EventFragment)
+}
+
+pub struct ConsumedChars {
+  // private fields
+}
+pub fn ConsumedChars::new(Int) -> Self?
+pub fn ConsumedChars::to_int(Self) -> Int
+
+pub struct ConsumedLines {
+  // private fields
+}
+pub fn ConsumedLines::new(Int) -> Self?
+pub fn ConsumedLines::to_int(Self) -> Int
+
 pub struct Element {
   // private fields
 }
@@ -73,6 +90,19 @@ pub(all) enum Event {
   HardBreak
   Html(String)
 }
+
+pub struct EventFragment {
+  // private fields
+}
+pub fn EventFragment::concat(Array[Self]) -> Self
+pub fn EventFragment::element(Element, children? : Array[Self]) -> Self
+pub fn EventFragment::empty() -> Self
+pub fn EventFragment::events(Self) -> Array[Event]
+pub fn EventFragment::from_events(Array[Event]) -> Self?
+pub fn EventFragment::hard_break() -> Self
+pub fn EventFragment::html(String) -> Self
+pub fn EventFragment::soft_break() -> Self
+pub fn EventFragment::text(String) -> Self
 
 pub struct Events {
   // private fields
@@ -95,6 +125,11 @@ pub fn InlineContext::offset(Self) -> Int
 pub fn InlineContext::scanner(Self) -> InlineScanner
 pub fn InlineContext::source(Self) -> String
 
+pub(all) enum InlineRuleResult {
+  NoMatch
+  Match(ConsumedChars, EventFragment)
+}
+
 pub struct InlineScanner {
   // private fields
 }
@@ -114,14 +149,14 @@ pub fn Processor::parse(Self, String, Sink) -> Unit
 pub struct Rule {
   // private fields
 }
-pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, Sink) -> Int) -> Self
-pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, Sink) -> Int) -> Self
+pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
+pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Sink) -> Sink) -> Self
-pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, Sink) -> Int) -> Self
+pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
 pub fn Rule::disable(Self, RuleName) -> Self
 pub fn Rule::enable(Self, RuleName) -> Self
 pub fn Rule::extend(Self, Self) -> Self
-pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, Sink) -> Int) -> Self
+pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
 pub fn Rule::name(Self) -> String
 pub fn Rule::new(String) -> Self
 pub fn Rule::replace(Self, Self) -> Self
@@ -163,11 +198,11 @@ pub fn Tag::raw(String) -> Self
 pub fn Tag::to_string(Self) -> String
 
 // Type aliases
-pub type BlockRuleFn = (BlockContext, Sink) -> Int
+pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
 
 pub type CoreRuleFn = (Sink) -> Sink
 
-pub type InlineRuleFn = (InlineContext, Sink) -> Int
+pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
 
 // Traits
 

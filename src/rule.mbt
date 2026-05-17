@@ -8,18 +8,68 @@ priv enum RuleChain {
 } derive(Eq)
 
 ///|
-/// A block rule consumes source lines and emits events.
-///
-/// The return value is the number of lines consumed. Return `0` when the rule
-/// does not match.
-pub type BlockRuleFn = (BlockContext, Sink) -> Int
+/// A positive count of inline source characters consumed by a matched rule.
+pub struct ConsumedChars {
+  priv value : Int
+}
 
 ///|
-/// An inline rule consumes characters from inline source and emits events.
-///
-/// The return value is the number of source positions consumed. Return `0` when the rule
-/// does not match.
-pub type InlineRuleFn = (InlineContext, Sink) -> Int
+/// Creates a positive consumed-character count.
+pub fn ConsumedChars::new(value : Int) -> ConsumedChars? {
+  if value > 0 {
+    Some({ value, })
+  } else {
+    None
+  }
+}
+
+///|
+/// Returns the consumed-character count.
+pub fn ConsumedChars::to_int(self : ConsumedChars) -> Int {
+  self.value
+}
+
+///|
+/// A positive count of block source lines consumed by a matched rule.
+pub struct ConsumedLines {
+  priv value : Int
+}
+
+///|
+/// Creates a positive consumed-line count.
+pub fn ConsumedLines::new(value : Int) -> ConsumedLines? {
+  if value > 0 {
+    Some({ value, })
+  } else {
+    None
+  }
+}
+
+///|
+/// Returns the consumed-line count.
+pub fn ConsumedLines::to_int(self : ConsumedLines) -> Int {
+  self.value
+}
+
+///|
+pub(all) enum InlineRuleResult {
+  NoMatch
+  Match(ConsumedChars, EventFragment)
+}
+
+///|
+pub(all) enum BlockRuleResult {
+  NoMatch
+  Match(ConsumedLines, EventFragment)
+}
+
+///|
+/// A block rule consumes source lines and returns events for accepted matches.
+pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
+
+///|
+/// An inline rule consumes characters from inline source and returns events for accepted matches.
+pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
 
 ///|
 /// A core rule wraps a downstream sink with stream transformation behavior.
@@ -263,4 +313,47 @@ pub fn Rule::replace(self : Rule, rule : Rule) -> Rule {
     }
   }
   { name: self.name, ops }
+}
+
+///|
+fn consumed_chars(value : Int) -> ConsumedChars {
+  { value, }
+}
+
+///|
+fn consumed_lines(value : Int) -> ConsumedLines {
+  { value, }
+}
+
+///|
+fn inline_match(consumed : Int, fragment : EventFragment) -> InlineRuleResult {
+  if consumed > 0 {
+    Match(consumed_chars(consumed), fragment)
+  } else {
+    NoMatch
+  }
+}
+
+///|
+fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
+  if consumed > 0 {
+    Match(consumed_lines(consumed), fragment)
+  } else {
+    NoMatch
+  }
+}
+
+///|
+fn event_fragment_from_events(events : Array[Event]) -> EventFragment {
+  match EventFragment::from_events(events) {
+    Some(fragment) => fragment
+    None => EventFragment::empty()
+  }
+}
+
+///|
+fn emit_fragment(sink : Sink, fragment : EventFragment) -> Unit {
+  for event in fragment.events() {
+    sink.emit(event)
+  }
 }

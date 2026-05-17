@@ -288,9 +288,8 @@ fn mixed_document_sections(count : Int) -> String {
 ///|
 fn no_op_inline_rule(
   _ctx : @markdown.InlineContext,
-  _sink : @markdown.Sink,
-) -> Int {
-  0
+) -> @markdown.InlineRuleResult {
+  NoMatch
 }
 
 ///|
@@ -409,9 +408,9 @@ test "benchmark fixtures produce work" {
   assert_true(parse_event_count(issue_thread_document()) > 0)
   assert_true(parse_event_count(issue_thread_large_document()) > 0)
   assert_true(parse_event_count(issue_thread_huge_document()) > 0)
-  assert_eq(readme_like_document().length(), 15_747)
-  assert_eq(readme_like_large_document().length(), 199_211)
-  assert_eq(readme_like_huge_document().length(), 1_007_231)
+  assert_eq(readme_like_document().length(), 15_686)
+  assert_eq(readme_like_large_document().length(), 198_302)
+  assert_eq(readme_like_huge_document().length(), 1_002_602)
   assert_eq(changelog_like_document().length(), 16_309)
   assert_eq(changelog_like_large_document().length(), 205_679)
   assert_eq(changelog_like_huge_document().length(), 1_011_256)

@@ -64,10 +64,10 @@ test {
   let math = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:math"),
     priority=100,
-    fn(ctx, sink) {
+    fn(ctx) {
       let scanner = ctx.scanner()
       if !scanner.has_prefix("$") {
-        0
+        NoMatch
       } else {
         let mut end = 1
         while scanner.char_at_offset(end) != Some(36) &&
@@ -75,16 +75,22 @@ test {
           end = end + 1
         }
         if ctx.offset() + end >= ctx.source().length() {
-          0
+          NoMatch
         } else {
-          sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:math"))))
           match scanner.slice(1, end) {
-            Some(text) => {
-              sink.emit(Text(text))
-              sink.emit(Exit(@markdown.Tag::raw("x:math")))
-              end + 1
-            }
-            None => 0
+            Some(text) =>
+              match @markdown.ConsumedChars::new(end + 1) {
+                Some(chars) =>
+                  Match(
+                    chars,
+                    @markdown.EventFragment::element(
+                      @markdown.Element::new(@markdown.Tag::raw("x:math")),
+                      children=[@markdown.EventFragment::text(text)],
+                    ),
+                  )
+                None => NoMatch
+              }
+            None => NoMatch
           }
         }
       }
