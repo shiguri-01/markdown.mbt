@@ -32,6 +32,116 @@ test "commonmark block and inline html rendering" {
 }
 
 ///|
+test "commonmark list item ast has no renderer-only block attribute" {
+  match @markdown.ast("- one\n\n- two\n") {
+    Ok(root) => {
+      let lists = root.children()
+      assert_eq(lists.length(), 1)
+      let items = lists[0].children()
+      assert_eq(items.length(), 2)
+      for item in items {
+        match item.element() {
+          Some(el) => {
+            assert_eq(el.tag().to_string(), "cm:item")
+            assert_true(el.attr(@markdown.AttrName::raw("block")) is None)
+          }
+          None => abort("expected list item element")
+        }
+      }
+    }
+    Err(_) => abort("expected ast")
+  }
+}
+
+///|
+fn repeated_paragraphs(count : Int) -> String {
+  let out = StringBuilder::new()
+  for i in 0..<count {
+    out.write_string("padding line ")
+    out.write_string(i.to_string())
+    out.write_string("\n\n")
+  }
+  out.to_string()
+}
+
+///|
+test "canonical parser path is independent of input size" {
+  let sample =
+    #|# Title
+    #|
+    #|> quote with [ref]
+    #|
+    #|- item
+    #|- second
+    #|
+    #|```txt
+    #|[ref]: /not-a-definition
+    #|```
+    #|
+    #|[ref]: /url "title"
+    #|
+  let small = sample + "[ref]\n"
+  let large = sample + repeated_paragraphs(900) + "[ref]\n"
+  let small_html = render_html(@markdown.commonmark(), small)
+  let large_html = render_html(@markdown.commonmark(), large)
+  assert_true(
+    small_html.has_suffix("<p><a href=\"/url\" title=\"title\">ref</a></p>\n"),
+  )
+  assert_true(
+    large_html.has_suffix("<p><a href=\"/url\" title=\"title\">ref</a></p>\n"),
+  )
+}
+
+///|
+test "reference links resolve forward and ignore code definitions" {
+  assert_eq(
+    render_html(
+      @markdown.commonmark(),
+      "[x]\n\n```md\n[x]: /code\n```\n\n[x]: /real\n",
+    ),
+    "<p><a href=\"/real\">x</a></p>\n<pre><code class=\"language-md\">[x]: /code\n</code></pre>\n",
+  )
+}
+
+///|
+test "reference definitions in block quotes and lists do not emit" {
+  assert_eq(
+    render_html(
+      @markdown.commonmark(),
+      "[l]\n\n> [b]: /b\n> [b]\n\n- [l]: /l\n- [l]\n",
+    ),
+    "<p><a href=\"/l\">l</a></p>\n<blockquote>\n<p><a href=\"/b\">b</a></p>\n</blockquote>\n<ul>\n<li></li>\n<li><a href=\"/l\">l</a></li>\n</ul>\n",
+  )
+}
+
+///|
+test "collapsed full and image references resolve without source rewriting" {
+  assert_eq(
+    render_html(
+      @markdown.commonmark(),
+      "[full][label] and [collapsed][] and ![img][label]\n\n[label]: /url\n[collapsed]: /collapsed\n",
+    ),
+    "<p><a href=\"/url\">full</a> and <a href=\"/collapsed\">collapsed</a> and <img src=\"/url\" alt=\"img\" /></p>\n",
+  )
+}
+
+///|
+test "reference definitions in code spans stay literal" {
+  assert_eq(
+    render_html(@markdown.commonmark(), "`[x]: /code` and [x]\n\n[x]: /real\n"),
+    "<p><code>[x]: /code</code> and <a href=\"/real\">x</a></p>\n",
+  )
+}
+
+///|
+test "duplicate reference labels keep first definition" {
+  assert_eq(
+    render_html(@markdown.commonmark(), "[x]\n\n[x]: /first\n[x]: /second\n"),
+    "<p><a href=\"/first\">x</a></p>\n",
+  )
+}
+
+///|
 test "consumption wrappers reject non-positive values" {
   assert_true(@markdown.ConsumedChars::new(0) is None)
   assert_true(@markdown.ConsumedChars::new(-1) is None)

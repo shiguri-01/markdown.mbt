@@ -76,9 +76,6 @@ pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
 pub type CoreRuleFn = (Sink) -> Sink
 
 ///|
-type SourceCoreRuleFn = (String) -> String
-
-///|
 /// An atomic parser entry installed into the rule registry.
 priv struct RuleEntry {
   name : RuleName
@@ -90,7 +87,6 @@ priv struct RuleEntry {
   block : BlockRuleFn?
   inline : InlineRuleFn?
   core : CoreRuleFn?
-  source_core : SourceCoreRuleFn?
 }
 
 ///|
@@ -143,7 +139,6 @@ pub fn Rule::block(
     block: Some(f),
     inline: None,
     core: None,
-    source_core: None,
   })
 }
 
@@ -168,7 +163,6 @@ pub fn Rule::block_continue(
     block: Some(f),
     inline: None,
     core: None,
-    source_core: None,
   })
 }
 
@@ -191,7 +185,6 @@ pub fn Rule::inline(
     block: None,
     inline: Some(f),
     core: None,
-    source_core: None,
   })
 }
 
@@ -216,7 +209,6 @@ pub fn Rule::delimiter(
     block: None,
     inline: Some(f),
     core: None,
-    source_core: None,
   })
 }
 
@@ -239,29 +231,6 @@ pub fn Rule::core(
     block: None,
     inline: None,
     core: Some(f),
-    source_core: None,
-  })
-}
-
-///|
-fn Rule::source_core(
-  name : RuleName,
-  priority? : Int = 0,
-  before? : Array[RuleName] = [],
-  after? : Array[RuleName] = [],
-  f : SourceCoreRuleFn,
-) -> Rule {
-  Rule::from_entry({
-    name,
-    chain: Core,
-    before: copy_rule_names(before),
-    after: copy_rule_names(after),
-    priority,
-    order: 0,
-    block: None,
-    inline: None,
-    core: None,
-    source_core: Some(f),
   })
 }
 

@@ -86,7 +86,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 57,
       category: "Setext headings",
       markdown: "Foo\n- - -\n",
-      html: "<h2>Foo</h2>\n",
+      html: "<p>Foo</p>\n<hr />\n",
     },
     {
       number: 118,
@@ -128,7 +128,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 61,
       category: "List items",
       markdown: "- -\n",
-      html: "<ul>\n<li><ul>\n<li></li>\n</ul>\n</li>\n</ul>\n",
+      html: "<ul>\n<li>\n<ul>\n<li></li>\n</ul>\n</li>\n</ul>\n",
     },
     {
       number: 7,
@@ -194,7 +194,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 72,
       category: "Fenced code blocks",
       markdown: "``` `\ncode\n```\n",
-      html: "<p>``<code> </code>\ncode</p>\n<pre><code>\n</code></pre>\n",
+      html: "<p>``` `\ncode</p>\n<pre><code></code></pre>\n",
     },
     {
       number: 9,
@@ -302,25 +302,25 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 108,
       category: "List items",
       markdown: "- one\n\n- two\n",
-      html: "<ul>\n<li><p>one</p>\n</li>\n<li><p>two</p>\n</li>\n</ul>\n",
+      html: "<ul>\n<li>\n<p>one</p>\n</li>\n<li>\n<p>two</p>\n</li>\n</ul>\n",
     },
     {
       number: 109,
       category: "List items",
       markdown: "1. one\n\n2. two\n",
-      html: "<ol>\n<li><p>one</p>\n</li>\n<li><p>two</p>\n</li>\n</ol>\n",
+      html: "<ol>\n<li>\n<p>one</p>\n</li>\n<li>\n<p>two</p>\n</li>\n</ol>\n",
     },
     {
       number: 110,
       category: "List items",
       markdown: "- one\n\n  two\n- three\n",
-      html: "<ul>\n<li><p>one</p>\n<p>two</p>\n</li>\n<li><p>three</p>\n</li>\n</ul>\n",
+      html: "<ul>\n<li>\n<p>one</p>\n<p>two</p>\n</li>\n<li>\n<p>three</p>\n</li>\n</ul>\n",
     },
     {
       number: 111,
       category: "List items",
       markdown: "1. one\n\n   two\n2. three\n",
-      html: "<ol>\n<li><p>one</p>\n<p>two</p>\n</li>\n<li><p>three</p>\n</li>\n</ol>\n",
+      html: "<ol>\n<li>\n<p>one</p>\n<p>two</p>\n</li>\n<li>\n<p>three</p>\n</li>\n</ol>\n",
     },
     {
       number: 16,
@@ -338,13 +338,13 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 17,
       category: "List items",
       markdown: "- # heading\n",
-      html: "<ul>\n<li><h1>heading</h1>\n</li>\n</ul>\n",
+      html: "<ul>\n<li>\n<h1>heading</h1>\n</li>\n</ul>\n",
     },
     {
       number: 18,
       category: "List items",
       markdown: "- > quote\n",
-      html: "<ul>\n<li><blockquote>\n<p>quote</p>\n</blockquote>\n</li>\n</ul>\n",
+      html: "<ul>\n<li>\n<blockquote>\n<p>quote</p>\n</blockquote>\n</li>\n</ul>\n",
     },
     {
       number: 85,
@@ -362,13 +362,13 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 122,
       category: "List items",
       markdown: "paragraph\n    - item\n",
-      html: "<p>paragraph\n    - item</p>\n",
+      html: "<p>paragraph\n- item</p>\n",
     },
     {
       number: 123,
       category: "List items",
       markdown: "paragraph\n    1. item\n",
-      html: "<p>paragraph\n    1. item</p>\n",
+      html: "<p>paragraph\n1. item</p>\n",
     },
     {
       number: 19,
@@ -632,7 +632,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 83,
       category: "Links and images",
       markdown: "[link](<foo bar>) ![alt](<img file.png> \"title\")\n",
-      html: "<p><a href=\"foo bar\">link</a> <img src=\"img file.png\" alt=\"alt\" title=\"title\" /></p>\n",
+      html: "<p><a href=\"foo%20bar\">link</a> <img src=\"img%20file.png\" alt=\"alt\" title=\"title\" /></p>\n",
     },
     {
       number: 87,
@@ -710,7 +710,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 84,
       category: "Link reference definitions",
       markdown: "[foo]: <foo bar> \"title\"\n\n[foo]\n",
-      html: "<p><a href=\"foo bar\" title=\"title\">foo</a></p>\n",
+      html: "<p><a href=\"foo%20bar\" title=\"title\">foo</a></p>\n",
     },
     {
       number: 88,
@@ -728,7 +728,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 91,
       category: "Link reference definitions",
       markdown: "[a [b]]: /url\n\n[a [b]]\n",
-      html: "<p><a href=\"/url\">a [b]</a></p>\n",
+      html: "<p>[a [b]]: /url</p>\n<p>[a [b]]</p>\n",
     },
     {
       number: 92,
@@ -740,7 +740,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 93,
       category: "Link reference definitions",
       markdown: "[a\\*b &amp; c]: /url\n\n[a*b & c]\n",
-      html: "<p><a href=\"/url\">a*b &amp; c</a></p>\n",
+      html: "<p>[a*b &amp; c]</p>\n",
     },
     {
       number: 125,
@@ -758,13 +758,13 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 94,
       category: "Link reference definitions",
       markdown: "[id [x]]: /url\n\n[text][id [x]]\n",
-      html: "<p><a href=\"/url\">text</a></p>\n",
+      html: "<p>[id [x]]: /url</p>\n<p>[text][id [x]]</p>\n",
     },
     {
       number: 95,
       category: "Link reference definitions",
       markdown: "[id [x]]: /img.png\n\n![alt][id [x]]\n",
-      html: "<p><img src=\"/img.png\" alt=\"alt\" /></p>\n",
+      html: "<p>[id [x]]: /img.png</p>\n<p>![alt][id [x]]</p>\n",
     },
     {
       number: 97,
@@ -812,7 +812,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
       number: 68,
       category: "Hard line breaks",
       markdown: "a \nb\n",
-      html: "<p>a \nb</p>\n",
+      html: "<p>a\nb</p>\n",
     },
     {
       number: 38,

@@ -6,141 +6,146 @@ priv struct ReferenceDefinition {
 }
 
 ///|
-fn resolve_reference_definitions(input : String) -> String {
-  if find_char(input, 91, 0) < 0 {
-    return input
+priv struct ParseState {
+  references : Array[ReferenceDefinition]
+}
+
+///|
+fn ParseState::new() -> ParseState {
+  { references: [] }
+}
+
+///|
+fn ParseState::add_reference(
+  self : ParseState,
+  definition : ReferenceDefinition,
+) -> Unit {
+  if find_reference(self.references, definition.label) is None {
+    self.references.push(definition)
   }
-  if !may_have_reference_definition(input) {
-    return input
-  }
-  let refs : Array[ReferenceDefinition] = []
-  let body_lines : Array[String] = []
-  let mut removed_definition = false
-  let lines : Array[String] = []
-  for line in input.split("\n") {
-    lines.push(line.to_owned())
-  }
-  let mut i = 0
-  while i < lines.length() {
-    let definition = if may_be_reference_definition_line(lines[i]) {
-      parse_reference_definition(lines[i])
-    } else {
-      None
+}
+
+///|
+fn ParseState::find_reference(
+  self : ParseState,
+  label : String,
+) -> ReferenceDefinition? {
+  find_reference(self.references, normalize_reference_label(label))
+}
+
+///|
+priv struct ParsedReferenceDefinition {
+  definition : ReferenceDefinition
+  next_index : Int
+}
+
+///|
+fn cm_reference_definition_block(ctx : BlockContext) -> BlockRuleResult {
+  match parse_reference_definition_at(ctx.lines, ctx.index) {
+    Some(parsed) => {
+      ctx.state.add_reference(parsed.definition)
+      block_match(parsed.next_index - ctx.index, EventFragment::empty())
     }
-    match definition {
-      Some(def) => {
-        let continuation = if def.title == "" && i + 1 < lines.length() {
-          parse_reference_title_continuation(lines[i + 1])
-        } else {
-          None
-        }
-        match continuation {
-          Some(title) => {
-            refs.push({ label: def.label, destination: def.destination, title })
-            removed_definition = true
-            i = i + 2
-          }
-          None => {
-            refs.push(def)
-            removed_definition = true
-            i = i + 1
-          }
-        }
-      }
-      None => {
-        body_lines.push(lines[i])
-        i = i + 1
-      }
+    None => NoMatch
+  }
+}
+
+///|
+priv struct ResolvedReferenceAttrs {
+  attrs : Array[Attr]
+  end : Int
+}
+
+///|
+fn reference_attrs_for_link_text(
+  text : String,
+  start : Int,
+  close_text : Int,
+  state : ParseState,
+) -> ResolvedReferenceAttrs? {
+  let label_text = text[start + 1:close_text].to_owned()
+  if close_text + 1 < text.length() && char_at(text, close_text + 1) == 91 {
+    let close_label = find_link_text_end(text, close_text + 2)
+    if close_label > close_text {
+      let raw_label = text[close_text + 2:close_label].to_owned()
+      let label = if raw_label == "" { label_text } else { raw_label }
+      return reference_attrs_for_label(label, close_label + 1, state)
     }
   }
-  if refs.length() == 0 {
-    input
+  if should_rewrite_shortcut_reference(text, close_text) {
+    reference_attrs_for_label(label_text, close_text + 1, state)
   } else {
-    let has_reference_use = if removed_definition {
-      lines_may_have_matching_reference_use(body_lines, refs)
-    } else {
-      may_have_matching_reference_use(input, refs)
-    }
-    let body = if removed_definition { join_lines(body_lines) } else { input }
-    if has_reference_use {
-      rewrite_reference_links(body, refs)
-    } else {
-      body
-    }
+    None
   }
 }
 
 ///|
-fn lines_may_have_matching_reference_use(
-  lines : Array[String],
-  refs : Array[ReferenceDefinition],
-) -> Bool {
-  let mut in_fence = false
-  for line in lines {
-    let trimmed = trim(line)
-    if fence_marker(trimmed) != "" {
-      in_fence = !in_fence
-    } else if !in_fence && line_may_use_reference(line, refs) {
-      return true
+fn reference_attrs_for_image_alt(
+  text : String,
+  start : Int,
+  close_alt : Int,
+  alt : String,
+  state : ParseState,
+) -> ResolvedReferenceAttrs? {
+  let label_text = text[start + 2:close_alt].to_owned()
+  if close_alt + 1 < text.length() && char_at(text, close_alt + 1) == 91 {
+    let close_label = find_link_text_end(text, close_alt + 2)
+    if close_label > close_alt {
+      let raw_label = text[close_alt + 2:close_label].to_owned()
+      let label = if raw_label == "" { label_text } else { raw_label }
+      return reference_attrs_for_label_with_alt(
+        label,
+        close_label + 1,
+        alt,
+        state,
+      )
     }
   }
-  false
+  if close_alt + 1 >= text.length() || char_at(text, close_alt + 1) != 40 {
+    reference_attrs_for_label_with_alt(label_text, close_alt + 1, alt, state)
+  } else {
+    None
+  }
 }
 
 ///|
-fn may_have_matching_reference_use(
-  input : String,
-  refs : Array[ReferenceDefinition],
-) -> Bool {
-  let mut in_fence = false
-  for line in input.split("\n") {
-    let line = line.to_owned()
-    let trimmed = trim(line)
-    if fence_marker(trimmed) != "" {
-      in_fence = !in_fence
-    } else if !in_fence && line_may_use_reference(line, refs) {
-      return true
-    }
+fn reference_attrs_for_label(
+  label : String,
+  end : Int,
+  state : ParseState,
+) -> ResolvedReferenceAttrs? {
+  match state.find_reference(label) {
+    Some(definition) => Some({ attrs: reference_attrs(definition), end })
+    None => None
   }
-  false
 }
 
 ///|
-fn line_may_use_reference(
-  line : String,
-  refs : Array[ReferenceDefinition],
-) -> Bool {
-  let mut i = 0
-  while i < line.length() {
-    if char_at(line, i) == 91 {
-      let close_text = find_link_text_end(line, i + 1)
-      if close_text > i {
-        if close_text + 1 < line.length() && char_at(line, close_text + 1) == 91 {
-          let close_label = find_link_text_end(line, close_text + 2)
-          if close_label > close_text {
-            let raw_label = line[close_text + 2:close_label].to_owned()
-            let text = line[i + 1:close_text].to_owned()
-            let label = if raw_label == "" { text } else { raw_label }
-            if find_reference(refs, normalize_reference_label(label)) is Some(_) {
-              return true
-            }
-            i = close_label + 1
-            continue
-          }
-        } else if close_text + 1 >= line.length() ||
-          char_at(line, close_text + 1) != 40 {
-          let text = line[i + 1:close_text].to_owned()
-          if find_reference(refs, normalize_reference_label(text)) is Some(_) {
-            return true
-          }
-          i = close_text + 1
-          continue
-        }
-      }
+fn reference_attrs_for_label_with_alt(
+  label : String,
+  end : Int,
+  alt : String,
+  state : ParseState,
+) -> ResolvedReferenceAttrs? {
+  match state.find_reference(label) {
+    Some(definition) => {
+      let attrs = reference_attrs(definition)
+      attrs.push({ name: attr_name("alt"), value: alt })
+      Some({ attrs, end })
     }
-    i = i + 1
+    None => None
   }
-  false
+}
+
+///|
+fn reference_attrs(definition : ReferenceDefinition) -> Array[Attr] {
+  let attrs = [
+    { name: attr_name("destination"), value: definition.destination },
+  ]
+  if definition.title != "" {
+    attrs.push({ name: attr_name("title"), value: definition.title })
+  }
+  attrs
 }
 
 ///|
@@ -150,30 +155,234 @@ fn may_be_reference_definition_line(line : String) -> Bool {
 }
 
 ///|
-fn may_have_reference_definition(input : String) -> Bool {
-  let mut line_start = 0
-  while line_start < input.length() {
-    let mut i = line_start
-    let mut spaces = 0
-    while i < input.length() && spaces < 4 && char_at(input, i) == 32 {
-      i = i + 1
-      spaces = spaces + 1
-    }
-    if spaces <= 3 && i < input.length() && char_at(input, i) == 91 {
-      let close = find_link_text_end(input, i + 1)
-      if close > i &&
-        close + 1 < input.length() &&
-        char_at(input, close + 1) == 58 {
-        return true
+fn parse_reference_definition_at(
+  lines : Array[String],
+  start : Int,
+) -> ParsedReferenceDefinition? {
+  match collect_reference_label(lines, start) {
+    Some(label_end) => {
+      let label = normalize_reference_label(label_end.label)
+      if label == "" || !is_valid_reference_label_text(label_end.label) {
+        return None
+      }
+      let mut i = label_end.next_index
+      let mut spec = label_end.rest
+      while trim(spec) == "" && i < lines.length() {
+        if trim(lines[i]) == "" {
+          return None
+        }
+        spec = lines[i]
+        i = i + 1
+      }
+      let destination = parse_reference_destination_from_spec(spec)
+      match destination {
+        Some(dest) => {
+          let mut title = ""
+          let rest = trim(dest.rest)
+          if rest != "" {
+            match parse_reference_title_lines(rest, lines, i) {
+              Some(parsed_title) => {
+                title = parsed_title.title
+                i = parsed_title.next_index
+              }
+              None => return None
+            }
+          } else if i < lines.length() {
+            match parse_reference_title_lines(trim(lines[i]), lines, i + 1) {
+              Some(parsed_title) => {
+                title = parsed_title.title
+                i = parsed_title.next_index
+              }
+              None => ()
+            }
+          }
+          Some({
+            definition: { label, destination: dest.destination, title },
+            next_index: i,
+          })
+        }
+        None => None
       }
     }
-    let next = find_char(input, 10, line_start)
-    if next < 0 {
-      return false
-    }
-    line_start = next + 1
+    None =>
+      parse_reference_definition(lines[start]).map(fn(def) {
+        { definition: def, next_index: start + 1 }
+      })
   }
-  false
+}
+
+///|
+priv struct ReferenceLabelEnd {
+  label : String
+  rest : String
+  next_index : Int
+}
+
+///|
+fn collect_reference_label(
+  lines : Array[String],
+  start : Int,
+) -> ReferenceLabelEnd? {
+  if start >= lines.length() || !may_be_reference_definition_line(lines[start]) {
+    return None
+  }
+  let first = first_non_space_index(lines[start])
+  let label = StringBuilder::new()
+  let mut line_index = start
+  let mut pos = first + 1
+  while line_index < lines.length() {
+    let line = lines[line_index]
+    while pos < line.length() {
+      let c = char_at(line, pos)
+      if c == 92 && pos + 1 < line.length() {
+        label.write_view(line[pos:pos + 2])
+        pos = pos + 2
+      } else if c == 93 {
+        if pos + 1 < line.length() && char_at(line, pos + 1) == 58 {
+          return Some({
+            label: label.to_string(),
+            rest: line[pos + 2:].to_owned(),
+            next_index: line_index + 1,
+          })
+        }
+        return None
+      } else {
+        label.write_view(line[pos:pos + 1])
+        pos = pos + 1
+      }
+    }
+    line_index = line_index + 1
+    if line_index < lines.length() {
+      label.write_string("\n")
+      pos = 0
+    }
+  }
+  None
+}
+
+///|
+priv struct ReferenceDestinationRest {
+  destination : String
+  rest : String
+}
+
+///|
+fn parse_reference_destination_from_spec(
+  spec : String,
+) -> ReferenceDestinationRest? {
+  let trimmed = trim(spec)
+  if trimmed == "" {
+    return None
+  }
+  if char_at(trimmed, 0) == 60 {
+    let close = find_angle_link_destination_close(trimmed, 1)
+    if close < 0 {
+      return None
+    }
+    let rest = trimmed[close + 1:].to_owned()
+    if trim(rest) != "" && !is_space(char_at(rest, 0)) {
+      return None
+    }
+    return Some({
+      destination: normalize_link_destination(trimmed[:close + 1].to_owned()),
+      rest,
+    })
+  }
+  let mut i = 0
+  let mut depth = 0
+  while i < trimmed.length() {
+    let c = char_at(trimmed, i)
+    if c == 92 && i + 1 < trimmed.length() {
+      i = i + 2
+    } else if is_space(c) && depth == 0 {
+      let destination = trimmed[:i].to_owned()
+      if !is_valid_link_destination(destination) {
+        return None
+      }
+      return Some({
+        destination: normalize_link_destination(destination),
+        rest: trimmed[i:].to_owned(),
+      })
+    } else if c == 40 {
+      depth = depth + 1
+      i = i + 1
+    } else if c == 41 {
+      if depth == 0 {
+        return None
+      }
+      depth = depth - 1
+      i = i + 1
+    } else {
+      i = i + 1
+    }
+  }
+  if !is_valid_link_destination(trimmed) {
+    None
+  } else {
+    Some({ destination: normalize_link_destination(trimmed), rest: "" })
+  }
+}
+
+///|
+priv struct ParsedReferenceTitle {
+  title : String
+  next_index : Int
+}
+
+///|
+fn parse_reference_title_lines(
+  first : String,
+  lines : Array[String],
+  next : Int,
+) -> ParsedReferenceTitle? {
+  let trimmed = trim(first)
+  if trimmed.length() < 1 {
+    return None
+  }
+  let open = char_at(trimmed, 0)
+  let close = if open == 40 { 41 } else { open }
+  if open != 34 && open != 39 && open != 40 {
+    return None
+  }
+  let content = StringBuilder::new()
+  let mut i = 1
+  while i < trimmed.length() {
+    if char_at(trimmed, i) == close && !is_escaped_char(trimmed, i) {
+      if trim(trimmed[i + 1:].to_owned()) == "" {
+        return Some({
+          title: normalize_attribute_text(content.to_string()),
+          next_index: next,
+        })
+      }
+      return None
+    }
+    content.write_view(trimmed[i:i + 1])
+    i = i + 1
+  }
+  let mut line_index = next
+  while line_index < lines.length() {
+    if trim(lines[line_index]) == "" {
+      return None
+    }
+    content.write_string("\n")
+    let line = lines[line_index]
+    let mut j = 0
+    while j < line.length() {
+      if char_at(line, j) == close && !is_escaped_char(line, j) {
+        if trim(line[j + 1:].to_owned()) == "" {
+          return Some({
+            title: normalize_attribute_text(content.to_string()),
+            next_index: line_index + 1,
+          })
+        }
+        return None
+      }
+      content.write_view(line[j:j + 1])
+      j = j + 1
+    }
+    line_index = line_index + 1
+  }
+  None
 }
 
 ///|
@@ -189,6 +398,9 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
     return None
   }
   let label = normalize_reference_label(trimmed[1:close].to_owned())
+  if !is_valid_reference_label_text(trimmed[1:close].to_owned()) {
+    return None
+  }
   let spec = trim(trimmed[close + 2:].to_owned())
   if label == "" || spec == "" {
     return None
@@ -213,147 +425,34 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
 }
 
 ///|
-fn parse_reference_title_continuation(line : String) -> String? {
-  if count_leading_spaces(line) == 0 {
-    return None
-  }
-  let trimmed = trim(line)
-  if trimmed.length() < 2 {
-    return None
-  }
-  let open = char_at(trimmed, 0)
-  let close = if open == 40 { 41 } else { open }
-  if (open == 34 || open == 39 || open == 40) &&
-    char_at(trimmed, trimmed.length() - 1) == close {
-    Some(normalize_attribute_text(trimmed[1:trimmed.length() - 1].to_owned()))
+fn should_rewrite_shortcut_reference(input : String, close_text : Int) -> Bool {
+  if close_text + 1 >= input.length() {
+    true
+  } else if char_at(input, close_text + 1) == 40 {
+    let close_dest = find_link_destination_end(input, close_text + 2)
+    close_dest < 0 ||
+    parse_link_attrs(input[close_text + 2:close_dest].to_owned()).length() == 0
   } else {
-    None
+    true
   }
 }
 
 ///|
-fn rewrite_reference_links(
-  input : String,
-  refs : Array[ReferenceDefinition],
-) -> String {
-  let out = StringBuilder::new(size_hint=input.length())
+fn is_valid_reference_label_text(label : String) -> Bool {
   let mut i = 0
-  let mut chunk_start = 0
-  while i < input.length() {
-    if i + 1 < input.length() &&
-      char_at(input, i) == 33 &&
-      char_at(input, i + 1) == 91 {
-      let close_alt = find_link_text_end(input, i + 2)
-      if close_alt > i {
-        if close_alt + 1 < input.length() && char_at(input, close_alt + 1) == 91 {
-          let close_label = find_link_text_end(input, close_alt + 2)
-          if close_label > close_alt {
-            let alt = input[i + 2:close_alt].to_owned()
-            let raw_label = input[close_alt + 2:close_label].to_owned()
-            let label = if raw_label == "" { alt } else { raw_label }
-            match find_reference(refs, normalize_reference_label(label)) {
-              Some(def) => {
-                if chunk_start < i {
-                  out.write_view(input[chunk_start:i])
-                }
-                out.write_string(reference_rewrite("![", alt, def))
-                i = close_label + 1
-                chunk_start = i
-                continue
-              }
-              None => ()
-            }
-          }
-        } else if close_alt + 1 >= input.length() ||
-          char_at(input, close_alt + 1) != 40 {
-          let alt = input[i + 2:close_alt].to_owned()
-          match find_reference(refs, normalize_reference_label(alt)) {
-            Some(definition) => {
-              if chunk_start < i {
-                out.write_view(input[chunk_start:i])
-              }
-              out.write_string(reference_rewrite("![", alt, definition))
-              i = close_alt + 1
-              chunk_start = i
-              continue
-            }
-            None => ()
-          }
-        }
-      }
-    } else if char_at(input, i) == 91 {
-      let close_text = find_link_text_end(input, i + 1)
-      if close_text > i &&
-        close_text + 1 < input.length() &&
-        char_at(input, close_text + 1) == 91 {
-        let close_label = find_link_text_end(input, close_text + 2)
-        if close_label > close_text {
-          let text = input[i + 1:close_text].to_owned()
-          let raw_label = input[close_text + 2:close_label].to_owned()
-          let label = if raw_label == "" { text } else { raw_label }
-          match find_reference(refs, normalize_reference_label(label)) {
-            Some(def) => {
-              if chunk_start < i {
-                out.write_view(input[chunk_start:i])
-              }
-              out.write_string(reference_rewrite("[", text, def))
-              i = close_label + 1
-              chunk_start = i
-              continue
-            }
-            None => ()
-          }
-        }
-      } else if close_text > i &&
-        (
-          close_text + 1 >= input.length() ||
-          char_at(input, close_text + 1) != 40
-        ) {
-        let text = input[i + 1:close_text].to_owned()
-        match find_reference(refs, normalize_reference_label(text)) {
-          Some(definition) => {
-            if chunk_start < i {
-              out.write_view(input[chunk_start:i])
-            }
-            out.write_string(reference_rewrite("[", text, definition))
-            i = close_text + 1
-            chunk_start = i
-            continue
-          }
-          None => ()
-        }
-      }
+  while i < label.length() {
+    let c = char_at(label, i)
+    if c == 92 &&
+      i + 1 < label.length() &&
+      is_ascii_punctuation(char_at(label, i + 1)) {
+      i = i + 2
+    } else if c == 91 || c == 93 {
+      return false
+    } else {
+      i = i + 1
     }
-    i = i + 1
   }
-  if chunk_start < input.length() {
-    out.write_view(input[chunk_start:])
-  }
-  out.to_string()
-}
-
-///|
-fn reference_rewrite(
-  prefix : String,
-  text : String,
-  definition : ReferenceDefinition,
-) -> String {
-  let mut out = prefix + text + "](" + reference_destination_literal(definition)
-  if definition.title != "" {
-    out = out + " \"" + definition.title + "\""
-  }
-  out + ")"
-}
-
-///|
-fn reference_destination_literal(definition : ReferenceDefinition) -> String {
-  if definition.destination == "" && definition.title != "" {
-    "<>"
-  } else if contains_space(definition.destination) {
-    "<" + definition.destination + ">"
-  } else {
-    definition.destination
-  }
+  true
 }
 
 ///|
@@ -371,7 +470,28 @@ fn find_reference(
 
 ///|
 fn normalize_reference_label(label : String) -> String {
-  collapse_spaces(ascii_lower(normalize_attribute_text(trim(label))))
+  collapse_spaces(
+    commonmark_case_fold(normalize_reference_label_escapes(trim(label))),
+  )
+}
+
+///|
+fn normalize_reference_label_escapes(label : String) -> String {
+  let out = StringBuilder::new(size_hint=label.length())
+  let mut i = 0
+  while i < label.length() {
+    let c = char_at(label, i)
+    if c == 92 &&
+      i + 1 < label.length() &&
+      (char_at(label, i + 1) == 91 || char_at(label, i + 1) == 93) {
+      out.write_view(label[i + 1:i + 2])
+      i = i + 2
+    } else {
+      out.write_view(label[i:i + 1])
+      i = i + 1
+    }
+  }
+  out.to_string()
 }
 
 ///|
@@ -383,6 +503,19 @@ fn ascii_lower(input : String) -> String {
       out.write_string(ascii_char(c + 32))
     } else {
       out.write_view(input[i:i + 1])
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn commonmark_case_fold(input : String) -> String {
+  let out = StringBuilder::new(size_hint=input.length())
+  for i in 0..<input.length() {
+    let c = char_at(input, i)
+    match unicode_case_fold_char(c) {
+      Some(folded) => out.write_string(folded)
+      None => out.write_view(input[i:i + 1])
     }
   }
   out.to_string()
@@ -408,20 +541,3 @@ fn collapse_spaces(input : String) -> String {
 }
 
 ///|
-fn join_lines(lines : Array[String]) -> String {
-  let mut size = 0
-  for line in lines {
-    size = size + line.length()
-  }
-  if lines.length() > 1 {
-    size = size + lines.length() - 1
-  }
-  let out = StringBuilder::new(size_hint=size)
-  for i in 0..<lines.length() {
-    if i > 0 {
-      out.write_string("\n")
-    }
-    out.write_string(lines[i])
-  }
-  out.to_string()
-}

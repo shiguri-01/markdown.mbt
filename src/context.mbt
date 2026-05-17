@@ -34,6 +34,7 @@ pub struct BlockContext {
   priv index : Int
   priv registry : RuleRegistry
   priv inline_rules : Array[RuleEntry]
+  priv state : ParseState
 }
 
 ///|
@@ -43,6 +44,7 @@ pub struct InlineContext {
   priv index : Int
   priv scanner : InlineScanner
   priv registry : RuleRegistry
+  priv state : ParseState
 }
 
 ///|

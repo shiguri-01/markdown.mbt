@@ -7,12 +7,13 @@
 pub struct Html {
   priv out : StringBuilder
   priv close_stack : Array[String]
+  priv mut pending_item_open : Bool
 }
 
 ///|
 /// Creates an empty streaming HTML renderer.
 pub fn Html::new() -> Html {
-  { out: StringBuilder::new(), close_stack: [] }
+  { out: StringBuilder::new(), close_stack: [], pending_item_open: false }
 }
 
 ///|
@@ -30,8 +31,18 @@ pub fn Html::to_string(self : Html) -> String {
 ///|
 fn write_html_event(buffer : Html, event : Event) -> Unit {
   match event {
-    Enter(el) => buffer.close_stack.push(write_open_html(buffer.out, el))
-    Exit(tag) =>
+    Enter(el) =>
+      if el.tag.value == "cm:item" {
+        buffer.pending_item_open = true
+        buffer.close_stack.push("</li>\n")
+      } else {
+        flush_pending_item_open(buffer, is_list_item_block_child(el.tag))
+        buffer.close_stack.push(write_open_html(buffer.out, el))
+      }
+    Exit(tag) => {
+      if tag.value == "cm:item" && buffer.pending_item_open {
+        flush_pending_item_open(buffer, false)
+      }
       if buffer.close_stack.length() > 0 {
         let close = buffer.close_stack[buffer.close_stack.length() - 1]
         ignore(buffer.close_stack.pop())
@@ -41,11 +52,46 @@ fn write_html_event(buffer : Html, event : Event) -> Unit {
         buffer.out.write_string(escape_html(tag.value))
         buffer.out.write_string(">")
       }
-    Text(text) => buffer.out.write_string(escape_html(text))
-    SoftBreak => buffer.out.write_string("\n")
-    HardBreak => buffer.out.write_string("<br />\n")
-    Html(raw) => buffer.out.write_string(raw)
+    }
+    Text(text) => {
+      flush_pending_item_open(buffer, false)
+      buffer.out.write_string(escape_html(text))
+    }
+    SoftBreak => {
+      flush_pending_item_open(buffer, false)
+      buffer.out.write_string("\n")
+    }
+    HardBreak => {
+      flush_pending_item_open(buffer, false)
+      buffer.out.write_string("<br />\n")
+    }
+    Html(raw) => {
+      flush_pending_item_open(buffer, false)
+      buffer.out.write_string(raw)
+    }
   }
+}
+
+///|
+fn flush_pending_item_open(buffer : Html, block_child : Bool) -> Unit {
+  if buffer.pending_item_open {
+    if block_child {
+      buffer.out.write_string("<li>\n")
+    } else {
+      buffer.out.write_string("<li>")
+    }
+    buffer.pending_item_open = false
+  }
+}
+
+///|
+fn is_list_item_block_child(tag : Tag) -> Bool {
+  tag.value == "cm:paragraph" ||
+  tag.value == "cm:block_quote" ||
+  tag.value == "cm:list" ||
+  tag.value == "cm:code_block" ||
+  tag.value == "cm:thematic_break" ||
+  tag.value == "cm:heading"
 }
 
 ///|
@@ -64,9 +110,6 @@ fn write_open_html(out : StringBuilder, el : Element) -> String {
       } else if el.tag.value == "cm:code_span" && el.attrs.length() == 0 {
         out.write_string("<code>")
         "</code>"
-      } else if el.tag.value == "cm:item" && el.attrs.length() == 0 {
-        out.write_string("<li>")
-        "</li>\n"
       } else if el.tag.value == "cm:block_quote" && el.attrs.length() == 0 {
         out.write_string("<blockquote>\n")
         "</blockquote>\n"
@@ -94,7 +137,7 @@ fn write_open_html(out : StringBuilder, el : Element) -> String {
         out.write_string(code_info_attr(el.attrs))
         out.write_string(attrs_html_except(el.attrs, ["info"]))
         out.write_string(">")
-        "\n</code></pre>\n"
+        "</code></pre>\n"
       } else if el.tag.value == "cm:link" {
         out.write_string("<a href=\"")
         out.write_string(escape_html(attr_value(el.attrs, "destination", "")))

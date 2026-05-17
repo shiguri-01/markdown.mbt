@@ -37,7 +37,6 @@ fn RuleRegistry::register_raw(
     block: rule.block,
     inline: rule.inline,
     core: rule.core,
-    source_core: rule.source_core,
   }
   self.next_order = self.next_order + 1
   self.rules.push(r)
@@ -170,6 +169,41 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
+fn RuleRegistry::has_commonmark_inline_pipeline(self : RuleRegistry) -> Bool {
+  let rules = self.inline_parse_rules()
+  if rules.length() != 11 {
+    return false
+  }
+  for rule in rules {
+    if !rule.name.value.has_prefix("cm:inline:") &&
+      !rule.name.value.has_prefix("cm:delimiter:") {
+      return false
+    }
+  }
+  has_rule_named(rules, "cm:inline:image") &&
+  has_rule_named(rules, "cm:inline:link") &&
+  has_rule_named(rules, "cm:inline:autolink") &&
+  has_rule_named(rules, "cm:inline:raw_html") &&
+  has_rule_named(rules, "cm:inline:entity") &&
+  has_rule_named(rules, "cm:inline:code_span") &&
+  has_rule_named(rules, "cm:delimiter:emphasis") &&
+  has_rule_named(rules, "cm:inline:hard_break") &&
+  has_rule_named(rules, "cm:inline:escape") &&
+  has_rule_named(rules, "cm:inline:soft_break") &&
+  has_rule_named(rules, "cm:inline:text")
+}
+
+///|
+fn has_rule_named(rules : Array[RuleEntry], name : String) -> Bool {
+  for rule in rules {
+    if rule.name.value == name {
+      return true
+    }
+  }
+  false
+}
+
+///|
 fn RuleRegistry::has_enabled_block_rules(self : RuleRegistry) -> Bool {
   for rule in self.rules {
     if rule.chain == BlockStart &&
@@ -178,73 +212,6 @@ fn RuleRegistry::has_enabled_block_rules(self : RuleRegistry) -> Bool {
     }
   }
   false
-}
-
-///|
-fn RuleRegistry::has_commonmark_block_rules_only(self : RuleRegistry) -> Bool {
-  if self.overrides.length() > 0 {
-    return false
-  }
-  let mut count = 0
-  for rule in self.rules {
-    if rule.chain == BlockContinue {
-      return false
-    }
-    if rule.chain == BlockStart {
-      if array_contains_string(self.disabled, rule.name) ||
-        !is_commonmark_block_rule_name(rule.name) {
-        return false
-      }
-      count = count + 1
-    }
-  }
-  count == 10
-}
-
-///|
-fn RuleRegistry::has_commonmark_preset_only(self : RuleRegistry) -> Bool {
-  if self.overrides.length() > 0 || self.disabled.length() > 0 {
-    return false
-  }
-  let mut count = 0
-  for rule in self.rules {
-    if !is_commonmark_rule_name(rule.name) {
-      return false
-    }
-    count = count + 1
-  }
-  count == 22
-}
-
-///|
-fn is_commonmark_rule_name(name : RuleName) -> Bool {
-  name.value == "cm:core:reference_definitions" ||
-  is_commonmark_block_rule_name(name) ||
-  name.value == "cm:inline:image" ||
-  name.value == "cm:inline:link" ||
-  name.value == "cm:inline:autolink" ||
-  name.value == "cm:inline:raw_html" ||
-  name.value == "cm:inline:entity" ||
-  name.value == "cm:inline:code_span" ||
-  name.value == "cm:delimiter:emphasis" ||
-  name.value == "cm:inline:hard_break" ||
-  name.value == "cm:inline:escape" ||
-  name.value == "cm:inline:soft_break" ||
-  name.value == "cm:inline:text"
-}
-
-///|
-fn is_commonmark_block_rule_name(name : RuleName) -> Bool {
-  name.value == "cm:block:blank" ||
-  name.value == "cm:block:fenced_code" ||
-  name.value == "cm:block:indented_code" ||
-  name.value == "cm:block:thematic_break" ||
-  name.value == "cm:block:setext_heading" ||
-  name.value == "cm:block:html" ||
-  name.value == "cm:block:atx_heading" ||
-  name.value == "cm:block:block_quote" ||
-  name.value == "cm:block:list" ||
-  name.value == "cm:block:paragraph"
 }
 
 ///|
@@ -367,7 +334,6 @@ fn copy_rule_entry(rule : RuleEntry) -> RuleEntry {
     block: rule.block,
     inline: rule.inline,
     core: rule.core,
-    source_core: rule.source_core,
   }
 }
 

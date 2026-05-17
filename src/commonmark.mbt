@@ -1,17 +1,10 @@
 ///|
 /// Returns the built-in CommonMark rule preset.
 ///
-/// The preset registers source, block, inline, delimiter, and core entries under
-/// `cm:` rule names.
+/// The preset registers block, inline, delimiter, and core entries under `cm:`
+/// rule names.
 pub fn commonmark() -> Rule {
   Rule::new("commonmark")
-  .extend(
-    Rule::source_core(
-      rule_name("cm:core:reference_definitions"),
-      priority=100,
-      resolve_reference_definitions,
-    ),
-  )
   .extend(
     Rule::block(rule_name("cm:block:blank"), priority=100, cm_blank_block),
   )
@@ -59,6 +52,13 @@ pub fn commonmark() -> Rule {
     ),
   )
   .extend(Rule::block(rule_name("cm:block:list"), priority=40, cm_list_block))
+  .extend(
+    Rule::block(
+      rule_name("cm:block:reference_definition"),
+      priority=10,
+      cm_reference_definition_block,
+    ),
+  )
   .extend(
     Rule::block(rule_name("cm:block:paragraph"), priority=0, cm_paragraph_block),
   )

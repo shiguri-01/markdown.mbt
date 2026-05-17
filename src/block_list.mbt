@@ -19,7 +19,11 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
   let item_ends : Array[Int] = []
   while i < ctx.lines.length() {
     let item_start = i
-    if count_leading_spaces(ctx.lines[i]) > 3 {
+    if i > ctx.index && is_thematic_break_marker_line(ctx.lines[i]) {
+      break
+    }
+    let marker_indent = count_leading_spaces(ctx.lines[i])
+    if marker_indent > 3 {
       break
     }
     let current = trim(ctx.lines[i])
@@ -33,9 +37,19 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     } else {
       strip_unordered_marker(current)
     }
-    let mut item_text = trim(item)
+    let content_indent = list_item_content_indent(ctx.lines[i], ordered)
+    let mut item_text = if count_leading_spaces(item) >= 4 {
+      item
+    } else {
+      trim(item)
+    }
     i = i + 1
-    let continuation = collect_list_continuation(ctx.lines, i, true)
+    let continuation = collect_list_continuation(
+      ctx.lines,
+      i,
+      true,
+      content_indent,
+    )
     item_text = item_text + continuation.text
     i = continuation.next_index
     let mut item_end = i
@@ -51,7 +65,12 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       for _ in 0..<blank_count {
         item_text = item_text + "\n"
       }
-      let continuation = collect_list_continuation(ctx.lines, i, false)
+      let continuation = collect_list_continuation(
+        ctx.lines,
+        i,
+        false,
+        content_indent,
+      )
       item_text = item_text + continuation.text
       i = continuation.next_index
       item_end = i
@@ -66,6 +85,46 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       loose = true
     } else if blank_count > 0 {
       i = item_end
+    }
+    let mut collecting = true
+    while collecting {
+      let mut more_blanks = 0
+      let blank_start = i
+      while i < ctx.lines.length() && trim(ctx.lines[i]) == "" {
+        more_blanks = more_blanks + 1
+        i = i + 1
+      }
+      if more_blanks > 0 &&
+        i < ctx.lines.length() &&
+        is_list_continuation_after_blank(ctx.lines[i]) {
+        loose = true
+        for _ in 0..<more_blanks {
+          item_text = item_text + "\n"
+        }
+        let continuation = collect_list_continuation(
+          ctx.lines,
+          i,
+          false,
+          content_indent,
+        )
+        item_text = item_text + continuation.text
+        i = continuation.next_index
+        item_end = i
+      } else if more_blanks > 0 &&
+        i < ctx.lines.length() &&
+        same_list_marker(
+          trim(ctx.lines[i]),
+          ordered,
+          ordered_delimiter,
+          unordered_delimiter,
+        ) {
+        loose = true
+      } else {
+        if more_blanks > 0 {
+          i = blank_start
+        }
+        collecting = false
+      }
     }
     item_texts.push(item_text)
     item_starts.push(item_start)
@@ -97,6 +156,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       ctx.registry,
       ctx.inline_rules,
       sink,
+      ctx.state,
       loose~,
     )
     sink.emit(Exit(tag_name("cm:item")))
@@ -106,32 +166,95 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
 }
 
 ///|
+fn is_list_marker_item_content(text : String) -> Bool {
+  let trimmed = trim(text)
+  is_ordered_list_marker(trimmed) || is_unordered_list_marker(trimmed)
+}
+
+///|
 fn emit_list_item_content(
   item_text : String,
   registry : RuleRegistry,
   inline_rules : Array[RuleEntry],
   sink : Sink,
+  state : ParseState,
   loose? : Bool = false,
 ) -> Unit {
+  match parse_reference_definition(trim(item_text)) {
+    Some(definition) => {
+      state.add_reference(definition)
+      return
+    }
+    None => ()
+  }
   if !loose &&
     item_text != "" &&
     !contains_char(item_text, 10) &&
+    count_leading_spaces(item_text) < 4 &&
+    !is_list_marker_item_content(item_text) &&
     !is_paragraph_interrupt(item_text) {
-    parse_inlines_with_rules(item_text, registry, inline_rules, sink)
+    parse_inlines_with_rules(item_text, registry, inline_rules, sink, state)
     return
   }
   let buffer = Events::new()
-  parse_blocks_into(item_text, registry, buffer.sink())
+  parse_blocks_into(item_text, registry, buffer.sink(), state)
   let events = buffer.collect()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {
       sink.emit(events[i])
     }
+  } else if !loose {
+    emit_without_paragraph_wrappers(events, sink)
   } else {
     for event in events {
       sink.emit(event)
     }
   }
+}
+
+///|
+fn emit_without_paragraph_wrappers(events : Array[Event], sink : Sink) -> Unit {
+  let mut depth = 0
+  let mut previous_text = false
+  for event in events {
+    match event {
+      Enter(el) =>
+        if el.tag.value == "cm:paragraph" && depth == 0 {
+          ()
+        } else {
+          if depth == 0 && previous_text && is_tight_list_block_child(el.tag) {
+            sink.emit(SoftBreak)
+          }
+          sink.emit(event)
+          depth = depth + 1
+          previous_text = false
+        }
+      Exit(tag) =>
+        if tag.value == "cm:paragraph" && depth == 0 {
+          ()
+        } else {
+          sink.emit(event)
+          depth = depth - 1
+          previous_text = false
+        }
+      Text(_) => {
+        sink.emit(event)
+        previous_text = depth == 0
+      }
+      _ => {
+        sink.emit(event)
+        previous_text = false
+      }
+    }
+  }
+}
+
+///|
+fn is_tight_list_block_child(tag : Tag) -> Bool {
+  tag.value == "cm:list" ||
+  tag.value == "cm:block_quote" ||
+  tag.value == "cm:code_block" ||
+  tag.value == "cm:heading"
 }
 
 ///|
@@ -145,14 +268,19 @@ fn collect_list_continuation(
   lines : Array[String],
   start : Int,
   allow_lazy : Bool,
+  content_indent : Int,
 ) -> ListContinuation {
   let mut i = start
   let text = StringBuilder::new()
   while i < lines.length() &&
         trim(lines[i]) != "" &&
-        !is_ordered_list_marker(trim(lines[i])) &&
-        !is_unordered_list_marker(trim(lines[i])) {
-    if count_leading_spaces(lines[i]) >= 2 {
+        !is_list_sibling_marker(lines[i], content_indent) {
+    let leading = count_leading_spaces(lines[i])
+    if leading >= content_indent {
+      text.write_string("\n")
+      text.write_view(lines[i][content_indent:])
+      i = i + 1
+    } else if leading >= 2 {
       text.write_string("\n")
       text.write_view(lines[i][2:])
       i = i + 1
@@ -165,6 +293,30 @@ fn collect_list_continuation(
     }
   }
   { text: text.to_string(), next_index: i }
+}
+
+///|
+fn is_list_sibling_marker(line : String, content_indent : Int) -> Bool {
+  count_leading_spaces(line) < content_indent &&
+  (is_ordered_list_marker(trim(line)) || is_unordered_list_marker(trim(line)))
+}
+
+///|
+fn list_item_content_indent(line : String, ordered : Bool) -> Int {
+  let leading = count_leading_spaces(line)
+  let current = trim(line)
+  let marker_width = if ordered { ordered_marker_end(current) + 1 } else { 1 }
+  let mut spaces = 0
+  let mut i = marker_width
+  while i < current.length() && char_at(current, i) == 32 && spaces < 5 {
+    spaces = spaces + 1
+    i = i + 1
+  }
+  if spaces > 0 && spaces < 5 {
+    leading + marker_width + spaces
+  } else {
+    leading + marker_width + 1
+  }
 }
 
 ///|
@@ -220,12 +372,15 @@ fn is_single_paragraph_events(events : Array[Event]) -> Bool {
 fn is_ordered_list_paragraph_interrupt(line : String) -> Bool {
   count_leading_spaces(line) <= 3 &&
   is_ordered_list_marker(trim(line)) &&
-  ordered_list_start(trim(line)) == 1
+  ordered_list_start(trim(line)) == 1 &&
+  trim(strip_ordered_marker(trim(line))) != ""
 }
 
 ///|
 fn is_unordered_list_marker_line(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 && is_unordered_list_marker(trim(line))
+  count_leading_spaces(line) <= 3 &&
+  is_unordered_list_marker(trim(line)) &&
+  trim(strip_unordered_marker(trim(line))) != ""
 }
 
 ///|
@@ -239,6 +394,8 @@ fn is_unordered_list_marker(line : String) -> Bool {
 fn strip_unordered_marker(line : String) -> String {
   if line.length() <= 1 {
     ""
+  } else if char_at(line, 1) == 9 {
+    expand_tabs_from_column(line[2:].to_owned(), 4, 2)
   } else {
     line[2:].to_owned()
   }
@@ -299,6 +456,12 @@ fn strip_ordered_marker(line : String) -> String {
   let marker = ordered_marker_end(line)
   if marker + 2 > line.length() {
     ""
+  } else if marker + 1 < line.length() && char_at(line, marker + 1) == 9 {
+    expand_tabs_from_column(
+      line[marker + 2:].to_owned(),
+      ((marker + 1) / 4 + 1) * 4,
+      ((marker + 1) / 4 + 1) * 4 - marker - 2,
+    )
   } else {
     line[marker + 2:].to_owned()
   }

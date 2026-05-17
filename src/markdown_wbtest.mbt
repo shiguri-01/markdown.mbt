@@ -11,3 +11,14 @@ test "source_range helper preserves validated offsets" {
   assert_eq(span.start(), 2)
   assert_eq(span.end(), 8)
 }
+
+///|
+test "character references use generated HTML5 and Unicode data" {
+  assert_true(decode_entity("CounterClockwiseContourIntegral") is Some("∳"))
+  assert_true(decode_entity("NotNestedGreaterGreater") is Some("⪢̸"))
+  assert_true(decode_entity("#x1F600") is Some("😀"))
+  assert_true(decode_entity("#xD800") is Some("�"))
+  assert_eq(commonmark_case_fold("ẞΑΩİ"), "ssαωi̇")
+  assert_true(is_unicode_whitespace(0x205F))
+  assert_true(is_unicode_punctuation_or_symbol(0x1F600))
+}
