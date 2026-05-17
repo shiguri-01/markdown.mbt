@@ -300,3 +300,124 @@ fn copy_events(events : Array[Event]) -> Array[Event] {
   }
   copied
 }
+
+///|
+/// A balanced event sequence produced by a parser rule.
+pub struct EventFragment {
+  priv events : Array[Event]
+}
+
+///|
+/// Creates an empty event fragment.
+pub fn EventFragment::empty() -> EventFragment {
+  { events: [] }
+}
+
+///|
+/// Creates a text event fragment.
+pub fn EventFragment::text(text : String) -> EventFragment {
+  { events: [Text(text)] }
+}
+
+///|
+/// Creates a soft-break event fragment.
+pub fn EventFragment::soft_break() -> EventFragment {
+  { events: [SoftBreak] }
+}
+
+///|
+/// Creates a hard-break event fragment.
+pub fn EventFragment::hard_break() -> EventFragment {
+  { events: [HardBreak] }
+}
+
+///|
+/// Creates a raw HTML event fragment.
+pub fn EventFragment::html(raw : String) -> EventFragment {
+  { events: [Html(raw)] }
+}
+
+///|
+/// Creates a balanced element event fragment.
+pub fn EventFragment::element(
+  element : Element,
+  children? : Array[EventFragment] = [],
+) -> EventFragment {
+  let events : Array[Event] = [Enter(copy_element(element))]
+  for child in children {
+    for event in child.events {
+      events.push(copy_event(event))
+    }
+  }
+  events.push(Exit(element.tag))
+  { events, }
+}
+
+///|
+/// Concatenates event fragments.
+pub fn EventFragment::concat(fragments : Array[EventFragment]) -> EventFragment {
+  let events : Array[Event] = []
+  for fragment in fragments {
+    for event in fragment.events {
+      events.push(copy_event(event))
+    }
+  }
+  { events, }
+}
+
+///|
+/// Creates a fragment from events if all element enter/exit pairs are balanced.
+pub fn EventFragment::from_events(events : Array[Event]) -> EventFragment? {
+  let stack : Array[Tag] = []
+  for event in events {
+    match event {
+      Enter(element) => stack.push(element.tag)
+      Exit(tag) => {
+        if stack.length() == 0 {
+          return None
+        }
+        let top = stack[stack.length() - 1]
+        if top != tag {
+          return None
+        }
+        ignore(stack.pop())
+      }
+      _ => ()
+    }
+  }
+  if stack.length() == 0 {
+    Some({ events: copy_events(events) })
+  } else {
+    None
+  }
+}
+
+///|
+/// Returns a copy of the events in this fragment.
+pub fn EventFragment::events(self : EventFragment) -> Array[Event] {
+  copy_events(self.events)
+}
+
+///|
+/// A downstream sink that collects events into an array.
+pub struct Events {
+  priv events : Array[Event]
+}
+
+///|
+/// Creates an empty event collector.
+pub fn Events::new() -> Events {
+  { events: [] }
+}
+
+///|
+/// Returns a sink that appends emitted events to this collector.
+pub fn Events::sink(self : Events) -> Sink {
+  Sink::new(fn(event) { self.events.push(copy_event(event)) })
+}
+
+///|
+/// Returns a copy of collected events.
+pub fn Events::collect(self : Events) -> Array[Event] {
+  copy_events(self.events)
+}

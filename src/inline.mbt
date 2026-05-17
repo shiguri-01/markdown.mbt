@@ -1,9 +1,5 @@
 ///|
-fn parse_inlines(
-  text : String,
-  registry : RuleRegistry,
-  sink : EventSink,
-) -> Unit {
+fn parse_inlines(text : String, registry : RuleRegistry, sink : Sink) -> Unit {
   parse_inlines_with_rules(text, registry, registry.inline_parse_rules(), sink)
 }
 
@@ -11,8 +7,8 @@ fn parse_inlines(
 fn parse_inlines_with_rules(
   text : String,
   registry : RuleRegistry,
-  rules : Array[Rule],
-  sink : EventSink,
+  rules : Array[RuleEntry],
+  sink : Sink,
 ) -> Unit {
   if rules.length() == 0 {
     if text.length() > 0 {
@@ -26,7 +22,16 @@ fn parse_inlines_with_rules(
     let ctx = { text, index: i, scanner: inline_scanner(text, i), registry }
     for rule in rules {
       match rule.inline {
-        Some(f) => if consumed == 0 { consumed = f(ctx, sink) }
+        Some(f) =>
+          if consumed == 0 {
+            match f(ctx) {
+              Match(chars, fragment) => {
+                emit_fragment(sink, fragment)
+                consumed = chars.to_int()
+              }
+              NoMatch => ()
+            }
+          }
         None => ()
       }
     }
@@ -40,89 +45,87 @@ fn parse_inlines_with_rules(
 }
 
 ///|
-fn cm_text_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_text_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let start = ctx.index
   if start >= text.length() || is_inline_special(text, start) {
-    return 0
+    return NoMatch
   }
   let mut end = start
   while end < text.length() && !is_inline_special(text, end) {
     end = end + 1
   }
-  if start == 0 && end == text.length() {
-    sink.emit(Text(text))
+  let fragment = if start == 0 && end == text.length() {
+    EventFragment::text(text)
   } else {
-    sink.emit(Text(text[start:end].to_owned()))
+    EventFragment::text(text[start:end].to_owned())
   }
-  end - start
+  inline_match(end - start, fragment)
 }
 
 ///|
-fn cm_escape_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_escape_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) == 92 &&
     i + 1 < text.length() &&
     is_ascii_punctuation(char_at(text, i + 1)) {
-    sink.emit(Text(text[i + 1:i + 2].to_owned()))
-    2
+    inline_match(2, EventFragment::text(text[i + 1:i + 2].to_owned()))
   } else {
-    0
+    NoMatch
   }
 }
 
 ///|
-fn cm_hard_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_hard_break_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if i + 1 < text.length() &&
     char_at(text, i) == 92 &&
     char_at(text, i + 1) == 10 {
-    sink.emit(HardBreak)
-    2
+    inline_match(2, EventFragment::hard_break())
   } else if char_at(text, i) == 32 {
     let mut end = i
     while end < text.length() && char_at(text, end) == 32 {
       end = end + 1
     }
     if end - i >= 2 && end < text.length() && char_at(text, end) == 10 {
-      sink.emit(HardBreak)
-      end - i + 1
+      inline_match(end - i + 1, EventFragment::hard_break())
     } else {
-      0
+      NoMatch
     }
   } else {
-    0
+    NoMatch
   }
 }
 
 ///|
-fn cm_soft_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_soft_break_inline(ctx : InlineContext) -> InlineRuleResult {
   if char_at(ctx.text, ctx.index) == 10 {
-    sink.emit(SoftBreak)
-    1
+    inline_match(1, EventFragment::soft_break())
   } else {
-    0
+    NoMatch
   }
 }
 
 ///|
-fn cm_code_span_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_code_span_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 96 {
-    return 0
+    return NoMatch
   }
   let width = delimiter_run_len(text, i, 96)
   let end = find_code_span_end(text, i + width, width)
   if end < 0 {
-    return 0
+    return NoMatch
   }
-  sink.emit(Enter(Element::new(tag_name("cm:code_span"))))
-  sink.emit(Text(normalize_code_span(text[i + width:end].to_owned())))
-  sink.emit(Exit(tag_name("cm:code_span")))
-  end - i + width
+  inline_match(
+    end - i + width,
+    EventFragment::element(Element::new(tag_name("cm:code_span")), children=[
+      EventFragment::text(normalize_code_span(text[i + width:end].to_owned())),
+    ]),
+  )
 }
 
 ///|
@@ -143,15 +146,15 @@ fn find_code_span_end(text : String, start : Int, width : Int) -> Int {
 }
 
 ///|
-fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_autolink_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 60 {
-    return 0
+    return NoMatch
   }
   let end = find_char(text, 62, i + 1)
   if end < 0 {
-    return 0
+    return NoMatch
   }
   let destination = text[i + 1:end].to_owned()
   let href = if is_uri_autolink(destination) {
@@ -159,44 +162,40 @@ fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
   } else if is_email_autolink(destination) {
     "mailto:" + destination
   } else {
-    return 0
+    return NoMatch
   }
-  sink.emit(
-    Enter(
+  inline_match(
+    end - i + 1,
+    EventFragment::element(
       Element::with_attrs(tag_name("cm:link"), [
         { name: attr_name("destination"), value: href },
       ]),
+      children=[EventFragment::text(destination)],
     ),
   )
-  sink.emit(Text(destination))
-  sink.emit(Exit(tag_name("cm:link")))
-  end - i + 1
 }
 
 ///|
-fn cm_raw_html_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_raw_html_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 60 {
-    return 0
+    return NoMatch
   }
   match raw_html_inline_end(text, i) {
-    Some(end) => {
-      sink.emit(Html(text[i:end].to_owned()))
-      return end - i
-    }
+    Some(end) =>
+      return inline_match(end - i, EventFragment::html(text[i:end].to_owned()))
     None => ()
   }
   let end = find_char(text, 62, i + 1)
   if end < 0 {
-    return 0
+    return NoMatch
   }
   let raw = text[i:end + 1].to_owned()
   if !looks_like_raw_html(raw) {
-    return 0
+    return NoMatch
   }
-  sink.emit(Html(raw))
-  end - i + 1
+  inline_match(end - i + 1, EventFragment::html(raw))
 }
 
 ///|
@@ -236,231 +235,76 @@ fn raw_html_inline_end(text : String, start : Int) -> Int? {
 }
 
 ///|
-fn cm_entity_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_entity_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 38 {
-    return 0
+    return NoMatch
   }
   let end = find_char(text, 59, i + 1)
   if end < 0 || end - i > 32 {
-    return 0
+    return NoMatch
   }
   let name = text[i + 1:end].to_owned()
   match decode_entity(name) {
-    Some(decoded) => {
-      sink.emit(Text(decoded))
-      end - i + 1
-    }
-    None => 0
+    Some(decoded) => inline_match(end - i + 1, EventFragment::text(decoded))
+    None => NoMatch
   }
 }
 
 ///|
-fn cm_link_inline(ctx : InlineContext, sink : EventSink) -> Int {
-  let text = ctx.text
-  let i = ctx.index
-  if char_at(text, i) != 91 {
-    return 0
-  }
-  let close_text = find_link_text_end(text, i + 1)
-  if close_text < 0 ||
-    close_text + 1 >= text.length() ||
-    char_at(text, close_text + 1) != 40 {
-    return 0
-  }
-  let close_dest = find_link_destination_end(text, close_text + 2)
-  if close_dest < 0 {
-    return 0
-  }
-  let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-  if attrs.length() == 0 {
-    return 0
-  }
-  sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
-  parse_inlines(text[i + 1:close_text].to_owned(), ctx.registry, sink)
-  sink.emit(Exit(tag_name("cm:link")))
-  close_dest - i + 1
-}
-
-///|
-fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
-  let text = ctx.text
-  let i = ctx.index
-  if i + 1 >= text.length() ||
-    char_at(text, i) != 33 ||
-    char_at(text, i + 1) != 91 {
-    return 0
-  }
-  let close_text = find_link_text_end(text, i + 2)
-  if close_text < 0 ||
-    close_text + 1 >= text.length() ||
-    char_at(text, close_text + 1) != 40 {
-    return 0
-  }
-  let close_dest = find_link_destination_end(text, close_text + 2)
-  if close_dest < 0 {
-    return 0
-  }
-  let alt = image_alt_text(text[i + 2:close_text].to_owned(), ctx.registry)
-  let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-  if attrs.length() == 0 {
-    return 0
-  }
-  attrs.push({ name: attr_name("alt"), value: alt })
-  sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), attrs)))
-  sink.emit(Exit(tag_name("cm:image")))
-  close_dest - i + 1
-}
-
-///|
-fn image_alt_text(text : String, registry : RuleRegistry) -> String {
-  let sink : EventSink = { events: [] }
-  parse_inlines(text, registry, sink)
-  let mut out = ""
-  for event in sink.events {
-    match event {
-      Text(text) => out = out + text
-      SoftBreak => out = out + "\n"
-      HardBreak => out = out + "\n"
-      Html(raw) => out = out + raw
-      _ => ()
-    }
-  }
-  out
-}
-
-///|
-fn find_link_text_end(text : String, start : Int) -> Int {
-  let mut i = start
-  let mut depth = 0
-  while i < text.length() {
-    let c = char_at(text, i)
-    if c == 92 && i + 1 < text.length() {
-      i = i + 2
-    } else if c == 91 {
-      depth = depth + 1
-      i = i + 1
-    } else if c == 93 {
-      if depth == 0 {
-        return i
-      }
-      depth = depth - 1
-      i = i + 1
-    } else {
-      i = i + 1
-    }
-  }
-  -1
-}
-
-///|
-fn normalize_attribute_text(text : String) -> String {
-  let out = StringBuilder::new(size_hint=text.length())
-  let mut i = 0
-  while i < text.length() {
-    if char_at(text, i) == 92 &&
-      i + 1 < text.length() &&
-      is_ascii_punctuation(char_at(text, i + 1)) {
-      out.write_view(text[i + 1:i + 2])
-      i = i + 2
-    } else if char_at(text, i) == 38 {
-      let end = find_char(text, 59, i + 1)
-      if end > i {
-        let name = text[i + 1:end].to_owned()
-        match decode_entity(name) {
-          Some(decoded) => {
-            out.write_string(decoded)
-            i = end + 1
-          }
-          None => {
-            out.write_view(text[i:i + 1])
-            i = i + 1
-          }
-        }
-      } else {
-        out.write_view(text[i:i + 1])
-        i = i + 1
-      }
-    } else {
-      out.write_view(text[i:i + 1])
-      i = i + 1
-    }
-  }
-  out.to_string()
-}
-
-///|
-fn find_link_destination_end(text : String, start : Int) -> Int {
-  let mut i = start
-  let mut depth = 0
-  while i < text.length() {
-    let c = char_at(text, i)
-    if c == 92 && i + 1 < text.length() {
-      i = i + 2
-    } else if c == 40 {
-      depth = depth + 1
-      i = i + 1
-    } else if c == 41 {
-      if depth == 0 {
-        return i
-      }
-      depth = depth - 1
-      i = i + 1
-    } else {
-      i = i + 1
-    }
-  }
-  -1
-}
-
-///|
-fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   let marker = char_at(text, i)
   if marker != 42 && marker != 95 {
-    return 0
+    return NoMatch
   }
   let run = delimiter_run_len(text, i, marker)
   if run >= 3 {
     if is_intraword_underscore_delimiter(text, i, 3, marker) {
-      return 0
+      return NoMatch
     }
     let end = find_closing_run(text, marker, i + 3, 3)
     if end < 0 {
-      return 0
+      return NoMatch
     }
+    let buffer = Events::new()
+    let sink = buffer.sink()
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:strong")))
     sink.emit(Exit(tag_name("cm:emphasis")))
-    end - i + 3
+    inline_match(end - i + 3, event_fragment_from_events(buffer.collect()))
   } else if run >= 2 {
     if is_intraword_underscore_delimiter(text, i, 2, marker) {
-      return 0
+      return NoMatch
     }
     let end = find_closing_run(text, marker, i + 2, 2)
     if end < 0 {
-      return 0
+      return NoMatch
     }
+    let buffer = Events::new()
+    let sink = buffer.sink()
     sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:strong")))
-    end - i + 2
+    inline_match(end - i + 2, event_fragment_from_events(buffer.collect()))
   } else {
     if is_intraword_underscore_delimiter(text, i, 1, marker) {
-      return 0
+      return NoMatch
     }
     let end = find_closing_single(text, marker, i + 1)
     if end < 0 {
-      return 0
+      return NoMatch
     }
+    let buffer = Events::new()
+    let sink = buffer.sink()
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink)
     sink.emit(Exit(tag_name("cm:emphasis")))
-    end - i + 1
+    inline_match(end - i + 1, event_fragment_from_events(buffer.collect()))
   }
 }
 
@@ -520,127 +364,6 @@ fn is_intraword_underscore_delimiter(
   start + width < text.length() &&
   is_ascii_alnum(char_at(text, start - 1)) &&
   is_ascii_alnum(char_at(text, start + width))
-}
-
-///|
-fn parse_link_attrs(spec : String) -> Array[Attr] {
-  let trimmed = trim(spec)
-  let attrs : Array[Attr] = []
-  let split = find_link_title_split(trimmed)
-  if split < 0 {
-    if !is_valid_link_destination(trimmed) {
-      return attrs
-    }
-    attrs.push({
-      name: attr_name("destination"),
-      value: normalize_link_destination(trimmed),
-    })
-  } else {
-    let destination = trim(trimmed[:split].to_owned())
-    if !is_valid_link_destination(destination) {
-      return attrs
-    }
-    attrs.push({
-      name: attr_name("destination"),
-      value: normalize_link_destination(destination),
-    })
-    attrs.push({
-      name: attr_name("title"),
-      value: normalize_attribute_text(
-        trimmed[split + 2:trimmed.length() - 1].to_owned(),
-      ),
-    })
-  }
-  attrs
-}
-
-///|
-fn is_valid_link_destination(destination : String) -> Bool {
-  let trimmed = trim(destination)
-  if trimmed.length() >= 2 &&
-    char_at(trimmed, 0) == 60 &&
-    char_at(trimmed, trimmed.length() - 1) == 62 {
-    is_valid_angle_link_destination(trimmed[1:trimmed.length() - 1].to_owned())
-  } else {
-    !contains_unescaped_space(trimmed)
-  }
-}
-
-///|
-fn is_valid_angle_link_destination(destination : String) -> Bool {
-  for i in 0..<destination.length() {
-    let c = char_at(destination, i)
-    if c == 60 || c == 62 || c == 10 || c == 13 {
-      return false
-    }
-  }
-  true
-}
-
-///|
-fn normalize_link_destination(destination : String) -> String {
-  let trimmed = trim(destination)
-  if trimmed.length() >= 2 &&
-    char_at(trimmed, 0) == 60 &&
-    char_at(trimmed, trimmed.length() - 1) == 62 {
-    normalize_attribute_text(trimmed[1:trimmed.length() - 1].to_owned())
-  } else {
-    normalize_attribute_text(trimmed)
-  }
-}
-
-///|
-fn contains_space(text : String) -> Bool {
-  for i in 0..<text.length() {
-    if is_space(char_at(text, i)) {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn contains_unescaped_space(text : String) -> Bool {
-  let mut i = 0
-  while i < text.length() {
-    if char_at(text, i) == 92 &&
-      i + 1 < text.length() &&
-      is_ascii_punctuation(char_at(text, i + 1)) {
-      i = i + 2
-    } else if is_space(char_at(text, i)) {
-      return true
-    } else {
-      i = i + 1
-    }
-  }
-  false
-}
-
-///|
-fn find_link_title_split(spec : String) -> Int {
-  for i in 0..<spec.length() {
-    if is_space(char_at(spec, i)) && i + 2 < spec.length() {
-      let open = char_at(spec, i + 1)
-      let close = if open == 40 { 41 } else { open }
-      if (open == 34 || open == 39 || open == 40) &&
-        char_at(spec, spec.length() - 1) == close &&
-        !is_escaped_char(spec, spec.length() - 1) {
-        return i
-      }
-    }
-  }
-  -1
-}
-
-///|
-fn is_escaped_char(text : String, index : Int) -> Bool {
-  let mut count = 0
-  let mut i = index - 1
-  while i >= 0 && char_at(text, i) == 92 {
-    count = count + 1
-    i = i - 1
-  }
-  count % 2 == 1
 }
 
 ///|

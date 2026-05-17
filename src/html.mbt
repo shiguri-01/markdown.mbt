@@ -1,54 +1,51 @@
 ///|
-/// Renders Markdown events as HTML.
+/// A streaming HTML sink.
 ///
 /// CommonMark tags are mapped to their HTML representation. Unknown extension
 /// tags are rendered with their tag value, with tag and attribute text escaped.
 /// Raw HTML events are passed through unchanged.
-pub struct HtmlRenderer {
-  priv unit : Int
+pub struct Html {
+  priv out : StringBuilder
+  priv close_stack : Array[String]
 }
 
 ///|
-/// Creates an HTML renderer.
-pub fn HtmlRenderer::new() -> HtmlRenderer {
-  { unit: 0 }
+/// Creates an empty streaming HTML renderer.
+pub fn Html::new() -> Html {
+  { out: StringBuilder::new(), close_stack: [] }
 }
 
 ///|
-/// Renders an event stream as HTML.
-pub fn to_html(events : Array[Event]) -> String {
-  HtmlRenderer::new().render(events)
+/// Returns a sink that renders events as they arrive.
+pub fn Html::sink(self : Html) -> Sink {
+  Sink::new(fn(event) { write_html_event(self, event) })
 }
 
 ///|
-/// Renders an event stream as HTML.
-pub fn HtmlRenderer::render(
-  self : HtmlRenderer,
-  events : Array[Event],
-) -> String {
-  ignore(self.unit)
-  let out = StringBuilder::new()
-  let close_stack : Array[String] = []
-  for event in events {
-    match event {
-      Enter(el) => close_stack.push(write_open_html(out, el))
-      Exit(tag) =>
-        if close_stack.length() > 0 {
-          let close = close_stack[close_stack.length() - 1]
-          ignore(close_stack.pop())
-          out.write_string(close)
-        } else {
-          out.write_string("</")
-          out.write_string(escape_html(tag.value))
-          out.write_string(">")
-        }
-      Text(text) => out.write_string(escape_html(text))
-      SoftBreak => out.write_string("\n")
-      HardBreak => out.write_string("<br />\n")
-      Html(raw) => out.write_string(raw)
-    }
+/// Returns the rendered HTML.
+pub fn Html::to_string(self : Html) -> String {
+  self.out.to_string()
+}
+
+///|
+fn write_html_event(buffer : Html, event : Event) -> Unit {
+  match event {
+    Enter(el) => buffer.close_stack.push(write_open_html(buffer.out, el))
+    Exit(tag) =>
+      if buffer.close_stack.length() > 0 {
+        let close = buffer.close_stack[buffer.close_stack.length() - 1]
+        ignore(buffer.close_stack.pop())
+        buffer.out.write_string(close)
+      } else {
+        buffer.out.write_string("</")
+        buffer.out.write_string(escape_html(tag.value))
+        buffer.out.write_string(">")
+      }
+    Text(text) => buffer.out.write_string(escape_html(text))
+    SoftBreak => buffer.out.write_string("\n")
+    HardBreak => buffer.out.write_string("<br />\n")
+    Html(raw) => buffer.out.write_string(raw)
   }
-  out.to_string()
 }
 
 ///|

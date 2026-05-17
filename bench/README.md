@@ -18,7 +18,7 @@ compare:
 - `parse/micro/*`: parser-only synthetic throughput cases.
 - `parse/syntax/*`: focused syntax-heavy inputs such as list, delimiter, and
   reference-definition cases.
-- `parse/extensions/*`: extension and plugin rule overhead.
+- `parse/extensions/*`: extension rule overhead.
 - `render/*`, `transform/*`, and `ast/*`: post-parse processing from a
   pre-parsed event stream.
 

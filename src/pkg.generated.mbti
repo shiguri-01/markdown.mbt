@@ -2,24 +2,21 @@
 package "shiguri/markdown"
 
 // Values
-pub fn commonmark() -> Processor
+pub fn ast(String) -> Result[AstNode, AstError]
 
-pub fn commonmark_plugin() -> Plugin
+pub fn commonmark() -> Rule
 
-pub fn parse(String) -> Array[Event]
-
-pub fn to_ast(Array[Event]) -> Result[AstNode, AstError]
-
-pub fn to_html(Array[Event]) -> String
+pub fn html(String) -> String
 
 // Errors
 
 // Types and methods
-pub struct AstBuilder {
+pub struct Ast {
   // private fields
 }
-pub fn AstBuilder::build(Self, Array[Event]) -> Result[AstNode, AstError]
-pub fn AstBuilder::new() -> Self
+pub fn Ast::new() -> Self
+pub fn Ast::result(Self) -> Result[AstNode, AstError]
+pub fn Ast::sink(Self) -> Sink
 
 pub(all) enum AstError {
   UnexpectedExit(Tag)
@@ -58,6 +55,23 @@ pub fn BlockContext::current_line_start(Self) -> Int
 pub fn BlockContext::line_at(Self, Int) -> String?
 pub fn BlockContext::line_index(Self) -> Int
 
+pub(all) enum BlockRuleResult {
+  NoMatch
+  Match(ConsumedLines, EventFragment)
+}
+
+pub struct ConsumedChars {
+  // private fields
+}
+pub fn ConsumedChars::new(Int) -> Self?
+pub fn ConsumedChars::to_int(Self) -> Int
+
+pub struct ConsumedLines {
+  // private fields
+}
+pub fn ConsumedLines::new(Int) -> Self?
+pub fn ConsumedLines::to_int(Self) -> Int
+
 pub struct Element {
   // private fields
 }
@@ -77,16 +91,32 @@ pub(all) enum Event {
   Html(String)
 }
 
-pub struct EventSink {
+pub struct EventFragment {
   // private fields
 }
-pub fn EventSink::emit(Self, Event) -> Unit
+pub fn EventFragment::concat(Array[Self]) -> Self
+pub fn EventFragment::element(Element, children? : Array[Self]) -> Self
+pub fn EventFragment::empty() -> Self
+pub fn EventFragment::events(Self) -> Array[Event]
+pub fn EventFragment::from_events(Array[Event]) -> Self?
+pub fn EventFragment::hard_break() -> Self
+pub fn EventFragment::html(String) -> Self
+pub fn EventFragment::soft_break() -> Self
+pub fn EventFragment::text(String) -> Self
 
-pub struct HtmlRenderer {
+pub struct Events {
   // private fields
 }
-pub fn HtmlRenderer::new() -> Self
-pub fn HtmlRenderer::render(Self, Array[Event]) -> String
+pub fn Events::collect(Self) -> Array[Event]
+pub fn Events::new() -> Self
+pub fn Events::sink(Self) -> Sink
+
+pub struct Html {
+  // private fields
+}
+pub fn Html::new() -> Self
+pub fn Html::sink(Self) -> Sink
+pub fn Html::to_string(Self) -> String
 
 pub struct InlineContext {
   // private fields
@@ -94,6 +124,11 @@ pub struct InlineContext {
 pub fn InlineContext::offset(Self) -> Int
 pub fn InlineContext::scanner(Self) -> InlineScanner
 pub fn InlineContext::source(Self) -> String
+
+pub(all) enum InlineRuleResult {
+  NoMatch
+  Match(ConsumedChars, EventFragment)
+}
 
 pub struct InlineScanner {
   // private fields
@@ -105,39 +140,26 @@ pub fn InlineScanner::has_prefix(Self, String) -> Bool
 pub fn InlineScanner::new(String, Int) -> Self?
 pub fn InlineScanner::slice(Self, Int, Int) -> String?
 
-pub struct Parser {
-  // private fields
-}
-pub fn Parser::collect(Self) -> Array[Event]
-pub fn Parser::next(Self) -> Event?
-
-pub struct Plugin {
-  // private fields
-}
-pub fn Plugin::add(Self, Rule) -> Self
-pub fn Plugin::disable(Self, RuleName) -> Self
-pub fn Plugin::enable(Self, RuleName) -> Self
-pub fn Plugin::name(Self) -> String
-pub fn Plugin::new(String) -> Self
-pub fn Plugin::override_rule(Self, Rule) -> Self
-pub fn Plugin::with_plugin(Self, Self) -> Self
-
 pub struct Processor {
   // private fields
 }
-pub fn Processor::commonmark() -> Self
-pub fn Processor::new() -> Self
-pub fn Processor::parse(Self, String) -> Parser
-pub fn Processor::with_plugin(Self, Plugin) -> Self
+pub fn Processor::new(rule? : Rule) -> Self
+pub fn Processor::parse(Self, String, Sink) -> Unit
 
 pub struct Rule {
   // private fields
 }
-pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, EventSink) -> Int) -> Self
-pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext, EventSink) -> Int) -> Self
-pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Array[Event]) -> Array[Event]) -> Self
-pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
-pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext, EventSink) -> Int) -> Self
+pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
+pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
+pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Sink) -> Sink) -> Self
+pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::disable(Self, RuleName) -> Self
+pub fn Rule::enable(Self, RuleName) -> Self
+pub fn Rule::extend(Self, Self) -> Self
+pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::name(Self) -> String
+pub fn Rule::new(String) -> Self
+pub fn Rule::replace(Self, Self) -> Self
 
 pub struct RuleName {
   // private fields
@@ -146,6 +168,19 @@ pub fn RuleName::commonmark(String) -> Self
 pub fn RuleName::custom(String, String) -> Self
 pub fn RuleName::raw(String) -> Self
 pub fn RuleName::to_string(Self) -> String
+
+pub struct Sink {
+  // private fields
+}
+pub fn Sink::emit(Self, Event) -> Unit
+pub fn Sink::finish(Self) -> Unit
+pub fn Sink::inject_attr(Self, Tag, Attr) -> Self
+pub fn Sink::map(Self, (Event) -> Event) -> Self
+pub fn Sink::new((Event) -> Unit, finish? : () -> Unit) -> Self
+pub fn Sink::on_finish(Self, (Self) -> Unit) -> Self
+pub fn Sink::rename_tag(Self, Tag, Tag) -> Self
+pub fn Sink::softbreak_to_hardbreak(Self) -> Self
+pub fn Sink::text_merge(Self) -> Self
 
 pub struct SourceRange {
   // private fields
@@ -162,22 +197,12 @@ pub fn Tag::custom(String, String) -> Self
 pub fn Tag::raw(String) -> Self
 pub fn Tag::to_string(Self) -> String
 
-pub struct Transform {
-  // private fields
-}
-pub fn Transform::collect(Self) -> Array[Event]
-pub fn Transform::inject_attr(Self, Tag, Attr) -> Self
-pub fn Transform::new(Array[Event]) -> Self
-pub fn Transform::rename_tag(Self, Tag, Tag) -> Self
-pub fn Transform::softbreak_to_hardbreak(Self) -> Self
-pub fn Transform::text_merge(Self) -> Self
-
 // Type aliases
-pub type BlockRuleFn = (BlockContext, EventSink) -> Int
+pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
 
-pub type CoreRuleFn = (Array[Event]) -> Array[Event]
+pub type CoreRuleFn = (Sink) -> Sink
 
-pub type InlineRuleFn = (InlineContext, EventSink) -> Int
+pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
 
 // Traits
 

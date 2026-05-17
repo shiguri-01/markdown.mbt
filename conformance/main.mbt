@@ -151,7 +151,9 @@ fn run_examples(
   let results : Array[ConformanceResult] = []
   for example in examples {
     if should_run_example(example, options) {
-      let actual = @markdown.to_html(@markdown.parse(example.markdown))
+      let html = @markdown.Html::new()
+      @markdown.Processor::new().parse(example.markdown, html.sink())
+      let actual = html.to_string()
       results.push({ example, actual })
     }
   }

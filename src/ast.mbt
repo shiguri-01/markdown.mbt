@@ -30,21 +30,31 @@ pub(all) enum AstError {
 }
 
 ///|
-/// Builds an AST from a balanced event stream.
-pub struct AstBuilder {
-  priv unit : Int
+/// A streaming AST builder sink.
+pub struct Ast {
+  priv stack : Array[AstNode]
+  priv mut result : Result[AstNode, AstError]?
 }
 
 ///|
-/// Creates an AST builder.
-pub fn AstBuilder::new() -> AstBuilder {
-  { unit: 0 }
+/// Creates an empty streaming AST builder.
+pub fn Ast::new() -> Ast {
+  { stack: [root_ast_node()], result: None }
 }
 
 ///|
-/// Converts events into an AST.
-pub fn to_ast(events : Array[Event]) -> Result[AstNode, AstError] {
-  AstBuilder::new().build(events)
+/// Returns a sink that builds an AST as events arrive.
+pub fn Ast::sink(self : Ast) -> Sink {
+  Sink::new(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
+}
+
+///|
+/// Returns the AST result after the stream has finished.
+pub fn Ast::result(self : Ast) -> Result[AstNode, AstError] {
+  match self.result {
+    Some(result) => copy_ast_result(result)
+    None => self.finish_and_result()
+  }
 }
 
 ///|
@@ -73,15 +83,30 @@ pub fn AstNode::text(self : AstNode) -> String? {
 fn copy_ast_nodes(nodes : Array[AstNode]) -> Array[AstNode] {
   let copied : Array[AstNode] = []
   for node in nodes {
-    copied.push({
-      kind: node.kind,
-      element: node.element,
-      children: copy_ast_nodes(node.children),
-      text: node.text,
-      range: node.range,
-    })
+    copied.push(copy_ast_node(node))
   }
   copied
+}
+
+///|
+fn copy_ast_node(node : AstNode) -> AstNode {
+  {
+    kind: node.kind,
+    element: node.element,
+    children: copy_ast_nodes(node.children),
+    text: node.text,
+    range: node.range,
+  }
+}
+
+///|
+fn copy_ast_result(
+  result : Result[AstNode, AstError],
+) -> Result[AstNode, AstError] {
+  match result {
+    Ok(node) => Ok(copy_ast_node(node))
+    Err(err) => Err(err)
+  }
 }
 
 ///|
@@ -91,97 +116,107 @@ pub fn AstNode::range(self : AstNode) -> SourceRange? {
 }
 
 ///|
-/// Converts events into a tree.
-///
-/// `Enter` and `Exit` events must be balanced and must close the same tag that
-/// was opened. The returned root node has no element. Mismatched close events
-/// report the expected open tag first and the actual close tag second.
-pub fn AstBuilder::build(
-  self : AstBuilder,
-  events : Array[Event],
-) -> Result[AstNode, AstError] {
-  ignore(self.unit)
-  let root : AstNode = {
-    kind: RootNode,
-    element: None,
-    children: [],
-    text: "",
-    range: None,
+fn root_ast_node() -> AstNode {
+  { kind: RootNode, element: None, children: [], text: "", range: None }
+}
+
+///|
+fn Ast::accept(self : Ast, event : Event) -> Unit {
+  match self.result {
+    Some(_) => return
+    None => ()
   }
-  let stack : Array[AstNode] = [root]
-  for event in events {
-    match event {
-      Enter(el) =>
-        stack.push({
-          kind: ElementNode,
-          element: Some(el),
-          children: [],
-          text: "",
-          range: el.range,
-        })
-      Exit(tag) => {
-        if stack.length() <= 1 {
-          return Err(UnexpectedExit(tag))
-        }
-        let node = stack[stack.length() - 1]
-        match node.element {
-          Some(el) =>
-            if el.tag != tag {
-              return Err(MismatchedExit(el.tag, tag))
-            }
-          None => return Err(UnexpectedExit(tag))
-        }
-        ignore(stack.pop())
-        stack[stack.length() - 1].children.push(node)
+  match event {
+    Enter(el) =>
+      self.stack.push({
+        kind: ElementNode,
+        element: Some(el),
+        children: [],
+        text: "",
+        range: el.range,
+      })
+    Exit(tag) => {
+      if self.stack.length() <= 1 {
+        self.result = Some(Err(UnexpectedExit(tag)))
+        return
       }
-      Text(text) =>
-        stack[stack.length() - 1].children.push({
-          kind: TextNode,
-          element: None,
-          children: [],
-          text,
-          range: None,
-        })
-      SoftBreak =>
-        stack[stack.length() - 1].children.push({
-          kind: TextNode,
-          element: None,
-          children: [],
-          text: "\n",
-          range: None,
-        })
-      HardBreak =>
-        stack[stack.length() - 1].children.push({
-          kind: ElementNode,
-          element: Some(Element::new(tag_name("cm:hard_break"))),
-          children: [],
-          text: "",
-          range: None,
-        })
-      Html(raw) =>
-        stack[stack.length() - 1].children.push({
-          kind: ElementNode,
-          element: Some(Element::new(tag_name("cm:html"))),
-          children: [
-            {
-              kind: TextNode,
-              element: None,
-              children: [],
-              text: raw,
-              range: None,
-            },
-          ],
-          text: "",
-          range: None,
-        })
+      let node = self.stack[self.stack.length() - 1]
+      match node.element {
+        Some(el) =>
+          if el.tag != tag {
+            self.result = Some(Err(MismatchedExit(el.tag, tag)))
+            return
+          }
+        None => {
+          self.result = Some(Err(UnexpectedExit(tag)))
+          return
+        }
+      }
+      ignore(self.stack.pop())
+      self.stack[self.stack.length() - 1].children.push(node)
     }
+    Text(text) =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: TextNode,
+        element: None,
+        children: [],
+        text,
+        range: None,
+      })
+    SoftBreak =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: TextNode,
+        element: None,
+        children: [],
+        text: "\n",
+        range: None,
+      })
+    HardBreak =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: ElementNode,
+        element: Some(Element::new(tag_name("cm:hard_break"))),
+        children: [],
+        text: "",
+        range: None,
+      })
+    Html(raw) =>
+      self.stack[self.stack.length() - 1].children.push({
+        kind: ElementNode,
+        element: Some(Element::new(tag_name("cm:html"))),
+        children: [
+          {
+            kind: TextNode,
+            element: None,
+            children: [],
+            text: raw,
+            range: None,
+          },
+        ],
+        text: "",
+        range: None,
+      })
   }
-  if stack.length() != 1 {
-    match stack[stack.length() - 1].element {
+}
+
+///|
+fn Ast::finish(self : Ast) -> Unit {
+  ignore(self.finish_and_result())
+}
+
+///|
+fn Ast::finish_and_result(self : Ast) -> Result[AstNode, AstError] {
+  match self.result {
+    Some(result) => return copy_ast_result(result)
+    None => ()
+  }
+  let result = if self.stack.length() != 1 {
+    match self.stack[self.stack.length() - 1].element {
       Some(el) => Err(UnclosedTag(el.tag))
       None => Err(UnclosedTag(tag_name("<root>")))
     }
   } else {
-    Ok(stack[0])
+    Ok(copy_ast_node(self.stack[0]))
   }
+  self.result = Some(result)
+  copy_ast_result(result)
 }

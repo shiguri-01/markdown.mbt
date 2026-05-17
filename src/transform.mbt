@@ -1,39 +1,56 @@
 ///|
-/// A chainable event stream transformer.
-pub struct Transform {
-  priv events : Array[Event]
+/// Creates a sink that runs `f` before finishing downstream.
+pub fn Sink::on_finish(self : Sink, f : (Sink) -> Unit) -> Sink {
+  Sink::new(fn(event) { self.emit(event) }, finish=fn() {
+    f(self)
+    self.finish()
+  })
 }
 
 ///|
-/// Creates a transform from an event array.
-pub fn Transform::new(events : Array[Event]) -> Transform {
-  { events: copy_events(events) }
+/// Creates a sink that maps every event before forwarding it downstream.
+pub fn Sink::map(self : Sink, f : (Event) -> Event) -> Sink {
+  Sink::new(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
+    self.finish()
+  })
 }
 
 ///|
-/// Merges adjacent `Text` events.
-pub fn Transform::text_merge(self : Transform) -> Transform {
-  let merged : Array[Event] = []
-  for event in self.events {
-    match event {
-      Text(text) =>
-        if merged.length() > 0 {
-          match merged[merged.length() - 1] {
-            Text(prev) => merged[merged.length() - 1] = Text(prev + text)
-            _ => merged.push(event)
+/// Creates a sink that merges adjacent `Text` events before forwarding.
+pub fn Sink::text_merge(self : Sink) -> Sink {
+  let mut pending : String? = None
+  Sink::new(
+    fn(event) {
+      match event {
+        Text(text) =>
+          match pending {
+            Some(prev) => pending = Some(prev + text)
+            None => pending = Some(text)
           }
-        } else {
-          merged.push(event)
+        _ => {
+          match pending {
+            Some(text) => self.emit(Text(text))
+            None => ()
+          }
+          pending = None
+          self.emit(event)
         }
-      _ => merged.push(event)
-    }
-  }
-  { events: merged }
+      }
+    },
+    finish=fn() {
+      match pending {
+        Some(text) => self.emit(Text(text))
+        None => ()
+      }
+      pending = None
+      self.finish()
+    },
+  )
 }
 
 ///|
-/// Rewrites every `SoftBreak` event to `HardBreak`.
-pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
+/// Creates a sink that rewrites every `SoftBreak` event to `HardBreak`.
+pub fn Sink::softbreak_to_hardbreak(self : Sink) -> Sink {
   self.map(fn(event) {
     match event {
       SoftBreak => HardBreak
@@ -43,14 +60,8 @@ pub fn Transform::softbreak_to_hardbreak(self : Transform) -> Transform {
 }
 
 ///|
-/// Renames matching `Enter` and `Exit` tags.
-///
-/// Element attributes and source ranges are preserved.
-pub fn Transform::rename_tag(
-  self : Transform,
-  from : Tag,
-  to : Tag,
-) -> Transform {
+/// Creates a sink that renames matching `Enter` and `Exit` tags.
+pub fn Sink::rename_tag(self : Sink, from : Tag, to : Tag) -> Sink {
   self.map(fn(event) {
     match event {
       Enter(el) =>
@@ -66,14 +77,8 @@ pub fn Transform::rename_tag(
 }
 
 ///|
-/// Appends an attribute to matching `Enter` elements.
-///
-/// Existing attributes and source ranges are preserved.
-pub fn Transform::inject_attr(
-  self : Transform,
-  tag : Tag,
-  attr : Attr,
-) -> Transform {
+/// Creates a sink that appends an attribute to matching `Enter` elements.
+pub fn Sink::inject_attr(self : Sink, tag : Tag, attr : Attr) -> Sink {
   self.map(fn(event) {
     match event {
       Enter(el) =>
@@ -90,19 +95,4 @@ pub fn Transform::inject_attr(
       _ => event
     }
   })
-}
-
-///|
-/// Returns the transformed event array.
-pub fn Transform::collect(self : Transform) -> Array[Event] {
-  copy_events(self.events)
-}
-
-///|
-fn Transform::map(self : Transform, f : (Event) -> Event) -> Transform {
-  let next : Array[Event] = []
-  for event in self.events {
-    next.push(copy_event(f(event)))
-  }
-  { events: next }
 }
