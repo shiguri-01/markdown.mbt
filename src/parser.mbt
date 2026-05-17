@@ -124,7 +124,11 @@ fn parse_block_lines_into(
   collect_only? : Bool = false,
 ) -> Unit {
   let mut i = 0
-  let inline_rules = registry.inline_parse_rules()
+  let inline_rules = if collect_only {
+    []
+  } else {
+    registry.inline_parse_rules()
+  }
   let block_continue_rules = registry.block_continue_rules()
   let block_start_rules = registry.block_rules()
   while i < lines.length() {
