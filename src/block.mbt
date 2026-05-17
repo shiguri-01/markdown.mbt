@@ -686,10 +686,11 @@ fn is_fence_marker_line(line : String) -> Bool {
 
 ///|
 fn is_html_block_paragraph_interrupt(line : String) -> Bool {
-  if count_leading_spaces(line) > 3 {
+  let leading = count_leading_spaces(line)
+  if leading > 3 || leading >= line.length() || char_at(line, leading) != 60 {
     return false
   }
-  let trimmed = trim(line)
+  let trimmed = if leading == 0 { line } else { line[leading:].to_owned() }
   html_block_terminator(trimmed) != None || looks_like_html_block_start(trimmed)
 }
 
