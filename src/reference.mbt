@@ -405,10 +405,10 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
     char_at(trimmed, close + 1) != 58 {
     return None
   }
-  let label = normalize_reference_label(trimmed[1:close].to_owned())
-  if !is_valid_reference_label_text(trimmed[1:close].to_owned()) {
+  if !is_valid_reference_label_range(trimmed, 1, close) {
     return None
   }
+  let label = normalize_reference_label(trimmed[1:close].to_owned())
   let spec = trim(trimmed[close + 2:].to_owned())
   if label == "" || spec == "" {
     return None
@@ -447,12 +447,19 @@ fn should_rewrite_shortcut_reference(input : String, close_text : Int) -> Bool {
 
 ///|
 fn is_valid_reference_label_text(label : String) -> Bool {
-  let mut i = 0
-  while i < label.length() {
-    let c = char_at(label, i)
-    if c == 92 &&
-      i + 1 < label.length() &&
-      is_ascii_punctuation(char_at(label, i + 1)) {
+  is_valid_reference_label_range(label, 0, label.length())
+}
+
+///|
+fn is_valid_reference_label_range(
+  text : String,
+  start : Int,
+  end : Int,
+) -> Bool {
+  let mut i = start
+  while i < end {
+    let c = char_at(text, i)
+    if c == 92 && i + 1 < end && is_ascii_punctuation(char_at(text, i + 1)) {
       i = i + 2
     } else if c == 91 || c == 93 {
       return false
