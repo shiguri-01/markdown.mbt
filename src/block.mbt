@@ -235,6 +235,9 @@ fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
     return NoMatch
   }
   if is_thematic_break_at(ctx.lines[ctx.index], leading) {
+    if ctx.collect_only {
+      return block_match(1, EventFragment::empty())
+    }
     block_match(
       1,
       EventFragment::element(
@@ -302,6 +305,15 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
   match html_block_terminator(line) {
     Some(terminator) => {
       let mut i = ctx.index
+      if ctx.collect_only {
+        while i < ctx.lines.length() {
+          if find_substring(ctx.lines[i], terminator, 0) >= 0 {
+            return block_match(i - ctx.index + 1, EventFragment::empty())
+          }
+          i = i + 1
+        }
+        return block_match(i - ctx.index, EventFragment::empty())
+      }
       let raw = StringBuilder::new()
       while i < ctx.lines.length() {
         raw.write_string(ctx.lines[i])
@@ -323,6 +335,12 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
     return NoMatch
   }
   let mut i = ctx.index
+  if ctx.collect_only {
+    while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
+      i = i + 1
+    }
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
   let raw = StringBuilder::new()
   while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
     raw.write_string(ctx.lines[i])
@@ -385,12 +403,21 @@ fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
   if fence == "" {
     return NoMatch
   }
-  let info = fence_info(trimmed, fence)
   if char_at(fence, 0) == 96 &&
     contains_char(trim(trimmed[fence.length():].to_owned()), 96) {
     return NoMatch
   }
   let mut i = ctx.index + 1
+  if ctx.collect_only {
+    while i < ctx.lines.length() {
+      if is_closing_fence_line(ctx.lines[i], fence) {
+        return block_match(i - ctx.index + 1, EventFragment::empty())
+      }
+      i = i + 1
+    }
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
+  let info = fence_info(trimmed, fence)
   let code = StringBuilder::new()
   while i < ctx.lines.length() {
     if is_closing_fence_line(ctx.lines[i], fence) {
@@ -441,6 +468,22 @@ fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
     return NoMatch
   }
   let mut i = ctx.index
+  if ctx.collect_only {
+    while i < ctx.lines.length() {
+      if is_blank(ctx.lines[i]) {
+        if next_nonblank_is_indented_code(ctx.lines, i + 1) {
+          i = i + 1
+          continue
+        }
+        break
+      }
+      if count_leading_spaces(ctx.lines[i]) < 4 {
+        break
+      }
+      i = i + 1
+    }
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
   let code = StringBuilder::new()
   while i < ctx.lines.length() {
     if is_blank(ctx.lines[i]) {
@@ -534,6 +577,11 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       i = i + 1
     }
   }
+  let inner_text = inner.to_string()
+  if ctx.collect_only {
+    collect_reference_definitions_in_blocks(inner_text, ctx.registry, ctx.state)
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
   let buffer = Events::new()
   let sink = buffer.owned_sink()
   sink.emit(
@@ -545,11 +593,6 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       ),
     ),
   )
-  let inner_text = inner.to_string()
-  if ctx.collect_only {
-    collect_reference_definitions_in_blocks(inner_text, ctx.registry, ctx.state)
-    return block_match(i - ctx.index, EventFragment::empty())
-  }
   match parse_reference_definition(trim(inner_text)) {
     Some(definition) => ctx.state.add_reference(definition)
     None =>
