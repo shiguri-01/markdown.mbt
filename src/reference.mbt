@@ -63,16 +63,20 @@ fn reference_attrs_for_link_text(
   close_text : Int,
   state : ParseState,
 ) -> ResolvedReferenceAttrs? {
-  let label_text = text[start + 1:close_text].to_owned()
   if close_text + 1 < text.length() && char_at(text, close_text + 1) == 91 {
     let close_label = find_link_text_end(text, close_text + 2)
     if close_label > close_text {
       let raw_label = text[close_text + 2:close_label].to_owned()
-      let label = if raw_label == "" { label_text } else { raw_label }
+      let label = if raw_label == "" {
+        text[start + 1:close_text].to_owned()
+      } else {
+        raw_label
+      }
       return reference_attrs_for_label(label, close_label + 1, state)
     }
   }
   if should_rewrite_shortcut_reference(text, close_text) {
+    let label_text = text[start + 1:close_text].to_owned()
     reference_attrs_for_label(label_text, close_text + 1, state)
   } else {
     None
@@ -87,12 +91,15 @@ fn reference_attrs_for_image_alt(
   alt : String,
   state : ParseState,
 ) -> ResolvedReferenceAttrs? {
-  let label_text = text[start + 2:close_alt].to_owned()
   if close_alt + 1 < text.length() && char_at(text, close_alt + 1) == 91 {
     let close_label = find_link_text_end(text, close_alt + 2)
     if close_label > close_alt {
       let raw_label = text[close_alt + 2:close_label].to_owned()
-      let label = if raw_label == "" { label_text } else { raw_label }
+      let label = if raw_label == "" {
+        text[start + 2:close_alt].to_owned()
+      } else {
+        raw_label
+      }
       return reference_attrs_for_label_with_alt(
         label,
         close_label + 1,
@@ -102,6 +109,7 @@ fn reference_attrs_for_image_alt(
     }
   }
   if close_alt + 1 >= text.length() || char_at(text, close_alt + 1) != 40 {
+    let label_text = text[start + 2:close_alt].to_owned()
     reference_attrs_for_label_with_alt(label_text, close_alt + 1, alt, state)
   } else {
     None
