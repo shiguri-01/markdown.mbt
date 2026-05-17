@@ -447,6 +447,11 @@ pub fn Events::collect(self : Events) -> Array[Event] {
 }
 
 ///|
+fn Events::owned_events(self : Events) -> Array[Event] {
+  self.events
+}
+
+///|
 fn Events::into_fragment(self : Events) -> EventFragment {
   match event_fragment_from_owned_events(self.events) {
     Some(fragment) => fragment

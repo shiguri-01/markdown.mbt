@@ -122,7 +122,7 @@ fn image_alt_text(
   let buffer = Events::new()
   parse_inlines(text, registry, buffer.owned_sink(), state)
   let out = StringBuilder::new(size_hint=text.length())
-  for event in buffer.collect() {
+  for event in buffer.owned_events() {
     match event {
       Text(text) => out.write_string(text)
       SoftBreak => out.write_string("\n")
