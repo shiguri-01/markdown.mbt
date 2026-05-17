@@ -12,16 +12,6 @@ fn RuleRegistry::new() -> RuleRegistry {
 }
 
 ///|
-fn RuleRegistry::copy(self : RuleRegistry) -> RuleRegistry {
-  {
-    rules: copy_rules(self.rules),
-    disabled: copy_rule_names(self.disabled),
-    overrides: copy_rules(self.overrides),
-    next_order: self.next_order,
-  }
-}
-
-///|
 fn RuleRegistry::register(
   self : RuleRegistry,
   rule : RuleEntry,
@@ -361,15 +351,6 @@ fn copy_rule_names(names : Array[RuleName]) -> Array[RuleName] {
   let copied : Array[RuleName] = []
   for name in names {
     copied.push(name)
-  }
-  copied
-}
-
-///|
-fn copy_rules(rules : Array[RuleEntry]) -> Array[RuleEntry] {
-  let copied : Array[RuleEntry] = []
-  for rule in rules {
-    copied.push(copy_rule_entry(rule))
   }
   copied
 }

@@ -2,31 +2,22 @@
 /// A configured Markdown processor.
 ///
 /// A processor owns the rule registry used to turn Markdown input into events.
-/// Add rules before calling `parse`.
+/// Build it from a rule before calling `parse`.
 pub struct Processor {
   priv registry : RuleRegistry
 }
 
 ///|
-/// Creates an empty processor with no registered rules.
-///
-/// Parsing with an empty processor still emits a fallback paragraph for plain
-/// text input.
-pub fn Processor::new() -> Processor {
-  { registry: RuleRegistry::new() }
-}
-
-///|
-/// Creates a processor with the built-in CommonMark rule preset installed.
-pub fn commonmark() -> Processor {
-  Processor::new().extend(commonmark_rules())
+/// Creates a processor from `rule`, defaulting to CommonMark.
+pub fn Processor::new(rule? : Rule = commonmark()) -> Processor {
+  { registry: RuleRegistry::new().use_rule(rule) }
 }
 
 ///|
 /// Parses CommonMark and renders it to HTML.
 pub fn to_html(source : String) -> String {
   let html = Html::new()
-  commonmark().parse(source, html.sink())
+  Processor::new().parse(source, html.sink())
   html.to_string()
 }
 
@@ -34,18 +25,8 @@ pub fn to_html(source : String) -> String {
 /// Parses CommonMark and returns the event-derived AST.
 pub fn to_ast(source : String) -> Result[AstNode, AstError] {
   let ast = Ast::new()
-  commonmark().parse(source, ast.sink())
+  Processor::new().parse(source, ast.sink())
   ast.result()
-}
-
-///|
-/// Applies `rule` to this processor.
-///
-/// Rule operations are applied in order. Registered entries are ordered by
-/// priority, registration order, and same-chain `before`/`after` edges.
-pub fn Processor::extend(self : Processor, rule : Rule) -> Processor {
-  let registry = self.registry.copy().use_rule(rule)
-  { registry, }
 }
 
 ///|

@@ -1,17 +1,17 @@
 ///|
-fn render_html(processor : @markdown.Processor, source : String) -> String {
+fn render_html(rule : @markdown.Rule, source : String) -> String {
   let html = @markdown.Html::new()
-  processor.parse(source, html.sink())
+  @markdown.Processor::new(rule~).parse(source, html.sink())
   html.to_string()
 }
 
 ///|
 fn parse_events(
-  processor : @markdown.Processor,
+  rule : @markdown.Rule,
   source : String,
 ) -> Array[@markdown.Event] {
   let buffer = @markdown.Events::new()
-  processor.parse(source, buffer.sink())
+  @markdown.Processor::new(rule~).parse(source, buffer.sink())
   buffer.collect()
 }
 

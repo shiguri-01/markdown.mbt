@@ -35,7 +35,7 @@ For everything else, build a processor and choose a sink:
 ///|
 test {
   let html = @markdown.Html::new()
-  @markdown.commonmark().parse("# Hello", html.sink())
+  @markdown.Processor::new().parse("# Hello", html.sink())
   assert_eq(html.to_string(), "<h1>Hello</h1>\n")
 }
 ```
@@ -44,7 +44,7 @@ test {
 ///|
 test {
   let events = @markdown.Events::new()
-  @markdown.commonmark().parse("hello", events.sink())
+  @markdown.Processor::new().parse("hello", events.sink())
   match events.collect().get(1) {
     Some(Text(text)) => assert_eq(text, "hello")
     _ => abort("expected text")
@@ -92,7 +92,8 @@ test {
   )
 
   let html = @markdown.Html::new()
-  @markdown.commonmark().extend(math).parse("Euler: $x + y$", html.sink())
+  let rule = @markdown.commonmark().extend(math)
+  @markdown.Processor::new(rule~).parse("Euler: $x + y$", html.sink())
   assert_eq(html.to_string(), "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
 ```
@@ -105,9 +106,8 @@ test {
     .disable(@markdown.RuleName::commonmark("inline:raw_html"))
 
   let html = @markdown.Html::new()
-  @markdown.commonmark()
-  .extend(no_raw_html)
-  .parse("<span>raw</span>", html.sink())
+  let rule = @markdown.commonmark().extend(no_raw_html)
+  @markdown.Processor::new(rule~).parse("<span>raw</span>", html.sink())
   assert_eq(html.to_string(), "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }
 ```

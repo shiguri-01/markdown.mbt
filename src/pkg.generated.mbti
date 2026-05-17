@@ -2,7 +2,7 @@
 package "shiguri/markdown"
 
 // Values
-pub fn commonmark() -> Processor
+pub fn commonmark() -> Rule
 
 pub fn to_ast(String) -> Result[AstNode, AstError]
 
@@ -108,8 +108,7 @@ pub fn InlineScanner::slice(Self, Int, Int) -> String?
 pub struct Processor {
   // private fields
 }
-pub fn Processor::extend(Self, Rule) -> Self
-pub fn Processor::new() -> Self
+pub fn Processor::new(rule? : Rule) -> Self
 pub fn Processor::parse(Self, String, Sink) -> Unit
 
 pub struct Rule {

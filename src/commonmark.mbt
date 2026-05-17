@@ -3,7 +3,7 @@
 ///
 /// The preset registers source, block, inline, delimiter, and core entries under
 /// `cm:` rule names.
-fn commonmark_rules() -> Rule {
+pub fn commonmark() -> Rule {
   Rule::new("commonmark")
   .extend(
     Rule::source_core(

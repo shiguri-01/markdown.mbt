@@ -152,7 +152,7 @@ fn run_examples(
   for example in examples {
     if should_run_example(example, options) {
       let html = @markdown.Html::new()
-      @markdown.commonmark().parse(example.markdown, html.sink())
+      @markdown.Processor::new().parse(example.markdown, html.sink())
       let actual = html.to_string()
       results.push({ example, actual })
     }

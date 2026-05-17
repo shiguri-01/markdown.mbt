@@ -147,7 +147,7 @@ fn readme_like_document_sections(count : Int) -> String {
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
   out.write_string("let html = @markdown.Html::new()\n")
-  out.write_string("@markdown.commonmark().parse(source, html.sink())\n")
+  out.write_string("@markdown.Processor::new().parse(source, html.sink())\n")
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {
@@ -310,7 +310,7 @@ fn many_extension_rules_rule(count : Int) -> @markdown.Rule {
 
 ///|
 fn parse_event_count(input : String) -> Int {
-  parse_event_count_with(@markdown.commonmark(), input)
+  parse_event_count_with(@markdown.Processor::new(), input)
 }
 
 ///|
@@ -326,8 +326,8 @@ fn parse_event_count_with(
 ///|
 fn parse_with_extension_event_count(input : String) -> Int {
   parse_event_count_with(
-    @markdown.commonmark().extend(
-      many_extension_rules_rule(50),
+    @markdown.Processor::new(
+      rule=@markdown.commonmark().extend(many_extension_rules_rule(50)),
     ),
     input,
   )
@@ -335,7 +335,7 @@ fn parse_with_extension_event_count(input : String) -> Int {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  parse_render_length_with(@markdown.commonmark(), input)
+  parse_render_length_with(@markdown.Processor::new(), input)
 }
 
 ///|
@@ -375,7 +375,7 @@ fn ast_child_count(events : Array[@markdown.Event]) -> Int {
 ///|
 fn parse_events(input : String) -> Array[@markdown.Event] {
   let events = @markdown.Events::new()
-  @markdown.commonmark().parse(input, events.sink())
+  @markdown.Processor::new().parse(input, events.sink())
   events.collect()
 }
 
@@ -448,9 +448,9 @@ test "markdown processing speed" (b : @bench.T) {
   let issue_thread = issue_thread_document()
   let large_issue_thread = issue_thread_large_document()
   let huge_issue_thread = issue_thread_huge_document()
-  let commonmark = @markdown.commonmark()
-  let commonmark_with_extensions = @markdown.commonmark().extend(
-    many_extension_rules_rule(50),
+  let commonmark = @markdown.Processor::new()
+  let commonmark_with_extensions = @markdown.Processor::new(
+    rule=@markdown.commonmark().extend(many_extension_rules_rule(50)),
   )
   let mixed_events = parse_events(mixed)
   b.bench(

@@ -11,12 +11,11 @@ test "commonmark block and inline html rendering" {
 
 ///|
 test "convenience parser builders are available" {
+  let html = @markdown.Html::new()
+  @markdown.Processor::new().parse("# hi", html.sink())
+  assert_eq(html.to_string(), "<h1>hi</h1>\n")
   assert_eq(render_html(@markdown.commonmark(), "# hi"), "<h1>hi</h1>\n")
-  match ast_from_events(parse_events(@markdown.commonmark(), "# hi")) {
-    Ok(root) => assert_eq(root.children().length(), 1)
-    Err(_) => abort("expected AST")
-  }
-  assert_eq(render_html(@markdown.Processor::new(), "# hi"), "<p># hi</p>\n")
+  assert_eq(render_html(@markdown.Rule::new("empty"), "# hi"), "<p># hi</p>\n")
 }
 
 ///|
@@ -187,14 +186,8 @@ test "rules compose in order" {
   let second_then_first = @markdown.Rule::new("combined")
     .extend(second)
     .extend(first)
-  assert_eq(
-    render_html(@markdown.Processor::new().extend(first_then_second), "#"),
-    "<p>first</p>\n",
-  )
-  assert_eq(
-    render_html(@markdown.Processor::new().extend(second_then_first), "#"),
-    "<p>second</p>\n",
-  )
+  assert_eq(render_html(first_then_second, "#"), "<p>first</p>\n")
+  assert_eq(render_html(second_then_first, "#"), "<p>second</p>\n")
 }
 
 ///|
@@ -212,14 +205,8 @@ test "rule builders leave the original rule unchanged" {
   )
   let base = @markdown.Rule::new("base")
   let configured = base.extend(rule)
-  assert_eq(
-    render_html(@markdown.Processor::new().extend(base), "#"),
-    "<p>#</p>\n",
-  )
-  assert_eq(
-    render_html(@markdown.Processor::new().extend(configured), "#"),
-    "<p>marker</p>\n",
-  )
+  assert_eq(render_html(base, "#"), "<p>#</p>\n")
+  assert_eq(render_html(configured, "#"), "<p>marker</p>\n")
 }
 
 ///|
@@ -317,9 +304,7 @@ test "block context public helpers expose parser position safely" {
     },
   )
   let html = render_html(
-    @markdown.Processor::new().extend(
-      @markdown.Rule::new("context").extend(rule),
-    ),
+    @markdown.Rule::new("context").extend(rule),
     "first\nsecond",
   )
   assert_eq(html, "<x:ctx>first</x:ctx><x:ctx>second</x:ctx>")
@@ -354,7 +339,7 @@ test "html renderer keeps extension tags attrs and stray exits deterministic" {
 
 ///|
 test "empty builder parses paragraph text without registered rules" {
-  let events = parse_events(@markdown.Processor::new(), "plain")
+  let events = parse_events(@markdown.Rule::new("empty"), "plain")
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected fallback paragraph")
@@ -1443,7 +1428,7 @@ test "inline rule order honors after edges" {
 ///|
 test "parser can push into a sink" {
   let buffer = @markdown.Events::new()
-  @markdown.commonmark().parse("hello", buffer.sink())
+  @markdown.Processor::new().parse("hello", buffer.sink())
   let events = buffer.collect()
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
@@ -1463,14 +1448,14 @@ test "parser can push into a sink" {
 ///|
 test "parser can render html downstream while parsing" {
   let html = @markdown.Html::new()
-  @markdown.commonmark().parse("# Hello *MoonBit*", html.sink())
+  @markdown.Processor::new().parse("# Hello *MoonBit*", html.sink())
   assert_eq(html.to_string(), "<h1>Hello <em>MoonBit</em></h1>\n")
 }
 
 ///|
 test "parser can build ast downstream while parsing" {
   let ast = @markdown.Ast::new()
-  @markdown.commonmark().parse("hello", ast.sink())
+  @markdown.Processor::new().parse("hello", ast.sink())
   match ast.result() {
     Ok(root) => {
       assert_eq(root.children().length(), 1)
@@ -1524,7 +1509,7 @@ test "parse does not expose reusable internal event arrays" {
 ///|
 test "event buffer collect returns a copy" {
   let buffer = @markdown.Events::new()
-  @markdown.commonmark().parse("hello", buffer.sink())
+  @markdown.Processor::new().parse("hello", buffer.sink())
   let collected = buffer.collect()
   assert_eq(collected.length(), 3)
   ignore(collected.pop())
