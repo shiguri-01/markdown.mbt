@@ -13,7 +13,11 @@ fn trim(input : String) -> String {
   while end > start && is_space(char_at(input, end - 1)) {
     end = end - 1
   }
-  input[start:end].to_owned()
+  if start == 0 && end == input.length() {
+    input
+  } else {
+    input[start:end].to_owned()
+  }
 }
 
 ///|
