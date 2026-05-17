@@ -85,6 +85,19 @@ fn find_substring(text : String, needle : String, start : Int) -> Int {
 }
 
 ///|
+fn has_prefix_at(text : String, prefix : String, start : Int) -> Bool {
+  if start < 0 || start + prefix.length() > text.length() {
+    return false
+  }
+  for i in 0..<prefix.length() {
+    if char_at(text, start + i) != char_at(prefix, i) {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn ascii_char(code : Int) -> String {
   match code {
     32 => " "

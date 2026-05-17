@@ -236,9 +236,9 @@ fn cm_raw_html_inline(ctx : InlineContext) -> InlineRuleResult {
 
 ///|
 fn raw_html_inline_end(text : String, start : Int) -> Int? {
-  let rest = text[start:].to_owned()
-  if rest.has_prefix("<!--") {
-    if rest.has_prefix("<!-->") || rest.has_prefix("<!--->") {
+  if has_prefix_at(text, "<!--", start) {
+    if has_prefix_at(text, "<!-->", start) ||
+      has_prefix_at(text, "<!--->", start) {
       let end = find_substring(text, "-->", start + 4)
       if end >= 0 {
         return Some(end + 2)
@@ -251,21 +251,21 @@ fn raw_html_inline_end(text : String, start : Int) -> Int? {
     } else {
       None
     }
-  } else if rest.has_prefix("<?") {
+  } else if has_prefix_at(text, "<?", start) {
     let end = find_substring(text, "?>", start + 2)
     if end >= 0 {
       Some(end + 2)
     } else {
       None
     }
-  } else if rest.has_prefix("<![CDATA[") {
+  } else if has_prefix_at(text, "<![CDATA[", start) {
     let end = find_substring(text, "]]>", start + 9)
     if end >= 0 {
       Some(end + 3)
     } else {
       None
     }
-  } else if looks_like_html_declaration(rest) {
+  } else if looks_like_html_declaration_at(text, start) {
     let end = find_char(text, 62, start + 2)
     if end >= 0 {
       Some(end + 1)
@@ -275,6 +275,14 @@ fn raw_html_inline_end(text : String, start : Int) -> Int? {
   } else {
     None
   }
+}
+
+///|
+fn looks_like_html_declaration_at(text : String, start : Int) -> Bool {
+  start + 2 < text.length() &&
+  char_at(text, start) == 60 &&
+  char_at(text, start + 1) == 33 &&
+  is_ascii_alpha(char_at(text, start + 2))
 }
 
 ///|
