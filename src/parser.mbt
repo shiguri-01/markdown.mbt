@@ -76,6 +76,7 @@ fn collect_reference_definitions_with_block_lines(
     registry,
     Sink::new(fn(_) { () }),
     state,
+    collect_only=true,
   )
 }
 
@@ -97,12 +98,30 @@ fn parse_blocks_into(
 }
 
 ///|
+fn collect_reference_definitions_in_blocks(
+  input : String,
+  registry : RuleRegistry,
+  state : ParseState,
+) -> Unit {
+  let source = split_lines(input)
+  parse_block_lines_into(
+    source.lines,
+    source.line_starts,
+    registry,
+    Sink::new(fn(_) { () }),
+    state,
+    collect_only=true,
+  )
+}
+
+///|
 fn parse_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
   registry : RuleRegistry,
   sink : Sink,
   state : ParseState,
+  collect_only? : Bool = false,
 ) -> Unit {
   let mut i = 0
   let inline_rules = registry.inline_parse_rules()
@@ -110,7 +129,15 @@ fn parse_block_lines_into(
   let block_start_rules = registry.block_rules()
   while i < lines.length() {
     let mut consumed = 0
-    let ctx = { lines, line_starts, index: i, registry, inline_rules, state }
+    let ctx = {
+      lines,
+      line_starts,
+      index: i,
+      registry,
+      inline_rules,
+      state,
+      collect_only,
+    }
     for rule in block_continue_rules {
       match rule.block {
         Some(f) =>

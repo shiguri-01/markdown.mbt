@@ -144,6 +144,12 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     item_starts.push(item_start)
     item_ends.push(item_end)
   }
+  if ctx.collect_only {
+    for item_text in item_texts {
+      collect_list_item_references(item_text, ctx.registry, ctx.state)
+    }
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
   let buffer = Events::new()
   let sink = buffer.owned_sink()
   sink.emit(
@@ -177,6 +183,18 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
   }
   sink.emit(Exit(tag_name("cm:list")))
   block_match(i - ctx.index, buffer.into_fragment())
+}
+
+///|
+fn collect_list_item_references(
+  item_text : String,
+  registry : RuleRegistry,
+  state : ParseState,
+) -> Unit {
+  match parse_reference_definition(trim(item_text)) {
+    Some(definition) => state.add_reference(definition)
+    None => collect_reference_definitions_in_blocks(item_text, registry, state)
+  }
 }
 
 ///|

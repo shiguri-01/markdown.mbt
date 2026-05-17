@@ -8,6 +8,8 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
   }
   if i == ctx.index {
     block_match(1, EventFragment::empty())
+  } else if ctx.collect_only {
+    block_match(i - ctx.index, EventFragment::empty())
   } else {
     let buffer = Events::new()
     let sink = buffer.owned_sink()
@@ -107,6 +109,9 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
   if level < line.length() && !is_space(char_at(line, level)) {
     return NoMatch
   }
+  if ctx.collect_only {
+    return block_match(1, EventFragment::empty())
+  }
   let content = if level >= line.length() {
     ""
   } else {
@@ -142,6 +147,9 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
   let underline_index = find_setext_underline(ctx)
   if underline_index < 0 {
     return NoMatch
+  }
+  if ctx.collect_only {
+    return block_match(underline_index - ctx.index + 1, EventFragment::empty())
   }
   let level = setext_heading_level_line(ctx.lines[underline_index])
   let buffer = Events::new()
@@ -538,6 +546,10 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     ),
   )
   let inner_text = inner.to_string()
+  if ctx.collect_only {
+    collect_reference_definitions_in_blocks(inner_text, ctx.registry, ctx.state)
+    return block_match(i - ctx.index, EventFragment::empty())
+  }
   match parse_reference_definition(trim(inner_text)) {
     Some(definition) => ctx.state.add_reference(definition)
     None =>
