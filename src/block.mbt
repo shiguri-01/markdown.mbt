@@ -568,7 +568,8 @@ fn blockquote_inner_starts_with_block(text : String) -> Bool {
 
 ///|
 fn is_blockquote_marker_line(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 && trim(line).has_prefix(">")
+  let leading = count_leading_spaces(line)
+  leading <= 3 && leading < line.length() && char_at(line, leading) == 62
 }
 
 ///|
