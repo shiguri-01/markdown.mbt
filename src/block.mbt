@@ -172,10 +172,11 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn is_setext_heading_paragraph_start(line : String) -> Bool {
-  trim(line) != "" &&
+  let trimmed = trim(line)
+  trimmed != "" &&
   count_leading_spaces(line) < 4 &&
-  !is_ordered_list_marker(trim(line)) &&
-  !is_unordered_list_marker(trim(line)) &&
+  !is_ordered_list_marker(trimmed) &&
+  !is_unordered_list_marker(trimmed) &&
   !is_paragraph_interrupt(line) &&
   !may_be_reference_definition_line(line)
 }
