@@ -774,6 +774,28 @@ fn is_inline_special(text : String, index : Int) -> Bool {
 
 ///|
 fn normalize_code_span(text : String) -> String {
+  let mut needs_space_normalization = false
+  let mut has_non_space_char = false
+  for i in 0..<text.length() {
+    let c = char_at(text, i)
+    if is_space(c) {
+      if c != 32 {
+        needs_space_normalization = true
+      }
+    } else {
+      has_non_space_char = true
+    }
+  }
+  let trim_outer_spaces = text.length() >= 2 &&
+    is_space(char_at(text, 0)) &&
+    is_space(char_at(text, text.length() - 1)) &&
+    has_non_space_char
+  if !needs_space_normalization {
+    if trim_outer_spaces {
+      return text[1:text.length() - 1].to_owned()
+    }
+    return text
+  }
   let normalized = StringBuilder::new(size_hint=text.length())
   for i in 0..<text.length() {
     if is_space(char_at(text, i)) {
@@ -783,24 +805,11 @@ fn normalize_code_span(text : String) -> String {
     }
   }
   let result = normalized.to_string()
-  if result.length() >= 2 &&
-    char_at(result, 0) == 32 &&
-    char_at(result, result.length() - 1) == 32 &&
-    has_non_space(result) {
+  if trim_outer_spaces {
     result[1:result.length() - 1].to_owned()
   } else {
     result
   }
-}
-
-///|
-fn has_non_space(text : String) -> Bool {
-  for i in 0..<text.length() {
-    if char_at(text, i) != 32 {
-      return true
-    }
-  }
-  false
 }
 
 ///|
