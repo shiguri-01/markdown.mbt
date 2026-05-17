@@ -759,21 +759,22 @@ fn is_inline_special(text : String, index : Int) -> Bool {
 
 ///|
 fn normalize_code_span(text : String) -> String {
-  let mut normalized = ""
+  let normalized = StringBuilder::new(size_hint=text.length())
   for i in 0..<text.length() {
     if is_space(char_at(text, i)) {
-      normalized = normalized + " "
+      normalized.write_string(" ")
     } else {
-      normalized = normalized + text[i:i + 1].to_owned()
+      normalized.write_view(text[i:i + 1])
     }
   }
-  if normalized.length() >= 2 &&
-    char_at(normalized, 0) == 32 &&
-    char_at(normalized, normalized.length() - 1) == 32 &&
-    has_non_space(normalized) {
-    normalized[1:normalized.length() - 1].to_owned()
+  let result = normalized.to_string()
+  if result.length() >= 2 &&
+    char_at(result, 0) == 32 &&
+    char_at(result, result.length() - 1) == 32 &&
+    has_non_space(result) {
+    result[1:result.length() - 1].to_owned()
   } else {
-    normalized
+    result
   }
 }
 
