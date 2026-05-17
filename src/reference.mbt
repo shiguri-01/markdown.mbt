@@ -477,8 +477,23 @@ fn normalize_reference_label(label : String) -> String {
 
 ///|
 fn normalize_reference_label_escapes(label : String) -> String {
+  let mut first_escape = -1
+  for i in 0..<label.length() {
+    if char_at(label, i) == 92 &&
+      i + 1 < label.length() &&
+      (char_at(label, i + 1) == 91 || char_at(label, i + 1) == 93) {
+      first_escape = i
+      break
+    }
+  }
+  if first_escape < 0 {
+    return label
+  }
   let out = StringBuilder::new(size_hint=label.length())
-  let mut i = 0
+  if first_escape > 0 {
+    out.write_view(label[:first_escape])
+  }
+  let mut i = first_escape
   while i < label.length() {
     let c = char_at(label, i)
     if c == 92 &&
@@ -524,8 +539,22 @@ fn ascii_lower(input : String) -> String {
 
 ///|
 fn commonmark_case_fold(input : String) -> String {
-  let out = StringBuilder::new(size_hint=input.length())
+  let mut first_fold = -1
   for i in 0..<input.length() {
+    let c = char_at(input, i)
+    if (c >= 65 && c <= 90) || (c >= 128 && unicode_case_fold_char(c) != None) {
+      first_fold = i
+      break
+    }
+  }
+  if first_fold < 0 {
+    return input
+  }
+  let out = StringBuilder::new(size_hint=input.length())
+  if first_fold > 0 {
+    out.write_view(input[:first_fold])
+  }
+  for i in first_fold..<input.length() {
     let c = char_at(input, i)
     match unicode_case_fold_char(c) {
       Some(folded) => out.write_string(folded)
@@ -537,9 +566,30 @@ fn commonmark_case_fold(input : String) -> String {
 
 ///|
 fn collapse_spaces(input : String) -> String {
-  let out = StringBuilder::new(size_hint=input.length())
-  let mut in_space = false
+  let mut first_space = -1
+  let mut previous_space = false
   for i in 0..<input.length() {
+    let c = char_at(input, i)
+    let current_space = is_space(c)
+    if current_space && c != 32 {
+      first_space = i
+      break
+    }
+    if current_space && previous_space {
+      first_space = i - 1
+      break
+    }
+    previous_space = current_space
+  }
+  if first_space < 0 {
+    return input
+  }
+  let out = StringBuilder::new(size_hint=input.length())
+  if first_space > 0 {
+    out.write_view(input[:first_space])
+  }
+  let mut in_space = false
+  for i in first_space..<input.length() {
     let c = char_at(input, i)
     if is_space(c) {
       if !in_space {
