@@ -141,8 +141,10 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       }
     }
     item_texts.push(item_text)
-    item_starts.push(item_start)
-    item_ends.push(item_end)
+    if !ctx.collect_only {
+      item_starts.push(item_start)
+      item_ends.push(item_end)
+    }
   }
   if ctx.collect_only {
     for item_text in item_texts {
