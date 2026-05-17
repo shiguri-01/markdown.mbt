@@ -64,7 +64,7 @@ fn link_inline_match(
   sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
   parse_inlines(text[start + 1:close_text].to_owned(), registry, sink, state)
   sink.emit(Exit(tag_name("cm:link")))
-  inline_match(end - start, event_fragment_from_events(buffer.collect()))
+  inline_match(end - start, buffer.into_fragment())
 }
 
 ///|

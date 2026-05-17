@@ -313,14 +313,6 @@ fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
 }
 
 ///|
-fn event_fragment_from_events(events : Array[Event]) -> EventFragment {
-  match EventFragment::from_events(events) {
-    Some(fragment) => fragment
-    None => EventFragment::empty()
-  }
-}
-
-///|
 fn emit_fragment(sink : Sink, fragment : EventFragment) -> Unit {
   for event in fragment.events() {
     sink.emit(event)

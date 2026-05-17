@@ -33,7 +33,7 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
       ctx.state,
     )
     sink.emit(Exit(tag_name("cm:paragraph")))
-    block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
+    block_match(i - ctx.index, buffer.into_fragment())
   }
 }
 
@@ -131,7 +131,7 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
     ctx.state,
   )
   sink.emit(Exit(tag_name("cm:heading")))
-  block_match(1, event_fragment_from_events(buffer.collect()))
+  block_match(1, buffer.into_fragment())
 }
 
 ///|
@@ -163,10 +163,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     ctx.state,
   )
   sink.emit(Exit(tag_name("cm:heading")))
-  block_match(
-    underline_index - ctx.index + 1,
-    event_fragment_from_events(buffer.collect()),
-  )
+  block_match(underline_index - ctx.index + 1, buffer.into_fragment())
 }
 
 ///|
@@ -574,7 +571,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       }
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
-  block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
+  block_match(i - ctx.index, buffer.into_fragment())
 }
 
 ///|

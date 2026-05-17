@@ -176,7 +176,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     sink.emit(Exit(tag_name("cm:item")))
   }
   sink.emit(Exit(tag_name("cm:list")))
-  block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))
+  block_match(i - ctx.index, buffer.into_fragment())
 }
 
 ///|

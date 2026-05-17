@@ -342,7 +342,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     if run % 2 == 1 {
       sink.emit(Exit(tag_name("cm:emphasis")))
     }
-    inline_match(end - i + run, event_fragment_from_events(buffer.collect()))
+    inline_match(end - i + run, buffer.into_fragment())
   } else if run >= 3 {
     let end = find_closing_run(text, marker, i + 3, 3)
     if end < 0 {
@@ -355,7 +355,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:strong")))
     sink.emit(Exit(tag_name("cm:emphasis")))
-    inline_match(end - i + 3, event_fragment_from_events(buffer.collect()))
+    inline_match(end - i + 3, buffer.into_fragment())
   } else if run >= 2 {
     let end = find_closing_run(text, marker, i + 2, 2)
     if end < 0 {
@@ -366,7 +366,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:strong")))
-    inline_match(end - i + 2, event_fragment_from_events(buffer.collect()))
+    inline_match(end - i + 2, buffer.into_fragment())
   } else {
     let end = find_closing_single(text, marker, i + 1)
     if end < 0 {
@@ -380,7 +380,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:emphasis")))
-    inline_match(end - i + 1, event_fragment_from_events(buffer.collect()))
+    inline_match(end - i + 1, buffer.into_fragment())
   }
 }
 
@@ -401,10 +401,7 @@ fn emphasis_partial_run_fallback(
       sink.emit(Enter(Element::new(tag_name("cm:strong"))))
       parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
       sink.emit(Exit(tag_name("cm:strong")))
-      return inline_match(
-        end - i + 2,
-        event_fragment_from_events(buffer.collect()),
-      )
+      return inline_match(end - i + 2, buffer.into_fragment())
     }
   }
   let end = find_closing_single(text, marker, i + run)
@@ -418,10 +415,7 @@ fn emphasis_partial_run_fallback(
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:emphasis")))
-    return inline_match(
-      end - i + 1,
-      event_fragment_from_events(buffer.collect()),
-    )
+    return inline_match(end - i + 1, buffer.into_fragment())
   }
   NoMatch
 }

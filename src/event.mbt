@@ -368,28 +368,40 @@ pub fn EventFragment::concat(fragments : Array[EventFragment]) -> EventFragment 
 ///|
 /// Creates a fragment from events if all element enter/exit pairs are balanced.
 pub fn EventFragment::from_events(events : Array[Event]) -> EventFragment? {
+  match validate_balanced_events(events) {
+    true => Some({ events: copy_events(events) })
+    false => None
+  }
+}
+
+///|
+fn event_fragment_from_owned_events(events : Array[Event]) -> EventFragment? {
+  match validate_balanced_events(events) {
+    true => Some({ events, })
+    false => None
+  }
+}
+
+///|
+fn validate_balanced_events(events : Array[Event]) -> Bool {
   let stack : Array[Tag] = []
   for event in events {
     match event {
       Enter(element) => stack.push(element.tag)
       Exit(tag) => {
         if stack.length() == 0 {
-          return None
+          return false
         }
         let top = stack[stack.length() - 1]
         if top != tag {
-          return None
+          return false
         }
         ignore(stack.pop())
       }
       _ => ()
     }
   }
-  if stack.length() == 0 {
-    Some({ events: copy_events(events) })
-  } else {
-    None
-  }
+  stack.length() == 0
 }
 
 ///|
@@ -420,4 +432,12 @@ pub fn Events::sink(self : Events) -> Sink {
 /// Returns a copy of collected events.
 pub fn Events::collect(self : Events) -> Array[Event] {
   copy_events(self.events)
+}
+
+///|
+fn Events::into_fragment(self : Events) -> EventFragment {
+  match event_fragment_from_owned_events(self.events) {
+    Some(fragment) => fragment
+    None => EventFragment::empty()
+  }
 }
