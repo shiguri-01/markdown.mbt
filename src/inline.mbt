@@ -22,7 +22,7 @@ fn parse_inlines_with_rules(
   sink : Sink,
   state : ParseState,
 ) -> Unit {
-  if registry.has_commonmark_inline_pipeline() {
+  if has_commonmark_inline_pipeline_rules(rules) {
     parse_commonmark_inline_range(
       text,
       0,

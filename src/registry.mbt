@@ -169,8 +169,7 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
-fn RuleRegistry::has_commonmark_inline_pipeline(self : RuleRegistry) -> Bool {
-  let rules = self.inline_parse_rules()
+fn has_commonmark_inline_pipeline_rules(rules : Array[RuleEntry]) -> Bool {
   if rules.length() != 11 {
     return false
   }
