@@ -118,7 +118,7 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
     Enter(
       Element::with_attrs(
         tag_name("cm:heading"),
-        [{ name: attr_name("level"), value: level.to_string() }],
+        [{ name: attr_name("level"), value: heading_level_value(level) }],
         range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
       ),
     ),
@@ -150,7 +150,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     Enter(
       Element::with_attrs(
         tag_name("cm:heading"),
-        [{ name: attr_name("level"), value: level.to_string() }],
+        [{ name: attr_name("level"), value: heading_level_value(level) }],
         range=Some(block_source_range(ctx, ctx.index, underline_index + 1)),
       ),
     ),
@@ -167,6 +167,19 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     underline_index - ctx.index + 1,
     event_fragment_from_events(buffer.collect()),
   )
+}
+
+///|
+fn heading_level_value(level : Int) -> String {
+  match level {
+    1 => "1"
+    2 => "2"
+    3 => "3"
+    4 => "4"
+    5 => "5"
+    6 => "6"
+    _ => level.to_string()
+  }
 }
 
 ///|

@@ -119,7 +119,7 @@ fn write_open_html(out : StringBuilder, el : Element) -> String {
         out.write_string(level)
         out.write_string(attrs_html_except(el.attrs, ["level"]))
         out.write_string(">")
-        "</h" + level + ">\n"
+        heading_close_html(level)
       } else if el.tag.value == "cm:list" &&
         attr_value(el.attrs, "ordered", "false") == "true" {
         out.write_string("<ol")
@@ -225,7 +225,7 @@ fn close_html(el : Element) -> String {
   match html_tag_name(el.tag) {
     Some(name) =>
       if el.tag.value == "cm:heading" {
-        "</h" + attr_value(el.attrs, "level", "1") + ">\n"
+        heading_close_html(attr_value(el.attrs, "level", "1"))
       } else if el.tag.value == "cm:list" &&
         attr_value(el.attrs, "ordered", "false") == "true" {
         "</ol>\n"
@@ -242,6 +242,19 @@ fn close_html(el : Element) -> String {
         "</" + name + ">"
       }
     None => "</" + escape_html(el.tag.value) + ">"
+  }
+}
+
+///|
+fn heading_close_html(level : String) -> String {
+  match level {
+    "1" => "</h1>\n"
+    "2" => "</h2>\n"
+    "3" => "</h3>\n"
+    "4" => "</h4>\n"
+    "5" => "</h5>\n"
+    "6" => "</h6>\n"
+    _ => "</h" + level + ">\n"
   }
 }
 
