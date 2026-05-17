@@ -655,28 +655,33 @@ fn is_paragraph_interrupt(line : String) -> Bool {
 }
 
 ///|
-fn is_atx_heading_start(line : String) -> Bool {
+fn is_atx_heading_start_at(line : String, start : Int) -> Bool {
   let mut level = 0
-  while level < line.length() && level < 6 && char_at(line, level) == 35 {
+  while start + level < line.length() &&
+        level < 6 &&
+        char_at(line, start + level) == 35 {
     level = level + 1
   }
-  level > 0 && (level >= line.length() || is_space(char_at(line, level)))
+  level > 0 &&
+  (start + level >= line.length() || is_space(char_at(line, start + level)))
 }
 
 ///|
 fn is_atx_heading_marker_line(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 && is_atx_heading_start(trim(line))
+  let leading = count_leading_spaces(line)
+  leading <= 3 && is_atx_heading_start_at(line, leading)
 }
 
 ///|
 fn is_thematic_break_marker_line(line : String) -> Bool {
-  let trimmed = trim(line)
-  count_leading_spaces(line) <= 3 && trimmed != "" && is_thematic_break(trimmed)
+  let leading = count_leading_spaces(line)
+  leading <= 3 && leading < line.length() && is_thematic_break_at(line, leading)
 }
 
 ///|
 fn is_fence_marker_line(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 && fence_marker(trim(line)) != ""
+  let leading = count_leading_spaces(line)
+  leading <= 3 && has_fence_marker_at(line, leading)
 }
 
 ///|
@@ -820,6 +825,23 @@ fn fence_marker(line : String) -> String {
 }
 
 ///|
+fn has_fence_marker_at(line : String, start : Int) -> Bool {
+  if start + 3 > line.length() {
+    return false
+  }
+  let marker = char_at(line, start)
+  if marker != 96 && marker != 126 {
+    return false
+  }
+  let mut length = 0
+  while start + length < line.length() &&
+        char_at(line, start + length) == marker {
+    length = length + 1
+  }
+  length >= 3
+}
+
+///|
 fn is_closing_fence(line : String, opening : String) -> Bool {
   if opening == "" || line.length() < opening.length() {
     return false
@@ -871,12 +893,17 @@ fn contains_char(text : String, needle : Int) -> Bool {
 
 ///|
 fn is_thematic_break(line : String) -> Bool {
-  let c = char_at(line, 0)
+  is_thematic_break_at(line, 0)
+}
+
+///|
+fn is_thematic_break_at(line : String, start : Int) -> Bool {
+  let c = char_at(line, start)
   if c != 45 && c != 42 && c != 95 {
     return false
   }
   let mut count = 0
-  for i in 0..<line.length() {
+  for i in start..<line.length() {
     let n = char_at(line, i)
     if n == c {
       count = count + 1
