@@ -141,7 +141,9 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       }
     }
     if ctx.collect_only {
-      collect_list_item_references(item_text, ctx.registry, ctx.state)
+      if may_contain_reference_definition(item_text) {
+        collect_list_item_references(item_text, ctx.registry, ctx.state)
+      }
     } else {
       item_texts.push(item_text)
       item_starts.push(item_start)
