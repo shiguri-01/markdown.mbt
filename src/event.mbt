@@ -411,6 +411,13 @@ pub fn EventFragment::events(self : EventFragment) -> Array[Event] {
 }
 
 ///|
+fn EventFragment::emit_to(self : EventFragment, sink : Sink) -> Unit {
+  for event in self.events {
+    sink.emit(copy_event(event))
+  }
+}
+
+///|
 /// A downstream sink that collects events into an array.
 pub struct Events {
   priv events : Array[Event]

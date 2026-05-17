@@ -314,7 +314,5 @@ fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
 
 ///|
 fn emit_fragment(sink : Sink, fragment : EventFragment) -> Unit {
-  for event in fragment.events() {
-    sink.emit(event)
-  }
+  fragment.emit_to(sink)
 }
