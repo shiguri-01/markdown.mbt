@@ -121,21 +121,21 @@ fn image_alt_text(
 ) -> String {
   let buffer = Events::new()
   parse_inlines(text, registry, buffer.sink(), state)
-  let mut out = ""
+  let out = StringBuilder::new(size_hint=text.length())
   for event in buffer.collect() {
     match event {
-      Text(text) => out = out + text
-      SoftBreak => out = out + "\n"
-      HardBreak => out = out + "\n"
-      Html(raw) => out = out + raw
+      Text(text) => out.write_string(text)
+      SoftBreak => out.write_string("\n")
+      HardBreak => out.write_string("\n")
+      Html(raw) => out.write_string(raw)
       Enter(el) =>
         if el.tag.value == "cm:image" {
-          out = out + attr_value(el.attrs, "alt", "")
+          out.write_string(attr_value(el.attrs, "alt", ""))
         }
       _ => ()
     }
   }
-  out
+  out.to_string()
 }
 
 ///|
