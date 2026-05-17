@@ -126,9 +126,7 @@ fn inline_scanner(text : String, index : Int) -> InlineScanner {
 ///|
 /// Returns whether the scanner position starts with `prefix`.
 pub fn InlineScanner::has_prefix(self : InlineScanner, prefix : String) -> Bool {
-  self.index >= 0 &&
-  self.index + prefix.length() <= self.text.length() &&
-  self.text[self.index:self.index + prefix.length()].to_owned() == prefix
+  has_prefix_at(self.text, prefix, self.index)
 }
 
 ///|
