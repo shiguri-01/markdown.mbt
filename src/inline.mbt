@@ -723,8 +723,15 @@ fn inline_span_end_for_delimiter_scan(text : String, start : Int) -> Int? {
 
 ///|
 fn percent_encode_autolink_uri(input : String) -> String {
+  let first = first_uri_encode_index(input, encode_brackets=true)
+  if first < 0 {
+    return input
+  }
   let out = StringBuilder::new(size_hint=input.length())
-  let mut i = 0
+  if first > 0 {
+    out.write_view(input[:first])
+  }
+  let mut i = first
   while i < input.length() {
     let c = char_at(input, i)
     if c == 91 || c == 93 {

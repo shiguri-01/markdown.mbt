@@ -427,8 +427,15 @@ fn normalize_link_destination(destination : String) -> String {
 
 ///|
 fn percent_encode_uri(input : String) -> String {
+  let first = first_uri_encode_index(input, encode_brackets=false)
+  if first < 0 {
+    return input
+  }
   let out = StringBuilder::new(size_hint=input.length())
-  let mut i = 0
+  if first > 0 {
+    out.write_view(input[:first])
+  }
+  let mut i = first
   while i < input.length() {
     let c = char_at(input, i)
     if c == 37 &&
@@ -449,6 +456,27 @@ fn percent_encode_uri(input : String) -> String {
     }
   }
   out.to_string()
+}
+
+///|
+fn first_uri_encode_index(input : String, encode_brackets~ : Bool) -> Int {
+  let mut i = 0
+  while i < input.length() {
+    let c = char_at(input, i)
+    if c == 37 &&
+      i + 2 < input.length() &&
+      is_ascii_hex_digit(char_at(input, i + 1)) &&
+      is_ascii_hex_digit(char_at(input, i + 2)) {
+      i = i + 3
+    } else if encode_brackets && (c == 91 || c == 93) {
+      return i
+    } else if is_uri_safe_char(c) {
+      i = i + 1
+    } else {
+      return i
+    }
+  }
+  -1
 }
 
 ///|
