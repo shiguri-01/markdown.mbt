@@ -327,7 +327,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
       return emphasis_partial_run_fallback(ctx, run)
     }
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     let strong_count = run / 2
     if run % 2 == 1 {
       sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
@@ -349,7 +349,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
       return emphasis_partial_run_fallback(ctx, run)
     }
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink, ctx.state)
@@ -362,7 +362,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
       return emphasis_partial_run_fallback(ctx, run)
     }
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     sink.emit(Enter(Element::new(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:strong")))
@@ -376,7 +376,7 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
       return NoMatch
     }
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:emphasis")))
@@ -396,7 +396,7 @@ fn emphasis_partial_run_fallback(
     let end = find_closing_run(text, marker, i + run, 2)
     if end >= 0 {
       let buffer = Events::new()
-      let sink = buffer.sink()
+      let sink = buffer.owned_sink()
       sink.emit(Text(text[i:i + run - 2].to_owned()))
       sink.emit(Enter(Element::new(tag_name("cm:strong"))))
       parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
@@ -410,7 +410,7 @@ fn emphasis_partial_run_fallback(
       return NoMatch
     }
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     sink.emit(Text(text[i:i + run - 1].to_owned()))
     sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
     parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)

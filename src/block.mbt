@@ -10,7 +10,7 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
     block_match(1, EventFragment::empty())
   } else {
     let buffer = Events::new()
-    let sink = buffer.sink()
+    let sink = buffer.owned_sink()
     sink.emit(
       Enter(
         Element::with_attrs(
@@ -113,7 +113,7 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
     trim(strip_closing_hashes(line[level:].to_owned()))
   }
   let buffer = Events::new()
-  let sink = buffer.sink()
+  let sink = buffer.owned_sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -145,7 +145,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
   }
   let level = setext_heading_level_line(ctx.lines[underline_index])
   let buffer = Events::new()
-  let sink = buffer.sink()
+  let sink = buffer.owned_sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -527,7 +527,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     }
   }
   let buffer = Events::new()
-  let sink = buffer.sink()
+  let sink = buffer.owned_sink()
   sink.emit(
     Enter(
       Element::with_attrs(

@@ -145,7 +145,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     item_ends.push(item_end)
   }
   let buffer = Events::new()
-  let sink = buffer.sink()
+  let sink = buffer.owned_sink()
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -211,7 +211,7 @@ fn emit_list_item_content(
     return
   }
   let buffer = Events::new()
-  parse_blocks_into(item_text, registry, buffer.sink(), state)
+  parse_blocks_into(item_text, registry, buffer.owned_sink(), state)
   let events = buffer.collect()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {

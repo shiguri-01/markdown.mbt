@@ -436,6 +436,11 @@ pub fn Events::sink(self : Events) -> Sink {
 }
 
 ///|
+fn Events::owned_sink(self : Events) -> Sink {
+  Sink::new(fn(event) { self.events.push(event) })
+}
+
+///|
 /// Returns a copy of collected events.
 pub fn Events::collect(self : Events) -> Array[Event] {
   copy_events(self.events)
