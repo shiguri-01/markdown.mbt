@@ -235,7 +235,7 @@ fn emit_commonmark_link(
   if close_text < 0 || close_text >= end {
     return 0
   }
-  if link_text_may_contain_link(text[start + 1:close_text].to_owned()) ||
+  if link_text_range_may_contain_link(text, start + 1, close_text) ||
     link_text_has_unclosed_priority_span(text, start + 1, close_text) {
     return 0
   }

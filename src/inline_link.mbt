@@ -9,7 +9,7 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
   if close_text < 0 {
     return NoMatch
   }
-  if link_text_may_contain_link(text[i + 1:close_text].to_owned()) {
+  if link_text_range_may_contain_link(text, i + 1, close_text) {
     return NoMatch
   }
   if link_text_has_unclosed_priority_span(text, i + 1, close_text) {
@@ -140,15 +140,20 @@ fn image_alt_text(
 
 ///|
 fn find_link_text_end(text : String, start : Int) -> Int {
+  find_link_text_end_before(text, start, text.length())
+}
+
+///|
+fn find_link_text_end_before(text : String, start : Int, end : Int) -> Int {
   let mut i = start
   let mut depth = 0
-  while i < text.length() {
+  while i < end {
     let c = char_at(text, i)
-    if c == 92 && i + 1 < text.length() {
+    if c == 92 && i + 1 < end {
       i = i + 2
     } else if c == 96 {
       let width = delimiter_run_len(text, i, 96)
-      let close = find_code_span_end(text, i + width, width)
+      let close = find_code_span_end_before(text, i + width, width, end)
       if close >= 0 {
         i = close + width
       } else {
@@ -260,17 +265,21 @@ fn find_angle_link_destination_close(text : String, start : Int) -> Int {
 }
 
 ///|
-fn link_text_may_contain_link(text : String) -> Bool {
-  let mut i = 0
-  while i < text.length() {
+fn link_text_range_may_contain_link(
+  text : String,
+  start : Int,
+  end : Int,
+) -> Bool {
+  let mut i = start
+  while i < end {
     if char_at(text, i) == 91 {
-      if i > 0 && char_at(text, i - 1) == 33 {
+      if i > start && char_at(text, i - 1) == 33 {
         i = i + 1
         continue
       }
-      let close_text = find_link_text_end(text, i + 1)
+      let close_text = find_link_text_end_before(text, i + 1, end)
       if close_text > i &&
-        close_text + 1 < text.length() &&
+        close_text + 1 < end &&
         (
           char_at(text, close_text + 1) == 40 ||
           char_at(text, close_text + 1) == 91

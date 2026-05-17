@@ -438,7 +438,7 @@ fn emphasis_would_split_link_text(
   if start + 1 >= text.length() || char_at(text, start + 1) != 91 {
     return false
   }
-  if link_text_may_contain_link(text[start + 2:end].to_owned()) {
+  if link_text_range_may_contain_link(text, start + 2, end) {
     return false
   }
   if end + 1 >= text.length() || char_at(text, end + 1) != 93 {
