@@ -32,6 +32,18 @@ test "commonmark block and inline html rendering" {
 }
 
 ///|
+test "commonmark inline text keeps ordinary spaces together" {
+  let events = @markdown.Events::new()
+  @markdown.Processor::new().parse("hello world from moonbit", events.sink())
+  let collected = events.collect()
+  assert_eq(collected.length(), 3)
+  match collected[1] {
+    Text(text) => assert_eq(text, "hello world from moonbit")
+    _ => abort("expected text")
+  }
+}
+
+///|
 test "commonmark list item ast has no renderer-only block attribute" {
   match @markdown.ast("- one\n\n- two\n") {
     Ok(root) => {

@@ -11,7 +11,7 @@ fn parse_commonmark_inline_range(
   let mut i = start
   let mut text_start = start
   while i < end {
-    let consumed = if is_inline_special(text, i) {
+    let consumed = if is_commonmark_inline_special(text, i, end) {
       if text_start < i {
         sink.emit(Text(text[text_start:i].to_owned()))
         text_start = i
@@ -30,6 +30,18 @@ fn parse_commonmark_inline_range(
   if text_start < end {
     sink.emit(Text(text[text_start:end].to_owned()))
   }
+}
+
+///|
+fn is_commonmark_inline_special(text : String, index : Int, end : Int) -> Bool {
+  if char_at(text, index) != 32 {
+    return is_inline_special(text, index)
+  }
+  let mut i = index
+  while i < end && char_at(text, i) == 32 {
+    i = i + 1
+  }
+  i < end && char_at(text, i) == 10
 }
 
 ///|
