@@ -37,9 +37,16 @@ pub fn ast(source : String) -> Result[AstNode, AstError] {
 pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
   let state = ParseState::new()
-  collect_reference_definitions_with_blocks(input, self.registry, state)
+  if may_contain_reference_definition(input) {
+    collect_reference_definitions_with_blocks(input, self.registry, state)
+  }
   parse_blocks_into(input, self.registry, downstream, state)
   downstream.finish()
+}
+
+///|
+fn may_contain_reference_definition(input : String) -> Bool {
+  find_char(input, 91, 0) >= 0
 }
 
 ///|
