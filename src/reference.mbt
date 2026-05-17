@@ -76,6 +76,9 @@ fn reference_attrs_for_link_text(
     }
   }
   if should_rewrite_shortcut_reference(text, close_text) {
+    if is_reference_label_range_blank(text, start + 1, close_text) {
+      return None
+    }
     let label_text = text[start + 1:close_text].to_owned()
     reference_attrs_for_label(label_text, close_text + 1, state)
   } else {
@@ -109,6 +112,9 @@ fn reference_attrs_for_image_alt(
     }
   }
   if close_alt + 1 >= text.length() || char_at(text, close_alt + 1) != 40 {
+    if is_reference_label_range_blank(text, start + 2, close_alt) {
+      return None
+    }
     let label_text = text[start + 2:close_alt].to_owned()
     reference_attrs_for_label_with_alt(label_text, close_alt + 1, alt, state)
   } else {
@@ -143,6 +149,22 @@ fn reference_attrs_for_label_with_alt(
     }
     None => None
   }
+}
+
+///|
+fn is_reference_label_range_blank(
+  text : String,
+  start : Int,
+  end : Int,
+) -> Bool {
+  let mut i = start
+  while i < end {
+    if !is_space(char_at(text, i)) {
+      return false
+    }
+    i = i + 1
+  }
+  true
 }
 
 ///|
