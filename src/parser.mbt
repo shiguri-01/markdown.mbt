@@ -212,7 +212,19 @@ fn split_lines(input : String) -> LineSource {
 
 ///|
 fn expand_leading_tabs(line : String) -> String {
-  let first_tab = find_char(line, 9, 0)
+  let mut first_tab = -1
+  let mut leading_end = 0
+  while leading_end < line.length() {
+    let c = char_at(line, leading_end)
+    if c == 9 {
+      first_tab = leading_end
+      break
+    } else if c == 32 {
+      leading_end = leading_end + 1
+    } else {
+      break
+    }
+  }
   if first_tab < 0 {
     return line
   }
