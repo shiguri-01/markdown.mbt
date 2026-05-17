@@ -550,12 +550,17 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   }
   let mut i = ctx.index
   let mut used_lazy = false
+  let mut inner_may_contain_reference = false
   let inner = StringBuilder::new()
   while i < ctx.lines.length() && is_blockquote_marker_line(ctx.lines[i]) {
     if i > ctx.index {
       inner.write_string("\n")
     }
     let stripped = strip_blockquote_marker(ctx.lines[i])
+    if !inner_may_contain_reference &&
+      may_contain_reference_definition(stripped) {
+      inner_may_contain_reference = true
+    }
     inner.write_string(stripped)
     i = i + 1
     let allow_lazy = stripped != "" &&
@@ -572,10 +577,17 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
           allow_lazy &&
           !is_paragraph_interrupt(ctx.lines[i]) {
       inner.write_string("\n")
-      inner.write_string(paragraph_line(ctx.lines[i]))
+      let line = paragraph_line(ctx.lines[i])
+      if !inner_may_contain_reference && may_contain_reference_definition(line) {
+        inner_may_contain_reference = true
+      }
+      inner.write_string(line)
       used_lazy = true
       i = i + 1
     }
+  }
+  if ctx.collect_only && !inner_may_contain_reference {
+    return block_match(i - ctx.index, EventFragment::empty())
   }
   let inner_text = inner.to_string()
   if ctx.collect_only {
