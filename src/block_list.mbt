@@ -437,24 +437,36 @@ fn is_single_paragraph_events(events : Array[Event]) -> Bool {
 
 ///|
 fn is_ordered_list_paragraph_interrupt(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 &&
-  is_ordered_list_marker(trim(line)) &&
-  ordered_list_start(trim(line)) == 1 &&
-  trim(strip_ordered_marker(trim(line))) != ""
+  let leading = count_leading_spaces(line)
+  let marker = ordered_marker_end_at(line, leading)
+  leading <= 3 &&
+  is_ordered_list_marker_at(line, leading, marker) &&
+  ordered_list_start_at(line, leading, marker) == 1 &&
+  has_nonblank_after_marker(line, marker + 2)
 }
 
 ///|
 fn is_unordered_list_marker_line(line : String) -> Bool {
-  count_leading_spaces(line) <= 3 &&
-  is_unordered_list_marker(trim(line)) &&
-  trim(strip_unordered_marker(trim(line))) != ""
+  let leading = count_leading_spaces(line)
+  leading <= 3 &&
+  is_unordered_list_marker_at(line, leading) &&
+  has_nonblank_after_marker(line, leading + 2)
 }
 
 ///|
 fn is_unordered_list_marker(line : String) -> Bool {
-  line.length() >= 1 &&
-  (char_at(line, 0) == 45 || char_at(line, 0) == 42 || char_at(line, 0) == 43) &&
-  (line.length() == 1 || is_space(char_at(line, 1)))
+  is_unordered_list_marker_at(line, 0)
+}
+
+///|
+fn is_unordered_list_marker_at(line : String, start : Int) -> Bool {
+  start < line.length() &&
+  (
+    char_at(line, start) == 45 ||
+    char_at(line, start) == 42 ||
+    char_at(line, start) == 43
+  ) &&
+  (start + 1 >= line.length() || is_space(char_at(line, start + 1)))
 }
 
 ///|
@@ -492,7 +504,12 @@ fn list_attrs(ordered : Bool, line : String) -> Array[Attr] {
 ///|
 fn is_ordered_list_marker(line : String) -> Bool {
   let marker = ordered_marker_end(line)
-  marker > 0 &&
+  is_ordered_list_marker_at(line, 0, marker)
+}
+
+///|
+fn is_ordered_list_marker_at(line : String, start : Int, marker : Int) -> Bool {
+  marker > start &&
   marker < line.length() &&
   (char_at(line, marker) == 46 || char_at(line, marker) == 41) &&
   (marker + 1 >= line.length() || is_space(char_at(line, marker + 1)))
@@ -501,8 +518,13 @@ fn is_ordered_list_marker(line : String) -> Bool {
 ///|
 fn ordered_list_start(line : String) -> Int {
   let marker = ordered_marker_end(line)
+  ordered_list_start_at(line, 0, marker)
+}
+
+///|
+fn ordered_list_start_at(line : String, start : Int, marker : Int) -> Int {
   let mut value = 0
-  for i in 0..<marker {
+  for i in start..<marker {
     value = value * 10 + char_at(line, i) - 48
   }
   value
@@ -536,13 +558,33 @@ fn strip_ordered_marker(line : String) -> String {
 
 ///|
 fn ordered_marker_end(line : String) -> Int {
+  ordered_marker_end_at(line, 0)
+}
+
+///|
+fn ordered_marker_end_at(line : String, start : Int) -> Int {
   let mut i = 0
-  while i < line.length() && char_at(line, i) >= 48 && char_at(line, i) <= 57 {
+  while start + i < line.length() &&
+        char_at(line, start + i) >= 48 &&
+        char_at(line, start + i) <= 57 {
     i = i + 1
   }
   if i == 0 || i > 9 {
     -1
   } else {
-    i
+    start + i
   }
+}
+
+///|
+fn has_nonblank_after_marker(line : String, start : Int) -> Bool {
+  if start > line.length() {
+    return false
+  }
+  for i in start..<line.length() {
+    if !is_space(char_at(line, i)) {
+      return true
+    }
+  }
+  false
 }
