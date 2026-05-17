@@ -311,6 +311,10 @@ fn emit_commonmark_link(
   if close_text < 0 || close_text >= end {
     return 0
   }
+  if link_text_may_contain_link(text[start + 1:close_text].to_owned()) ||
+    link_text_has_unclosed_priority_span(text, start + 1, close_text) {
+    return 0
+  }
   if close_text + 1 < end && char_at(text, close_text + 1) == 40 {
     let close_dest = find_link_destination_end(text, close_text + 2)
     if close_dest > close_text && close_dest < end {
@@ -427,8 +431,16 @@ fn emit_commonmark_emphasis(
   if run > 12 || !delimiter_can_open(text, start, run, marker) {
     return 0
   }
+  if run >= 4 {
+    let consumed = emit_commonmark_long_emphasis_run(
+      text, start, run, marker, end, registry, sink, state, allow_links,
+    )
+    if consumed > 0 {
+      return consumed
+    }
+  }
   let width = if run >= 3 { 3 } else if run >= 2 { 2 } else { 1 }
-  let close = find_commonmark_emphasis_close(
+  let mut close = find_commonmark_emphasis_close(
     text,
     marker,
     start + width,
@@ -436,8 +448,129 @@ fn emit_commonmark_emphasis(
     end,
   )
   if close < 0 {
+    let split = emit_commonmark_split_opening_run(
+      text, start, run, marker, end, registry, sink, state, allow_links,
+    )
+    if split > 0 {
+      return split
+    }
+    return emit_commonmark_partial_emphasis(
+      text, start, run, marker, end, registry, sink, state, allow_links,
+    )
+  }
+  let close_run = delimiter_run_len(text, close, marker)
+  if close_run > width &&
+    inner_opener_of_width_between(
+      text,
+      marker,
+      start + width,
+      close,
+      close_run - width,
+    ) {
+    emit_commonmark_emphasis_element(
+      text,
+      start + width,
+      close + close_run - width,
+      width,
+      registry,
+      sink,
+      state,
+      allow_links,
+    )
+    return close - start + close_run
+  }
+  if exact_inner_opener_can_use_close(text, marker, start + width, close, width) {
+    if close_run > width {
+      emit_commonmark_emphasis_element(
+        text,
+        start + width,
+        close + close_run - width,
+        width,
+        registry,
+        sink,
+        state,
+        allow_links,
+      )
+      return close - start + close_run
+    }
+    let next = find_commonmark_emphasis_close(
+      text,
+      marker,
+      close + delimiter_run_len(text, close, marker),
+      width,
+      end,
+    )
+    if next < 0 {
+      return 0
+    }
+    close = next
+  }
+  if width == 1 && emphasis_would_split_link_text(text, start, close) {
     return 0
   }
+  emit_commonmark_emphasis_element(
+    text,
+    start + width,
+    close,
+    width,
+    registry,
+    sink,
+    state,
+    allow_links,
+  )
+  close - start + width
+}
+
+///|
+fn inner_opener_of_width_between(
+  text : String,
+  marker : Int,
+  start : Int,
+  close : Int,
+  width : Int,
+) -> Bool {
+  let mut i = start
+  while i < close {
+    match priority_inline_span_end(text, i, close) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    match other_emphasis_span_end_for_inner_scan(text, marker, i, close) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    let run = if char_at(text, i) == marker {
+      delimiter_run_len(text, i, marker)
+    } else {
+      0
+    }
+    if run == width &&
+      !is_escaped_char(text, i) &&
+      delimiter_can_open(text, i, run, marker) {
+      return true
+    }
+    i = if run > 0 { i + run } else { i + 1 }
+  }
+  false
+}
+
+///|
+fn emit_commonmark_emphasis_element(
+  text : String,
+  start : Int,
+  end : Int,
+  width : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Unit {
   let tag = if width >= 2 {
     tag_name("cm:strong")
   } else {
@@ -448,19 +581,316 @@ fn emit_commonmark_emphasis(
   }
   sink.emit(Enter(Element::new(tag)))
   parse_commonmark_inline_range(
+    text, start, end, registry, sink, state, allow_links,
+  )
+  sink.emit(Exit(tag))
+  if width == 3 {
+    sink.emit(Exit(tag_name("cm:emphasis")))
+  }
+}
+
+///|
+fn emit_commonmark_split_opening_run(
+  text : String,
+  start : Int,
+  run : Int,
+  marker : Int,
+  end : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Int {
+  let width = if run == 2 {
+    1
+  } else if run == 3 {
+    return emit_commonmark_split_three_opening_run(
+      text, start, marker, end, registry, sink, state, allow_links,
+    )
+  } else if run == 4 {
+    2
+  } else {
+    return 0
+  }
+  let inner_close = find_commonmark_emphasis_close(
     text,
-    start + width,
-    close,
+    marker,
+    start + run,
+    width,
+    end,
+  )
+  if inner_close < 0 {
+    return 0
+  }
+  let outer_close = find_commonmark_emphasis_close(
+    text,
+    marker,
+    inner_close + width,
+    width,
+    end,
+  )
+  if outer_close < 0 {
+    return 0
+  }
+  let tag = if width >= 2 {
+    tag_name("cm:strong")
+  } else {
+    tag_name("cm:emphasis")
+  }
+  sink.emit(Enter(Element::new(tag)))
+  let content = text[start + width:outer_close].to_owned()
+  parse_commonmark_inline_range(
+    content,
+    0,
+    content.length(),
     registry,
     sink,
     state,
     allow_links,
   )
   sink.emit(Exit(tag))
-  if width == 3 {
+  outer_close - start + width
+}
+
+///|
+fn emit_commonmark_split_three_opening_run(
+  text : String,
+  start : Int,
+  marker : Int,
+  end : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Int {
+  let outer_em = emit_commonmark_split_mixed_opening_run(
+    text,
+    start,
+    marker,
+    end,
+    outer_width=1,
+    inner_width=2,
+    registry,
+    sink,
+    state,
+    allow_links,
+  )
+  if outer_em > 0 {
+    return outer_em
+  }
+  emit_commonmark_split_mixed_opening_run(
+    text,
+    start,
+    marker,
+    end,
+    outer_width=2,
+    inner_width=1,
+    registry,
+    sink,
+    state,
+    allow_links,
+  )
+}
+
+///|
+fn emit_commonmark_split_mixed_opening_run(
+  text : String,
+  start : Int,
+  marker : Int,
+  end : Int,
+  outer_width~ : Int,
+  inner_width~ : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Int {
+  let inner_close = find_commonmark_emphasis_close(
+    text,
+    marker,
+    start + 3,
+    inner_width,
+    end,
+  )
+  if inner_close < 0 {
+    return 0
+  }
+  let outer_close = find_commonmark_emphasis_close(
+    text,
+    marker,
+    inner_close + inner_width,
+    outer_width,
+    end,
+  )
+  if outer_close < 0 {
+    return 0
+  }
+  let tag = if outer_width >= 2 {
+    tag_name("cm:strong")
+  } else {
+    tag_name("cm:emphasis")
+  }
+  sink.emit(Enter(Element::new(tag)))
+  let content = text[start + outer_width:outer_close].to_owned()
+  parse_commonmark_inline_range(
+    content,
+    0,
+    content.length(),
+    registry,
+    sink,
+    state,
+    allow_links,
+  )
+  sink.emit(Exit(tag))
+  outer_close - start + outer_width
+}
+
+///|
+fn exact_inner_opener_can_use_close(
+  text : String,
+  marker : Int,
+  start : Int,
+  close : Int,
+  width : Int,
+) -> Bool {
+  let mut i = start
+  while i < close {
+    match priority_inline_span_end(text, i, close) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    match other_emphasis_span_end_for_inner_scan(text, marker, i, close) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    let run = if char_at(text, i) == marker {
+      delimiter_run_len(text, i, marker)
+    } else {
+      0
+    }
+    if run == width &&
+      !is_escaped_char(text, i) &&
+      delimiter_can_open(text, i, run, marker) {
+      return true
+    }
+    i = if run > 0 { i + run } else { i + 1 }
+  }
+  false
+}
+
+///|
+fn other_emphasis_span_end_for_inner_scan(
+  text : String,
+  marker : Int,
+  start : Int,
+  end : Int,
+) -> Int? {
+  let other = char_at(text, start)
+  if (other != 42 && other != 95) || other == marker {
+    return None
+  }
+  let run = delimiter_run_len(text, start, other)
+  if run > 3 || !delimiter_can_open(text, start, run, other) {
+    return None
+  }
+  let width = if run >= 2 { 2 } else { 1 }
+  let close = find_commonmark_emphasis_close(
+    text,
+    other,
+    start + width,
+    width,
+    end,
+  )
+  if close >= 0 {
+    Some(close + width)
+  } else {
+    None
+  }
+}
+
+///|
+fn emit_commonmark_long_emphasis_run(
+  text : String,
+  start : Int,
+  run : Int,
+  marker : Int,
+  end : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Int {
+  let close = find_commonmark_exact_run_close(
+    text,
+    marker,
+    start + run,
+    run,
+    end,
+  )
+  if close < 0 {
+    return 0
+  }
+  let strong_count = run / 2
+  if run % 2 == 1 {
+    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+  }
+  for _ in 0..<strong_count {
+    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+  }
+  parse_commonmark_inline_range(
+    text,
+    start + run,
+    close,
+    registry,
+    sink,
+    state,
+    allow_links,
+  )
+  for _ in 0..<strong_count {
+    sink.emit(Exit(tag_name("cm:strong")))
+  }
+  if run % 2 == 1 {
     sink.emit(Exit(tag_name("cm:emphasis")))
   }
-  close - start + width
+  close - start + run
+}
+
+///|
+fn find_commonmark_exact_run_close(
+  text : String,
+  marker : Int,
+  start : Int,
+  width : Int,
+  end : Int,
+) -> Int {
+  let mut i = start
+  while i + width <= end {
+    match priority_inline_span_end(text, i, end) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    let run = if char_at(text, i) == marker {
+      delimiter_run_len(text, i, marker)
+    } else {
+      0
+    }
+    if run >= width &&
+      !is_escaped_char(text, i) &&
+      delimiter_can_close(text, i, width, marker) {
+      return i
+    }
+    i = if run > 0 { i + run } else { i + 1 }
+  }
+  -1
 }
 
 ///|
@@ -491,9 +921,224 @@ fn find_commonmark_emphasis_close(
       delimiter_can_close(text, i, width, marker) {
       return i
     }
+    if run > 0 {
+      i = if is_escaped_char(text, i) { i + 1 } else { i + run }
+    } else {
+      i = i + 1
+    }
+  }
+  -1
+}
+
+///|
+fn emit_commonmark_partial_emphasis(
+  text : String,
+  start : Int,
+  run : Int,
+  marker : Int,
+  end : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  allow_links : Bool,
+) -> Int {
+  if run >= 3 {
+    let close = find_commonmark_emphasis_close(
+      text,
+      marker,
+      start + run,
+      2,
+      end,
+    )
+    if close >= 0 {
+      sink.emit(Text(text[start:start + run - 2].to_owned()))
+      sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+      parse_commonmark_inline_range(
+        text,
+        start + run,
+        close,
+        registry,
+        sink,
+        state,
+        allow_links,
+      )
+      sink.emit(Exit(tag_name("cm:strong")))
+      return close - start + 2
+    }
+  }
+  if run >= 2 {
+    let close = find_commonmark_emphasis_close(
+      text,
+      marker,
+      start + run,
+      1,
+      end,
+    )
+    if close >= 0 {
+      sink.emit(Text(text[start:start + run - 1].to_owned()))
+      sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+      parse_commonmark_inline_range(
+        text,
+        start + run,
+        close,
+        registry,
+        sink,
+        state,
+        allow_links,
+      )
+      sink.emit(Exit(tag_name("cm:emphasis")))
+      return close - start + 1
+    }
+  }
+  if run == 1 {
+    let close = find_commonmark_relaxed_single_close(
+      text,
+      marker,
+      start + 1,
+      end,
+    )
+    if close >= 0 {
+      let close_run = delimiter_run_len(text, close, marker)
+      if close_run > 1 &&
+        !has_delimiter_run_between(text, marker, start + 1, close) &&
+        delimiter_can_open(text, close, close_run, marker) {
+        let later = find_later_compound_emphasis_close(
+          text,
+          marker,
+          close + close_run,
+          end,
+        )
+        if later >= 0 {
+          let later_run = delimiter_run_len(text, later, marker)
+          sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+          parse_commonmark_inline_range(
+            text,
+            start + 1,
+            later + later_run - 1,
+            registry,
+            sink,
+            state,
+            allow_links,
+          )
+          sink.emit(Exit(tag_name("cm:emphasis")))
+          return later - start + later_run
+        }
+      }
+      if close_run > 1 &&
+        has_delimiter_run_between(text, marker, start + 1, close) {
+        sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+        parse_commonmark_inline_range(
+          text,
+          start + 1,
+          close + close_run - 1,
+          registry,
+          sink,
+          state,
+          allow_links,
+        )
+        sink.emit(Exit(tag_name("cm:emphasis")))
+        return close - start + close_run
+      }
+    }
+    if close >= 0 && !has_delimiter_run_between(text, marker, start + 1, close) {
+      sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+      parse_commonmark_inline_range(
+        text,
+        start + 1,
+        close,
+        registry,
+        sink,
+        state,
+        allow_links,
+      )
+      sink.emit(Exit(tag_name("cm:emphasis")))
+      return close - start + 1
+    }
+  }
+  0
+}
+
+///|
+fn find_later_compound_emphasis_close(
+  text : String,
+  marker : Int,
+  start : Int,
+  end : Int,
+) -> Int {
+  let mut i = start
+  while i < end {
+    match priority_inline_span_end(text, i, end) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    let run = if char_at(text, i) == marker {
+      delimiter_run_len(text, i, marker)
+    } else {
+      0
+    }
+    if run > 1 &&
+      !is_escaped_char(text, i) &&
+      delimiter_can_close(text, i, 1, marker) {
+      return i
+    }
     i = if run > 0 { i + run } else { i + 1 }
   }
   -1
+}
+
+///|
+fn find_commonmark_relaxed_single_close(
+  text : String,
+  marker : Int,
+  start : Int,
+  end : Int,
+) -> Int {
+  let mut i = start
+  while i < end {
+    match priority_inline_span_end(text, i, end) {
+      Some(next) => {
+        i = next
+        continue
+      }
+      None => ()
+    }
+    let run = if char_at(text, i) == marker {
+      delimiter_run_len(text, i, marker)
+    } else {
+      0
+    }
+    if run > 1 &&
+      !is_escaped_char(text, i) &&
+      delimiter_can_close(text, i, 1, marker) {
+      return i
+    }
+    if run > 0 {
+      i = if is_escaped_char(text, i) { i + 1 } else { i + run }
+    } else {
+      i = i + 1
+    }
+  }
+  -1
+}
+
+///|
+fn has_delimiter_run_between(
+  text : String,
+  marker : Int,
+  start : Int,
+  end : Int,
+) -> Bool {
+  let mut i = start
+  while i < end {
+    if char_at(text, i) == marker && !is_escaped_char(text, i) {
+      return true
+    }
+    i = i + 1
+  }
+  false
 }
 
 ///|
@@ -875,6 +1520,9 @@ fn emphasis_would_split_link_text(
   start : Int,
   end : Int,
 ) -> Bool {
+  if emphasis_close_splits_link_label(text, start, end) {
+    return true
+  }
   if start + 1 >= text.length() || char_at(text, start + 1) != 91 {
     return false
   }
@@ -882,6 +1530,42 @@ fn emphasis_would_split_link_text(
     return false
   }
   if end + 1 >= text.length() || char_at(text, end + 1) != 93 {
+    return false
+  }
+  let close_text = end + 1
+  if close_text + 1 < text.length() && char_at(text, close_text + 1) == 40 {
+    let close_dest = find_link_destination_end(text, close_text + 2)
+    close_dest > close_text &&
+    parse_link_attrs(text[close_text + 2:close_dest].to_owned()).length() > 0
+  } else if close_text + 1 < text.length() &&
+    char_at(text, close_text + 1) == 91 {
+    true
+  } else {
+    true
+  }
+}
+
+///|
+fn emphasis_close_splits_link_label(
+  text : String,
+  start : Int,
+  end : Int,
+) -> Bool {
+  if char_at(text, start) != 95 {
+    return false
+  }
+  if end + 1 >= text.length() || char_at(text, end + 1) != 93 {
+    return false
+  }
+  let mut open = -1
+  let mut i = start + 1
+  while i < end {
+    if char_at(text, i) == 91 && !is_escaped_char(text, i) {
+      open = i
+    }
+    i = i + 1
+  }
+  if open < 0 {
     return false
   }
   let close_text = end + 1

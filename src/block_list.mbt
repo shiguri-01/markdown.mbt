@@ -60,8 +60,15 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     }
     if blank_count > 0 &&
       i < ctx.lines.length() &&
-      is_list_continuation_after_blank(ctx.lines[i]) {
-      loose = true
+      item_text != "" &&
+      is_list_continuation_after_blank(ctx.lines[i], content_indent) {
+      if is_loose_list_blank_continuation(
+          ctx.lines[i],
+          content_indent,
+          item_text,
+        ) {
+        loose = true
+      }
       for _ in 0..<blank_count {
         item_text = item_text + "\n"
       }
@@ -96,8 +103,15 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       }
       if more_blanks > 0 &&
         i < ctx.lines.length() &&
-        is_list_continuation_after_blank(ctx.lines[i]) {
-        loose = true
+        item_text != "" &&
+        is_list_continuation_after_blank(ctx.lines[i], content_indent) {
+        if is_loose_list_blank_continuation(
+            ctx.lines[i],
+            content_indent,
+            item_text,
+          ) {
+          loose = true
+        }
         for _ in 0..<more_blanks {
           item_text = item_text + "\n"
         }
@@ -280,13 +294,15 @@ fn collect_list_continuation(
       text.write_string("\n")
       text.write_view(lines[i][content_indent:])
       i = i + 1
-    } else if leading >= 2 {
+    } else if leading >= 2 &&
+      !is_ordered_list_marker(trim(lines[i])) &&
+      !is_unordered_list_marker(trim(lines[i])) {
       text.write_string("\n")
       text.write_view(lines[i][2:])
       i = i + 1
     } else if allow_lazy && !is_paragraph_interrupt(lines[i]) {
       text.write_string("\n")
-      text.write_string(paragraph_line(lines[i]))
+      text.write_string(list_lazy_continuation_line(lines[i]))
       i = i + 1
     } else {
       break
@@ -296,8 +312,18 @@ fn collect_list_continuation(
 }
 
 ///|
+fn list_lazy_continuation_line(line : String) -> String {
+  if count_leading_spaces(line) > 3 {
+    line
+  } else {
+    paragraph_line(line)
+  }
+}
+
+///|
 fn is_list_sibling_marker(line : String, content_indent : Int) -> Bool {
   count_leading_spaces(line) < content_indent &&
+  count_leading_spaces(line) <= 3 &&
   (is_ordered_list_marker(trim(line)) || is_unordered_list_marker(trim(line)))
 }
 
@@ -320,11 +346,52 @@ fn list_item_content_indent(line : String, ordered : Bool) -> Int {
 }
 
 ///|
-fn is_list_continuation_after_blank(line : String) -> Bool {
-  trim(line) != "" &&
-  count_leading_spaces(line) >= 2 &&
-  !is_ordered_list_marker(trim(line)) &&
-  !is_unordered_list_marker(trim(line))
+fn is_list_continuation_after_blank(
+  line : String,
+  content_indent : Int,
+) -> Bool {
+  trim(line) != "" && count_leading_spaces(line) >= content_indent
+}
+
+///|
+fn is_loose_list_blank_continuation(
+  line : String,
+  content_indent : Int,
+  item_text : String,
+) -> Bool {
+  let leading = count_leading_spaces(line)
+  !has_open_fenced_code(item_text) &&
+  (
+    leading == content_indent ||
+    (leading >= content_indent + 4 && !has_nested_list_marker(item_text))
+  )
+}
+
+///|
+fn has_open_fenced_code(text : String) -> Bool {
+  let mut fence = ""
+  for line in text.split("\n") {
+    if fence == "" {
+      let marker = fence_marker(trim(line.to_owned()))
+      if marker != "" {
+        fence = marker
+      }
+    } else if is_closing_fence_line(line.to_owned(), fence) {
+      fence = ""
+    }
+  }
+  fence != ""
+}
+
+///|
+fn has_nested_list_marker(text : String) -> Bool {
+  for line in text.split("\n") {
+    let trimmed = trim(line.to_owned())
+    if is_ordered_list_marker(trimmed) || is_unordered_list_marker(trimmed) {
+      return true
+    }
+  }
+  false
 }
 
 ///|

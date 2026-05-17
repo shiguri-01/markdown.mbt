@@ -14,6 +14,9 @@ fn decode_numeric_entity(digits : String, base : Int) -> String? {
   if digits == "" {
     return None
   }
+  if (base == 10 && digits.length() > 7) || (base == 16 && digits.length() > 6) {
+    return None
+  }
   let mut value = 0
   for i in 0..<digits.length() {
     let digit = if base == 16 {

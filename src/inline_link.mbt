@@ -146,6 +146,14 @@ fn find_link_text_end(text : String, start : Int) -> Int {
     let c = char_at(text, i)
     if c == 92 && i + 1 < text.length() {
       i = i + 2
+    } else if c == 96 {
+      let width = delimiter_run_len(text, i, 96)
+      let close = find_code_span_end(text, i + width, width)
+      if close >= 0 {
+        i = close + width
+      } else {
+        i = i + width
+      }
     } else if c == 91 {
       depth = depth + 1
       i = i + 1

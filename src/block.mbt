@@ -136,6 +136,9 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
+  if !is_setext_heading_paragraph_start(ctx.lines[ctx.index]) {
+    return NoMatch
+  }
   let underline_index = find_setext_underline(ctx)
   if underline_index < 0 {
     return NoMatch
@@ -165,6 +168,16 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     underline_index - ctx.index + 1,
     event_fragment_from_events(buffer.collect()),
   )
+}
+
+///|
+fn is_setext_heading_paragraph_start(line : String) -> Bool {
+  trim(line) != "" &&
+  count_leading_spaces(line) < 4 &&
+  !is_ordered_list_marker(trim(line)) &&
+  !is_unordered_list_marker(trim(line)) &&
+  !is_paragraph_interrupt(line) &&
+  !may_be_reference_definition_line(line)
 }
 
 ///|
@@ -481,7 +494,12 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     i = i + 1
     let allow_lazy = stripped != "" &&
       count_leading_spaces(stripped) < 4 &&
-      (!is_paragraph_interrupt(stripped) || is_blockquote_marker_line(stripped))
+      (
+        !is_paragraph_interrupt(stripped) ||
+        is_blockquote_marker_line(stripped) ||
+        is_ordered_list_marker(trim(stripped)) ||
+        is_unordered_list_marker(trim(stripped))
+      )
     while i < ctx.lines.length() &&
           trim(ctx.lines[i]) != "" &&
           !trim(ctx.lines[i]).has_prefix(">") &&
@@ -505,33 +523,37 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     ),
   )
   let inner_text = inner.to_string()
-  if used_lazy && blockquote_inner_starts_with_block(inner_text) {
-    parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
-  } else if used_lazy {
-    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
-    parse_inlines_with_rules(
-      inner_text,
-      ctx.registry,
-      ctx.inline_rules,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
-  } else if inner_text != "" &&
-    !contains_char(inner_text, 10) &&
-    count_leading_spaces(inner_text) < 4 &&
-    !is_paragraph_interrupt(inner_text) {
-    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
-    parse_inlines_with_rules(
-      paragraph_line(inner_text),
-      ctx.registry,
-      ctx.inline_rules,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
-  } else {
-    parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
+  match parse_reference_definition(trim(inner_text)) {
+    Some(definition) => ctx.state.add_reference(definition)
+    None =>
+      if used_lazy && blockquote_inner_starts_with_block(inner_text) {
+        parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
+      } else if used_lazy {
+        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        parse_inlines_with_rules(
+          inner_text,
+          ctx.registry,
+          ctx.inline_rules,
+          sink,
+          ctx.state,
+        )
+        sink.emit(Exit(tag_name("cm:paragraph")))
+      } else if inner_text != "" &&
+        !contains_char(inner_text, 10) &&
+        count_leading_spaces(inner_text) < 4 &&
+        !is_paragraph_interrupt(inner_text) {
+        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        parse_inlines_with_rules(
+          paragraph_line(inner_text),
+          ctx.registry,
+          ctx.inline_rules,
+          sink,
+          ctx.state,
+        )
+        sink.emit(Exit(tag_name("cm:paragraph")))
+      } else {
+        parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
+      }
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   block_match(i - ctx.index, event_fragment_from_events(buffer.collect()))

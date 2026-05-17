@@ -66,7 +66,7 @@ fn write_html_event(buffer : Html, event : Event) -> Unit {
       buffer.out.write_string("<br />\n")
     }
     Html(raw) => {
-      flush_pending_item_open(buffer, false)
+      flush_pending_item_open(buffer, contains_char(raw, 10))
       buffer.out.write_string(raw)
     }
   }
