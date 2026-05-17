@@ -302,7 +302,7 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
   }
   let mut i = ctx.index
   let raw = StringBuilder::new()
-  while i < ctx.lines.length() && trim(ctx.lines[i]) != "" {
+  while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
     raw.write_string(ctx.lines[i])
     raw.write_string("\n")
     i = i + 1
@@ -421,7 +421,7 @@ fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
   let mut i = ctx.index
   let code = StringBuilder::new()
   while i < ctx.lines.length() {
-    if trim(ctx.lines[i]) == "" {
+    if is_blank(ctx.lines[i]) {
       if next_nonblank_is_indented_code(ctx.lines, i + 1) {
         if i > ctx.index {
           code.write_string("\n")
@@ -470,7 +470,7 @@ fn finalize_code_block_text(text : String) -> String {
 fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
   let mut i = start
   while i < lines.length() {
-    if trim(lines[i]) != "" {
+    if !is_blank(lines[i]) {
       return count_leading_spaces(lines[i]) >= 4
     }
     i = i + 1
@@ -502,8 +502,8 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
         is_unordered_list_marker(trim(stripped))
       )
     while i < ctx.lines.length() &&
-          trim(ctx.lines[i]) != "" &&
-          !trim(ctx.lines[i]).has_prefix(">") &&
+          !is_blank(ctx.lines[i]) &&
+          !is_blockquote_marker_line(ctx.lines[i]) &&
           allow_lazy &&
           !is_paragraph_interrupt(ctx.lines[i]) {
       inner.write_string("\n")

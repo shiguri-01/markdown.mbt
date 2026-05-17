@@ -167,8 +167,8 @@ fn parse_reference_definition_at(
       }
       let mut i = label_end.next_index
       let mut spec = label_end.rest
-      while trim(spec) == "" && i < lines.length() {
-        if trim(lines[i]) == "" {
+      while is_blank(spec) && i < lines.length() {
+        if is_blank(lines[i]) {
           return None
         }
         spec = lines[i]
@@ -280,7 +280,7 @@ fn parse_reference_destination_from_spec(
       return None
     }
     let rest = trimmed[close + 1:].to_owned()
-    if trim(rest) != "" && !is_space(char_at(rest, 0)) {
+    if !is_blank(rest) && !is_space(char_at(rest, 0)) {
       return None
     }
     return Some({
@@ -361,7 +361,7 @@ fn parse_reference_title_lines(
   }
   let mut line_index = next
   while line_index < lines.length() {
-    if trim(lines[line_index]) == "" {
+    if is_blank(lines[line_index]) {
       return None
     }
     content.write_string("\n")

@@ -54,7 +54,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     i = continuation.next_index
     let mut item_end = i
     let mut blank_count = 0
-    while i < ctx.lines.length() && trim(ctx.lines[i]) == "" {
+    while i < ctx.lines.length() && is_blank(ctx.lines[i]) {
       blank_count = blank_count + 1
       i = i + 1
     }
@@ -97,7 +97,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     while collecting {
       let mut more_blanks = 0
       let blank_start = i
-      while i < ctx.lines.length() && trim(ctx.lines[i]) == "" {
+      while i < ctx.lines.length() && is_blank(ctx.lines[i]) {
         more_blanks = more_blanks + 1
         i = i + 1
       }
@@ -287,7 +287,7 @@ fn collect_list_continuation(
   let mut i = start
   let text = StringBuilder::new()
   while i < lines.length() &&
-        trim(lines[i]) != "" &&
+        !is_blank(lines[i]) &&
         !is_list_sibling_marker(lines[i], content_indent) {
     let leading = count_leading_spaces(lines[i])
     if leading >= content_indent {
@@ -350,7 +350,7 @@ fn is_list_continuation_after_blank(
   line : String,
   content_indent : Int,
 ) -> Bool {
-  trim(line) != "" && count_leading_spaces(line) >= content_indent
+  !is_blank(line) && count_leading_spaces(line) >= content_indent
 }
 
 ///|
