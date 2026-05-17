@@ -140,16 +140,15 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
         collecting = false
       }
     }
-    item_texts.push(item_text)
-    if !ctx.collect_only {
+    if ctx.collect_only {
+      collect_list_item_references(item_text, ctx.registry, ctx.state)
+    } else {
+      item_texts.push(item_text)
       item_starts.push(item_start)
       item_ends.push(item_end)
     }
   }
   if ctx.collect_only {
-    for item_text in item_texts {
-      collect_list_item_references(item_text, ctx.registry, ctx.state)
-    }
     return block_match(i - ctx.index, EventFragment::empty())
   }
   let buffer = Events::new()
