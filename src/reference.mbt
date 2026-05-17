@@ -496,8 +496,22 @@ fn normalize_reference_label_escapes(label : String) -> String {
 
 ///|
 fn ascii_lower(input : String) -> String {
-  let out = StringBuilder::new(size_hint=input.length())
+  let mut first_upper = -1
   for i in 0..<input.length() {
+    let c = char_at(input, i)
+    if c >= 65 && c <= 90 {
+      first_upper = i
+      break
+    }
+  }
+  if first_upper < 0 {
+    return input
+  }
+  let out = StringBuilder::new(size_hint=input.length())
+  if first_upper > 0 {
+    out.write_view(input[:first_upper])
+  }
+  for i in first_upper..<input.length() {
     let c = char_at(input, i)
     if c >= 65 && c <= 90 {
       out.write_string(ascii_char(c + 32))
