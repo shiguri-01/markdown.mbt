@@ -31,26 +31,26 @@ pub(all) enum AstError {
 
 ///|
 /// A streaming AST builder sink.
-pub struct AstBuffer {
+pub struct Ast {
   priv stack : Array[AstNode]
   priv mut result : Result[AstNode, AstError]?
 }
 
 ///|
-/// Creates an empty streaming AST buffer.
-pub fn AstBuffer::new() -> AstBuffer {
+/// Creates an empty streaming AST builder.
+pub fn Ast::new() -> Ast {
   { stack: [root_ast_node()], result: None }
 }
 
 ///|
 /// Returns a sink that builds an AST as events arrive.
-pub fn AstBuffer::sink(self : AstBuffer) -> EventSink {
-  EventSink::new(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
+pub fn Ast::sink(self : Ast) -> Sink {
+  Sink::new(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
 }
 
 ///|
 /// Returns the AST result after the stream has finished.
-pub fn AstBuffer::result(self : AstBuffer) -> Result[AstNode, AstError] {
+pub fn Ast::result(self : Ast) -> Result[AstNode, AstError] {
   match self.result {
     Some(result) => copy_ast_result(result)
     None => self.finish_and_result()
@@ -121,7 +121,7 @@ fn root_ast_node() -> AstNode {
 }
 
 ///|
-fn AstBuffer::accept(self : AstBuffer, event : Event) -> Unit {
+fn Ast::accept(self : Ast, event : Event) -> Unit {
   match self.result {
     Some(_) => return
     None => ()
@@ -199,12 +199,12 @@ fn AstBuffer::accept(self : AstBuffer, event : Event) -> Unit {
 }
 
 ///|
-fn AstBuffer::finish(self : AstBuffer) -> Unit {
+fn Ast::finish(self : Ast) -> Unit {
   ignore(self.finish_and_result())
 }
 
 ///|
-fn AstBuffer::finish_and_result(self : AstBuffer) -> Result[AstNode, AstError] {
+fn Ast::finish_and_result(self : Ast) -> Result[AstNode, AstError] {
   match self.result {
     Some(result) => return copy_ast_result(result)
     None => ()

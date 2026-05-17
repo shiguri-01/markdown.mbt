@@ -1,8 +1,8 @@
 ///|
 priv struct RuleRegistry {
-  mut rules : Array[Rule]
+  mut rules : Array[RuleEntry]
   mut disabled : Array[RuleName]
-  mut overrides : Array[Rule]
+  mut overrides : Array[RuleEntry]
   mut next_order : Int
 }
 
@@ -22,15 +22,21 @@ fn RuleRegistry::copy(self : RuleRegistry) -> RuleRegistry {
 }
 
 ///|
-fn RuleRegistry::register(self : RuleRegistry, rule : Rule) -> RuleRegistry {
+fn RuleRegistry::register(
+  self : RuleRegistry,
+  rule : RuleEntry,
+) -> RuleRegistry {
   match self.override_for(rule.name) {
-    Some(override_rule) => self.override_registered(override_rule)
+    Some(replace) => self.override_registered(replace)
     None => self.register_raw(rule)
   }
 }
 
 ///|
-fn RuleRegistry::register_raw(self : RuleRegistry, rule : Rule) -> RuleRegistry {
+fn RuleRegistry::register_raw(
+  self : RuleRegistry,
+  rule : RuleEntry,
+) -> RuleRegistry {
   let r = {
     name: rule.name,
     chain: rule.chain,
@@ -50,26 +56,23 @@ fn RuleRegistry::register_raw(self : RuleRegistry, rule : Rule) -> RuleRegistry 
 }
 
 ///|
-fn RuleRegistry::use_plugin(
-  self : RuleRegistry,
-  plugin : Plugin,
-) -> RuleRegistry {
-  for op in plugin.ops {
-    ignore(self.apply_plugin_op(op))
+fn RuleRegistry::use_rule(self : RuleRegistry, rule : Rule) -> RuleRegistry {
+  for op in rule.ops {
+    ignore(self.apply_rule_op(op))
   }
   self
 }
 
 ///|
-fn RuleRegistry::apply_plugin_op(
+fn RuleRegistry::apply_rule_op(
   self : RuleRegistry,
-  op : PluginOp,
+  op : RuleOp,
 ) -> RuleRegistry {
   match op {
-    AddRule(rule) => self.register(rule)
+    RegisterRule(rule) => self.register(rule)
     DisableRule(name) => self.disable(name)
     EnableRule(name) => self.enable(name)
-    OverrideRule(rule) => self.override_rule(rule)
+    ReplaceRule(rule) => self.replace(rule)
   }
 }
 
@@ -94,17 +97,17 @@ fn RuleRegistry::disable(self : RuleRegistry, name : RuleName) -> RuleRegistry {
 }
 
 ///|
-fn RuleRegistry::override_rule(
-  self : RuleRegistry,
-  rule : Rule,
-) -> RuleRegistry {
+fn RuleRegistry::replace(self : RuleRegistry, rule : RuleEntry) -> RuleRegistry {
   self.remember_override(rule)
   self.override_registered(rule)
 }
 
 ///|
-fn RuleRegistry::remember_override(self : RuleRegistry, rule : Rule) -> Unit {
-  let next : Array[Rule] = []
+fn RuleRegistry::remember_override(
+  self : RuleRegistry,
+  rule : RuleEntry,
+) -> Unit {
+  let next : Array[RuleEntry] = []
   for old in self.overrides {
     if old.name != rule.name {
       next.push(old)
@@ -115,7 +118,10 @@ fn RuleRegistry::remember_override(self : RuleRegistry, rule : Rule) -> Unit {
 }
 
 ///|
-fn RuleRegistry::override_for(self : RuleRegistry, name : RuleName) -> Rule? {
+fn RuleRegistry::override_for(
+  self : RuleRegistry,
+  name : RuleName,
+) -> RuleEntry? {
   for rule in self.overrides {
     if rule.name == name {
       return Some(rule)
@@ -127,9 +133,9 @@ fn RuleRegistry::override_for(self : RuleRegistry, name : RuleName) -> Rule? {
 ///|
 fn RuleRegistry::override_registered(
   self : RuleRegistry,
-  rule : Rule,
+  rule : RuleEntry,
 ) -> RuleRegistry {
-  let next : Array[Rule] = []
+  let next : Array[RuleEntry] = []
   for old in self.rules {
     if old.name != rule.name {
       next.push(old)
@@ -140,32 +146,32 @@ fn RuleRegistry::override_registered(
 }
 
 ///|
-fn RuleRegistry::block_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::block_rules(self : RuleRegistry) -> Array[RuleEntry] {
   self.rules_for(BlockStart)
 }
 
 ///|
-fn RuleRegistry::block_continue_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::block_continue_rules(self : RuleRegistry) -> Array[RuleEntry] {
   self.rules_for(BlockContinue)
 }
 
 ///|
-fn RuleRegistry::inline_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::inline_rules(self : RuleRegistry) -> Array[RuleEntry] {
   self.rules_for(Inline)
 }
 
 ///|
-fn RuleRegistry::delimiter_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::delimiter_rules(self : RuleRegistry) -> Array[RuleEntry] {
   self.rules_for(Delimiter)
 }
 
 ///|
-fn RuleRegistry::core_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::core_rules(self : RuleRegistry) -> Array[RuleEntry] {
   self.rules_for(Core)
 }
 
 ///|
-fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[Rule] {
+fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
   let rules = self.delimiter_rules()
   for rule in self.inline_rules() {
     rules.push(rule)
@@ -255,8 +261,8 @@ fn is_commonmark_block_rule_name(name : RuleName) -> Bool {
 fn RuleRegistry::rules_for(
   self : RuleRegistry,
   chain : RuleChain,
-) -> Array[Rule] {
-  let selected : Array[Rule] = []
+) -> Array[RuleEntry] {
+  let selected : Array[RuleEntry] = []
   for rule in self.rules {
     if rule.chain == chain && !array_contains_string(self.disabled, rule.name) {
       selected.push(rule)
@@ -266,7 +272,7 @@ fn RuleRegistry::rules_for(
 }
 
 ///|
-fn sort_rules(rules : Array[Rule]) -> Unit {
+fn sort_rules(rules : Array[RuleEntry]) -> Unit {
   let n = rules.length()
   for i in 1..<n {
     let current = rules[i]
@@ -281,7 +287,7 @@ fn sort_rules(rules : Array[Rule]) -> Unit {
 }
 
 ///|
-fn apply_rule_edges(rules : Array[Rule]) -> Unit {
+fn apply_rule_edges(rules : Array[RuleEntry]) -> Unit {
   let n = rules.length()
   for _ in 0..<n {
     for i in 0..<rules.length() {
@@ -303,7 +309,7 @@ fn apply_rule_edges(rules : Array[Rule]) -> Unit {
 }
 
 ///|
-fn rule_less(left : Rule, right : Rule) -> Bool {
+fn rule_less(left : RuleEntry, right : RuleEntry) -> Bool {
   if left.priority != right.priority {
     left.priority > right.priority
   } else {
@@ -313,7 +319,7 @@ fn rule_less(left : Rule, right : Rule) -> Bool {
 
 ///|
 fn find_rule_index(
-  rules : Array[Rule],
+  rules : Array[RuleEntry],
   name : RuleName,
   chain : RuleChain,
 ) -> Int {
@@ -326,7 +332,7 @@ fn find_rule_index(
 }
 
 ///|
-fn move_rule(rules : Array[Rule], from : Int, to : Int) -> Unit {
+fn move_rule(rules : Array[RuleEntry], from : Int, to : Int) -> Unit {
   let rule = rules[from]
   if from < to {
     for i in from..<to {
@@ -360,30 +366,45 @@ fn copy_rule_names(names : Array[RuleName]) -> Array[RuleName] {
 }
 
 ///|
-fn copy_rules(rules : Array[Rule]) -> Array[Rule] {
-  let copied : Array[Rule] = []
+fn copy_rules(rules : Array[RuleEntry]) -> Array[RuleEntry] {
+  let copied : Array[RuleEntry] = []
   for rule in rules {
-    copied.push({
-      name: rule.name,
-      chain: rule.chain,
-      before: copy_rule_names(rule.before),
-      after: copy_rule_names(rule.after),
-      priority: rule.priority,
-      order: rule.order,
-      block: rule.block,
-      inline: rule.inline,
-      core: rule.core,
-      source_core: rule.source_core,
-    })
+    copied.push(copy_rule_entry(rule))
   }
   copied
 }
 
 ///|
-fn copy_plugin_ops(ops : Array[PluginOp]) -> Array[PluginOp] {
-  let copied : Array[PluginOp] = []
+fn copy_rule_entry(rule : RuleEntry) -> RuleEntry {
+  {
+    name: rule.name,
+    chain: rule.chain,
+    before: copy_rule_names(rule.before),
+    after: copy_rule_names(rule.after),
+    priority: rule.priority,
+    order: rule.order,
+    block: rule.block,
+    inline: rule.inline,
+    core: rule.core,
+    source_core: rule.source_core,
+  }
+}
+
+///|
+fn copy_rule_op(op : RuleOp) -> RuleOp {
+  match op {
+    RegisterRule(rule) => RegisterRule(copy_rule_entry(rule))
+    DisableRule(name) => DisableRule(name)
+    EnableRule(name) => EnableRule(name)
+    ReplaceRule(rule) => ReplaceRule(copy_rule_entry(rule))
+  }
+}
+
+///|
+fn copy_rule_ops(ops : Array[RuleOp]) -> Array[RuleOp] {
+  let copied : Array[RuleOp] = []
   for op in ops {
-    copied.push(op)
+    copied.push(copy_rule_op(op))
   }
   copied
 }

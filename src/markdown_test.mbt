@@ -1,7 +1,7 @@
 ///|
 test "commonmark block and inline html rendering" {
   let html = render_html(
-    @markdown.Processor::commonmark(),
+    @markdown.commonmark(),
     "## Hello *MoonBit*\n\n- one\n- two",
   )
   assert_eq(
@@ -20,11 +20,8 @@ test "convenience parser builders are available" {
 }
 
 ///|
-test "commonmark plugin can be installed explicitly" {
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(@markdown.commonmark_plugin()),
-    "# hi\n\n*em*",
-  )
+test "commonmark rule can be installed explicitly" {
+  let html = render_html(@markdown.commonmark(), "# hi\n\n*em*")
   assert_eq(html, "<h1>hi</h1>\n<p><em>em</em></p>\n")
 }
 
@@ -112,9 +109,9 @@ test "element attributes are isolated from mutable arrays" {
 }
 
 ///|
-test "plugin and inline scanner public helpers have stable behavior" {
-  let plugin = @markdown.Plugin::new("contract")
-  assert_eq(plugin.name(), "contract")
+test "rule and inline scanner public helpers have stable behavior" {
+  let rule = @markdown.Rule::new("contract")
+  assert_eq(rule.name(), "contract")
   let scanner = match @markdown.InlineScanner::new("abcdef", 2) {
     Some(scanner) => scanner
     None => abort("expected valid scanner")
@@ -157,8 +154,8 @@ test "inline scanner constructor rejects invalid offsets" {
 }
 
 ///|
-test "plugins compose in order" {
-  let first = @markdown.Plugin::new("first").add(
+test "rules compose in order" {
+  let first = @markdown.Rule::new("first").extend(
     @markdown.Rule::inline(@markdown.RuleName::raw("x:inline:first"), fn(
       ctx,
       sink,
@@ -171,7 +168,7 @@ test "plugins compose in order" {
       }
     }),
   )
-  let second = @markdown.Plugin::new("second").add(
+  let second = @markdown.Rule::new("second").extend(
     @markdown.Rule::inline(@markdown.RuleName::raw("x:inline:second"), fn(
       ctx,
       sink,
@@ -184,24 +181,24 @@ test "plugins compose in order" {
       }
     }),
   )
-  let first_then_second = @markdown.Plugin::new("combined")
-    .with_plugin(first)
-    .with_plugin(second)
-  let second_then_first = @markdown.Plugin::new("combined")
-    .with_plugin(second)
-    .with_plugin(first)
+  let first_then_second = @markdown.Rule::new("combined")
+    .extend(first)
+    .extend(second)
+  let second_then_first = @markdown.Rule::new("combined")
+    .extend(second)
+    .extend(first)
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(first_then_second), "#"),
+    render_html(@markdown.Processor::new().extend(first_then_second), "#"),
     "<p>first</p>\n",
   )
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(second_then_first), "#"),
+    render_html(@markdown.Processor::new().extend(second_then_first), "#"),
     "<p>second</p>\n",
   )
 }
 
 ///|
-test "plugin builders leave the original plugin unchanged" {
+test "rule builders leave the original rule unchanged" {
   let rule = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     fn(ctx, sink) {
@@ -213,33 +210,37 @@ test "plugin builders leave the original plugin unchanged" {
       }
     },
   )
-  let base = @markdown.Plugin::new("base")
-  let configured = base.add(rule)
+  let base = @markdown.Rule::new("base")
+  let configured = base.extend(rule)
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(base), "#"),
+    render_html(@markdown.Processor::new().extend(base), "#"),
     "<p>#</p>\n",
   )
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(configured), "#"),
+    render_html(@markdown.Processor::new().extend(configured), "#"),
     "<p>marker</p>\n",
   )
 }
 
 ///|
 test "processor builders leave the original processor unchanged" {
-  let base = @markdown.Processor::new()
-  let configured = base.with_plugin(@markdown.commonmark_plugin())
-  assert_eq(render_html(base, "# hi"), "<p># hi</p>\n")
-  assert_eq(render_html(configured, "# hi"), "<h1>hi</h1>\n")
+  let base = @markdown.commonmark()
+  let configured = base.extend(
+    @markdown.Rule::new("no-heading").disable(
+      @markdown.RuleName::commonmark("block:atx_heading"),
+    ),
+  )
+  assert_eq(render_html(base, "# hi"), "<h1>hi</h1>\n")
+  assert_eq(render_html(configured, "# hi"), "<p># hi</p>\n")
 }
 
 ///|
-test "plugins can carry rule controls" {
-  let no_heading = @markdown.Plugin::new("no-heading")
-    .disable(@markdown.RuleName::commonmark("block:atx_heading"))
-    .with_plugin(@markdown.commonmark_plugin())
+test "rules can carry rule controls" {
+  let no_heading = @markdown.Rule::new("no-heading").disable(
+    @markdown.RuleName::commonmark("block:atx_heading"),
+  )
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(no_heading), "# title"),
+    render_html(@markdown.commonmark().extend(no_heading), "# title"),
     "<p># title</p>\n",
   )
 
@@ -259,16 +260,16 @@ test "plugins can carry rule controls" {
       }
     },
   )
-  let overridden = @markdown.commonmark_plugin().override_rule(heading)
+  let overridden = @markdown.Rule::new("config").replace(heading)
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(overridden), "# title"),
+    render_html(@markdown.commonmark().extend(overridden), "# title"),
     "<x:heading>overridden</x:heading>",
   )
 }
 
 ///|
-test "plugin override applies to later matching rules" {
-  let override_rule = @markdown.Rule::block(
+test "rule override applies to later matching rules" {
+  let replace = @markdown.Rule::block(
     @markdown.RuleName::commonmark("block:atx_heading"),
     priority=60,
     fn(ctx, sink) {
@@ -284,11 +285,9 @@ test "plugin override applies to later matching rules" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("heading-override")
-    .override_rule(override_rule)
-    .with_plugin(@markdown.commonmark_plugin())
+  let rule = @markdown.Rule::new("heading-override").replace(replace)
   assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), "# title"),
+    render_html(@markdown.commonmark().extend(rule), "# title"),
     "<x:heading>configured</x:heading>",
   )
 }
@@ -318,8 +317,8 @@ test "block context public helpers expose parser position safely" {
     },
   )
   let html = render_html(
-    @markdown.Processor::new().with_plugin(
-      @markdown.Plugin::new("context").add(rule),
+    @markdown.Processor::new().extend(
+      @markdown.Rule::new("context").extend(rule),
     ),
     "first\nsecond",
   )
@@ -374,7 +373,7 @@ test "empty builder parses paragraph text without registered rules" {
 ///|
 test "ordered list and code block render with balanced tags" {
   let html = render_html(
-    @markdown.Processor::commonmark(),
+    @markdown.commonmark(),
     "1. one\n2. two\n\n```\n<a>\n```",
   )
   assert_eq(
@@ -384,67 +383,52 @@ test "ordered list and code block render with balanced tags" {
 
 ///|
 test "standard rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("block:atx_heading"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "# not a heading",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "# not a heading")
   assert_eq(html, "<p># not a heading</p>\n")
 }
 
 ///|
 test "disabled standard rule can be re-enabled" {
-  let plugin = @markdown.commonmark_plugin()
+  let rule = @markdown.Rule::new("config")
     .disable(@markdown.RuleName::commonmark("block:atx_heading"))
     .enable(@markdown.RuleName::commonmark("block:atx_heading"))
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "# heading",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "# heading")
   assert_eq(html, "<h1>heading</h1>\n")
 }
 
 ///|
 test "setext heading rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("block:setext_heading"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "heading\n---",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "heading\n---")
   assert_eq(html, "<p>heading</p>\n<hr />\n")
 }
 
 ///|
 test "list rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("block:list"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "1) one",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "1) one")
   assert_eq(html, "<p>1) one</p>\n")
 }
 
 ///|
 test "paragraph rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("block:paragraph"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "plain",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "plain")
   assert_eq(html, "plain")
 }
 
 ///|
 test "paragraph rule can be overridden" {
-  let override_rule = @markdown.Rule::block(
+  let replace = @markdown.Rule::block(
     @markdown.RuleName::commonmark("block:paragraph"),
     priority=0,
     fn(ctx, sink) {
@@ -456,21 +440,18 @@ test "paragraph rule can be overridden" {
       1
     },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "plain",
-  )
+  let rule = @markdown.Rule::new("config").replace(replace)
+  let html = render_html(@markdown.commonmark().extend(rule), "plain")
   assert_eq(html, "<x:paragraph>plain</x:paragraph>")
 }
 
 ///|
 test "reference definition core rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
+    @markdown.commonmark().extend(rule),
     "[foo]: /url\n\n[foo]",
   )
   assert_eq(html, "<p>[foo]: /url</p>\n<p>[foo]</p>\n")
@@ -478,11 +459,11 @@ test "reference definition core rule can be disabled" {
 
 ///|
 test "reference definition continuation core rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
+    @markdown.commonmark().extend(rule),
     "[foo]: /url\n  'title'\n\n[foo]",
   )
   assert_eq(html, "<p>[foo]: /url\n'title'</p>\n<p>[foo]</p>\n")
@@ -490,11 +471,11 @@ test "reference definition continuation core rule can be disabled" {
 
 ///|
 test "reference definition core rule can be disabled for images" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("core:reference_definitions"),
   )
   let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
+    @markdown.commonmark().extend(rule),
     "[alt]: /img.png\n\n![alt]",
   )
   assert_eq(html, "<p>[alt]: /img.png</p>\n<p>![alt]</p>\n")
@@ -502,14 +483,14 @@ test "reference definition core rule can be disabled for images" {
 
 ///|
 test "reference definition core rule can be overridden" {
-  let override_rule = @markdown.Rule::core(
+  let replace = @markdown.Rule::core(
     @markdown.RuleName::commonmark("core:reference_definitions"),
     priority=100,
     fn(sink) { sink },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
+  let rule = @markdown.Rule::new("config").replace(replace)
   let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
+    @markdown.commonmark().extend(rule),
     "[foo]: /url\n\n[foo]",
   )
   assert_eq(html, "<p>[foo]: /url</p>\n<p>[foo]</p>\n")
@@ -517,24 +498,21 @@ test "reference definition core rule can be overridden" {
 
 ///|
 test "hard break rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("inline:hard_break"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "a\\\nb",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "a\\\nb")
   assert_eq(html, "<p>a\\\nb</p>\n")
 }
 
 ///|
 test "hard break rule emits event for backslash and spaces" {
-  let backslash = parse_events(@markdown.Processor::commonmark(), "a\\\nb")
+  let backslash = parse_events(@markdown.commonmark(), "a\\\nb")
   match backslash[2] {
     HardBreak => ()
     _ => abort("expected backslash hard break")
   }
-  let spaces = parse_events(@markdown.Processor::commonmark(), "a  \nb")
+  let spaces = parse_events(@markdown.commonmark(), "a  \nb")
   match spaces[2] {
     HardBreak => ()
     _ => abort("expected spaces hard break")
@@ -543,18 +521,15 @@ test "hard break rule emits event for backslash and spaces" {
 
 ///|
 test "soft break rule emits event and can be disabled" {
-  let enabled = parse_events(@markdown.Processor::commonmark(), "a\nb")
+  let enabled = parse_events(@markdown.commonmark(), "a\nb")
   match enabled[2] {
     SoftBreak => ()
     _ => abort("expected soft break")
   }
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("inline:soft_break"),
   )
-  let disabled = parse_events(
-    @markdown.Processor::new().with_plugin(plugin),
-    "a\nb",
-  )
+  let disabled = parse_events(@markdown.commonmark().extend(rule), "a\nb")
   match disabled[2] {
     Text(text) => assert_eq(text, "\n")
     _ => abort("expected text newline")
@@ -563,30 +538,24 @@ test "soft break rule emits event and can be disabled" {
 
 ///|
 test "entity rule can be disabled" {
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("inline:entity"),
   )
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "&amp;",
-  )
+  let html = render_html(@markdown.commonmark().extend(rule), "&amp;")
   assert_eq(html, "<p>&amp;amp;</p>\n")
 }
 
 ///|
 test "entity rule emits text event and can be disabled" {
-  let enabled = parse_events(@markdown.Processor::commonmark(), "&amp;")
+  let enabled = parse_events(@markdown.commonmark(), "&amp;")
   match enabled[1] {
     Text(text) => assert_eq(text, "&")
     _ => abort("expected decoded entity text")
   }
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("inline:entity"),
   )
-  let disabled = parse_events(
-    @markdown.Processor::new().with_plugin(plugin),
-    "&amp;",
-  )
+  let disabled = parse_events(@markdown.commonmark().extend(rule), "&amp;")
   match disabled[1] {
     Text(text) => assert_eq(text, "&")
     _ => abort("expected raw ampersand text")
@@ -599,7 +568,7 @@ test "entity rule emits text event and can be disabled" {
 
 ///|
 test "standard rule can be overridden" {
-  let override_rule = @markdown.Rule::block(
+  let replace = @markdown.Rule::block(
     @markdown.RuleName::commonmark("block:atx_heading"),
     priority=100,
     fn(ctx, sink) {
@@ -615,17 +584,14 @@ test "standard rule can be overridden" {
       }
     },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "# hello",
-  )
+  let rule = @markdown.Rule::new("config").replace(replace)
+  let html = render_html(@markdown.commonmark().extend(rule), "# hello")
   assert_eq(html, "<x:heading>overridden</x:heading>")
 }
 
 ///|
 test "overridden disabled rule stays disabled until enabled" {
-  let override_rule = @markdown.Rule::block(
+  let replace = @markdown.Rule::block(
     @markdown.RuleName::commonmark("block:atx_heading"),
     priority=100,
     fn(ctx, sink) {
@@ -641,20 +607,20 @@ test "overridden disabled rule stays disabled until enabled" {
       }
     },
   )
-  let disabled_plugin = @markdown.commonmark_plugin()
+  let disabled_rule = @markdown.Rule::new("config")
     .disable(@markdown.RuleName::commonmark("block:atx_heading"))
-    .override_rule(override_rule)
+    .replace(replace)
   let disabled_html = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
+    @markdown.commonmark().extend(disabled_rule),
     "# hello",
   )
   assert_eq(disabled_html, "<p># hello</p>\n")
-  let enabled_plugin = @markdown.commonmark_plugin()
+  let enabled_rule = @markdown.Rule::new("config")
     .disable(@markdown.RuleName::commonmark("block:atx_heading"))
-    .override_rule(override_rule)
+    .replace(replace)
     .enable(@markdown.RuleName::commonmark("block:atx_heading"))
   let enabled_html = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
+    @markdown.commonmark().extend(enabled_rule),
     "# hello",
   )
   assert_eq(enabled_html, "<x:heading>overridden</x:heading>")
@@ -662,7 +628,7 @@ test "overridden disabled rule stays disabled until enabled" {
 
 ///|
 test "standard delimiter rule can be overridden" {
-  let override_rule = @markdown.Rule::delimiter(
+  let replace = @markdown.Rule::delimiter(
     @markdown.RuleName::commonmark("delimiter:emphasis"),
     priority=100,
     fn(ctx, sink) {
@@ -689,17 +655,14 @@ test "standard delimiter rule can be overridden" {
       close + 1
     },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "*hello*",
-  )
+  let rule = @markdown.Rule::new("config").replace(replace)
+  let html = render_html(@markdown.commonmark().extend(rule), "*hello*")
   assert_eq(html, "<p><x:emphasis>hello</x:emphasis></p>\n")
 }
 
 ///|
 test "standard inline rule can be overridden" {
-  let override_rule = @markdown.Rule::inline(
+  let replace = @markdown.Rule::inline(
     @markdown.RuleName::commonmark("inline:code_span"),
     priority=100,
     fn(ctx, sink) {
@@ -726,17 +689,14 @@ test "standard inline rule can be overridden" {
       close + 1
     },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
-  let html = render_html(
-    @markdown.Processor::new().with_plugin(plugin),
-    "`hello`",
-  )
+  let rule = @markdown.Rule::new("config").replace(replace)
+  let html = render_html(@markdown.commonmark().extend(rule), "`hello`")
   assert_eq(html, "<p><x:code>hello</x:code></p>\n")
 }
 
 ///|
 test "standard text inline rule can be overridden" {
-  let override_rule = @markdown.Rule::inline(
+  let replace = @markdown.Rule::inline(
     @markdown.RuleName::commonmark("inline:text"),
     priority=-1000,
     fn(ctx, sink) {
@@ -748,25 +708,22 @@ test "standard text inline rule can be overridden" {
       }
     },
   )
-  let plugin = @markdown.commonmark_plugin().override_rule(override_rule)
-  let html = render_html(@markdown.Processor::new().with_plugin(plugin), "abc")
+  let rule = @markdown.Rule::new("config").replace(replace)
+  let html = render_html(@markdown.commonmark().extend(rule), "abc")
   assert_eq(html, "<p>XYZ</p>\n")
 }
 
 ///|
 test "standard text inline rule can be disabled" {
-  let enabled = parse_events(@markdown.Processor::commonmark(), "abc")
+  let enabled = parse_events(@markdown.commonmark(), "abc")
   match enabled[1] {
     Text(text) => assert_eq(text, "abc")
     _ => abort("expected text")
   }
-  let plugin = @markdown.commonmark_plugin().disable(
+  let rule = @markdown.Rule::new("config").disable(
     @markdown.RuleName::commonmark("inline:text"),
   )
-  let disabled = parse_events(
-    @markdown.Processor::new().with_plugin(plugin),
-    "abc",
-  )
+  let disabled = parse_events(@markdown.commonmark().extend(rule), "abc")
   match disabled[1] {
     Text(text) => assert_eq(text, "a")
     _ => abort("expected fallback text")
@@ -782,7 +739,7 @@ test "standard text inline rule can be disabled" {
 }
 
 ///|
-test "external plugin rule participates in block chain" {
+test "external rule rule participates in block chain" {
   let admonition = @markdown.Rule::block(
     @markdown.RuleName::raw("x:block:admonition"),
     priority=100,
@@ -806,16 +763,13 @@ test "external plugin rule participates in block chain" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("admonition").add(admonition)
-  let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(plugin),
-    "!!! note",
-  )
+  let rule = @markdown.Rule::new("admonition").extend(admonition)
+  let html = render_html(@markdown.commonmark().extend(rule), "!!! note")
   assert_eq(html, "<x:admonition kind=\"note\"></x:admonition>")
 }
 
 ///|
-test "external block plugin rule can be disabled and re-enabled" {
+test "external block rule rule can be disabled and re-enabled" {
   let admonition = @markdown.Rule::block(
     @markdown.RuleName::raw("x:block:admonition"),
     priority=100,
@@ -839,28 +793,28 @@ test "external block plugin rule can be disabled and re-enabled" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("admonition").add(admonition)
-  let disabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let rule = @markdown.Rule::new("admonition").extend(admonition)
+  let disabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:block:admonition"))
   let disabled = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
+    @markdown.commonmark().extend(disabled_rule),
     "!!! note",
   )
   assert_eq(disabled, "<p>!!! note</p>\n")
-  let enabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let enabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:block:admonition"))
     .enable(@markdown.RuleName::raw("x:block:admonition"))
   let enabled = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
+    @markdown.commonmark().extend(enabled_rule),
     "!!! note",
   )
   assert_eq(enabled, "<x:admonition kind=\"note\"></x:admonition>")
 }
 
 ///|
-test "external plugin rule can be disabled and re-enabled" {
+test "external rule rule can be disabled and re-enabled" {
   let marker = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
@@ -875,28 +829,22 @@ test "external plugin rule can be disabled and re-enabled" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("marker").add(marker)
-  let disabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let rule = @markdown.Rule::new("marker").extend(marker)
+  let disabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
-  let disabled = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
-    "@@",
-  )
+  let disabled = render_html(@markdown.commonmark().extend(disabled_rule), "@@")
   assert_eq(disabled, "<p>@@</p>\n")
-  let enabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let enabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
     .enable(@markdown.RuleName::raw("x:inline:marker"))
-  let enabled = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
-    "@@",
-  )
+  let enabled = render_html(@markdown.commonmark().extend(enabled_rule), "@@")
   assert_eq(enabled, "<p><x:marker>marked</x:marker></p>\n")
 }
 
 ///|
-test "external block plugin can consume multiline admonition" {
+test "external block rule can consume multiline admonition" {
   let admonition = @markdown.Rule::block(
     @markdown.RuleName::raw("x:block:admonition"),
     priority=100,
@@ -944,8 +892,8 @@ test "external block plugin can consume multiline admonition" {
     },
   )
   let events = parse_events(
-    @markdown.Processor::commonmark().with_plugin(
-      @markdown.Plugin::new("admonition").add(admonition),
+    @markdown.commonmark().extend(
+      @markdown.Rule::new("admonition").extend(admonition),
     ),
     "!!! note\n    first\n    second\n\nnext",
   )
@@ -974,7 +922,7 @@ test "external block plugin can consume multiline admonition" {
 }
 
 ///|
-test "external plugin rule participates in block continue chain" {
+test "external rule rule participates in block continue chain" {
   let continuation = @markdown.Rule::block_continue(
     @markdown.RuleName::raw("x:block_continue:marker"),
     priority=-100,
@@ -1007,13 +955,10 @@ test "external plugin rule participates in block continue chain" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("block-continue")
-    .add(start)
-    .add(continuation)
-  let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(plugin),
-    "% done",
-  )
+  let rule = @markdown.Rule::new("block-continue")
+    .extend(start)
+    .extend(continuation)
+  let html = render_html(@markdown.commonmark().extend(rule), "% done")
   assert_eq(html, "<x:continued>done</x:continued>")
 }
 
@@ -1049,23 +994,23 @@ test "external block continue rule can be disabled and re-enabled" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("block-continue")
-    .add(start)
-    .add(continuation)
-  let disabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let rule = @markdown.Rule::new("block-continue")
+    .extend(start)
+    .extend(continuation)
+  let disabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:block_continue:marker"))
   let disabled = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
+    @markdown.commonmark().extend(disabled_rule),
     "% done",
   )
   assert_eq(disabled, "<x:start>done</x:start>")
-  let enabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let enabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:block_continue:marker"))
     .enable(@markdown.RuleName::raw("x:block_continue:marker"))
   let enabled = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
+    @markdown.commonmark().extend(enabled_rule),
     "% done",
   )
   assert_eq(enabled, "<x:continued>done</x:continued>")
@@ -1098,17 +1043,14 @@ test "block continue rule order honors before edges" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("block-continue-order")
-    .add(first)
-    .add(second)
-  assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), "%"),
-    "second",
-  )
+  let rule = @markdown.Rule::new("block-continue-order")
+    .extend(first)
+    .extend(second)
+  assert_eq(render_html(@markdown.commonmark().extend(rule), "%"), "second")
 }
 
 ///|
-test "external plugin rule participates in inline chain" {
+test "external rule rule participates in inline chain" {
   let math = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:math"),
     priority=100,
@@ -1137,16 +1079,14 @@ test "external plugin rule participates in inline chain" {
     },
   )
   let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(
-      @markdown.Plugin::new("math").add(math),
-    ),
+    @markdown.commonmark().extend(@markdown.Rule::new("math").extend(math)),
     "a $x + y$ b",
   )
   assert_eq(html, "<p>a <x:math>x + y</x:math> b</p>\n")
 }
 
 ///|
-test "external plugin rule participates in delimiter chain" {
+test "external rule rule participates in delimiter chain" {
   let mark = @markdown.Rule::delimiter(
     @markdown.RuleName::raw("x:delimiter:mark"),
     priority=100,
@@ -1176,9 +1116,7 @@ test "external plugin rule participates in delimiter chain" {
     },
   )
   let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(
-      @markdown.Plugin::new("mark").add(mark),
-    ),
+    @markdown.commonmark().extend(@markdown.Rule::new("mark").extend(mark)),
     "a ^^marked^^ b",
   )
   assert_eq(html, "<p>a <x:mark>marked</x:mark> b</p>\n")
@@ -1213,21 +1151,21 @@ test "external delimiter rule can be disabled and re-enabled" {
       offset + 2
     },
   )
-  let plugin = @markdown.Plugin::new("mark").add(mark)
-  let disabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let rule = @markdown.Rule::new("mark").extend(mark)
+  let disabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:delimiter:mark"))
   let disabled = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
+    @markdown.commonmark().extend(disabled_rule),
     "a ^^marked^^ b",
   )
   assert_eq(disabled, "<p>a ^^marked^^ b</p>\n")
-  let enabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let enabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:delimiter:mark"))
     .enable(@markdown.RuleName::raw("x:delimiter:mark"))
   let enabled = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
+    @markdown.commonmark().extend(enabled_rule),
     "a ^^marked^^ b",
   )
   assert_eq(enabled, "<p>a <x:mark>marked</x:mark> b</p>\n")
@@ -1260,15 +1198,15 @@ test "delimiter rule order honors after edges" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("delimiter-order").add(second).add(first)
+  let rule = @markdown.Rule::new("delimiter-order").extend(second).extend(first)
   assert_eq(
-    render_html(@markdown.Processor::commonmark().with_plugin(plugin), "^"),
+    render_html(@markdown.commonmark().extend(rule), "^"),
     "<p>first</p>\n",
   )
 }
 
 ///|
-test "external plugin can define wikilinks" {
+test "external rule can define wikilinks" {
   let wikilink = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:wikilink"),
     priority=100,
@@ -1301,8 +1239,8 @@ test "external plugin can define wikilinks" {
     },
   )
   let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(
-      @markdown.Plugin::new("wikilink").add(wikilink),
+    @markdown.commonmark().extend(
+      @markdown.Rule::new("wikilink").extend(wikilink),
     ),
     "See [[MoonBit]].",
   )
@@ -1312,7 +1250,7 @@ test "external plugin can define wikilinks" {
 }
 
 ///|
-test "external plugin core rule transforms event stream" {
+test "external rule core rule transforms event stream" {
   let core = @markdown.Rule::core(
     @markdown.RuleName::raw("x:core:footer"),
     priority=10,
@@ -1325,16 +1263,14 @@ test "external plugin core rule transforms event stream" {
     },
   )
   let html = render_html(
-    @markdown.Processor::commonmark().with_plugin(
-      @markdown.Plugin::new("footer").add(core),
-    ),
+    @markdown.commonmark().extend(@markdown.Rule::new("footer").extend(core)),
     "body",
   )
   assert_eq(html, "<p>body</p>\n<x:footer>done</x:footer>")
 }
 
 ///|
-test "external core plugin rule can be disabled and re-enabled" {
+test "external core rule rule can be disabled and re-enabled" {
   let core = @markdown.Rule::core(
     @markdown.RuleName::raw("x:core:footer"),
     priority=10,
@@ -1346,23 +1282,20 @@ test "external core plugin rule can be disabled and re-enabled" {
       })
     },
   )
-  let plugin = @markdown.Plugin::new("footer").add(core)
-  let disabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let rule = @markdown.Rule::new("footer").extend(core)
+  let disabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:core:footer"))
   let disabled = render_html(
-    @markdown.Processor::new().with_plugin(disabled_plugin),
+    @markdown.commonmark().extend(disabled_rule),
     "body",
   )
   assert_eq(disabled, "<p>body</p>\n")
-  let enabled_plugin = @markdown.commonmark_plugin()
-    .with_plugin(plugin)
+  let enabled_rule = @markdown.Rule::new("config")
+    .extend(rule)
     .disable(@markdown.RuleName::raw("x:core:footer"))
     .enable(@markdown.RuleName::raw("x:core:footer"))
-  let enabled = render_html(
-    @markdown.Processor::new().with_plugin(enabled_plugin),
-    "body",
-  )
+  let enabled = render_html(@markdown.commonmark().extend(enabled_rule), "body")
   assert_eq(enabled, "<p>body</p>\n<x:footer>done</x:footer>")
 }
 
@@ -1383,11 +1316,8 @@ test "rule order honors priority and registration order" {
     priority=1,
     fn(sink) { sink.on_finish(fn(out) { out.emit(Text("C")) }) },
   )
-  let plugin = @markdown.Plugin::new("order").add(a).add(b).add(c)
-  assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), ""),
-    "BAC",
-  )
+  let rule = @markdown.Rule::new("order").extend(a).extend(b).extend(c)
+  assert_eq(render_html(@markdown.commonmark().extend(rule), ""), "BAC")
 }
 
 ///|
@@ -1402,11 +1332,8 @@ test "rule order honors before and after edges" {
     before=[@markdown.RuleName::raw("x:core:first")],
     fn(sink) { sink.on_finish(fn(out) { out.emit(Text("2")) }) },
   )
-  let plugin = @markdown.Plugin::new("edges").add(first).add(second)
-  assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), ""),
-    "21",
-  )
+  let rule = @markdown.Rule::new("edges").extend(first).extend(second)
+  assert_eq(render_html(@markdown.commonmark().extend(rule), ""), "21")
 }
 
 ///|
@@ -1436,11 +1363,8 @@ test "block rule order honors before edges" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("block-order").add(first).add(second)
-  assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), "!"),
-    "second",
-  )
+  let rule = @markdown.Rule::new("block-order").extend(first).extend(second)
+  assert_eq(render_html(@markdown.commonmark().extend(rule), "!"), "second")
 }
 
 ///|
@@ -1475,14 +1399,11 @@ test "rule order ignores edges that target another chain" {
     priority=100,
     fn(_ctx, _sink) { 0 },
   )
-  let plugin = @markdown.Plugin::new("cross-chain-order")
-    .add(first)
-    .add(second)
-    .add(target)
-  assert_eq(
-    render_html(@markdown.Processor::new().with_plugin(plugin), "!"),
-    "first",
-  )
+  let rule = @markdown.Rule::new("cross-chain-order")
+    .extend(first)
+    .extend(second)
+    .extend(target)
+  assert_eq(render_html(@markdown.commonmark().extend(rule), "!"), "first")
 }
 
 ///|
@@ -1512,17 +1433,17 @@ test "inline rule order honors after edges" {
       }
     },
   )
-  let plugin = @markdown.Plugin::new("inline-order").add(second).add(first)
+  let rule = @markdown.Rule::new("inline-order").extend(second).extend(first)
   assert_eq(
-    render_html(@markdown.Processor::commonmark().with_plugin(plugin), "@"),
+    render_html(@markdown.commonmark().extend(rule), "@"),
     "<p>first</p>\n",
   )
 }
 
 ///|
 test "parser can push into a sink" {
-  let buffer = @markdown.EventBuffer::new()
-  @markdown.Processor::commonmark().parse_into("hello", buffer.sink())
+  let buffer = @markdown.Events::new()
+  @markdown.commonmark().parse("hello", buffer.sink())
   let events = buffer.collect()
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
@@ -1541,15 +1462,15 @@ test "parser can push into a sink" {
 
 ///|
 test "parser can render html downstream while parsing" {
-  let html = @markdown.HtmlBuffer::new()
-  @markdown.Processor::commonmark().parse_into("# Hello *MoonBit*", html.sink())
+  let html = @markdown.Html::new()
+  @markdown.commonmark().parse("# Hello *MoonBit*", html.sink())
   assert_eq(html.to_string(), "<h1>Hello <em>MoonBit</em></h1>\n")
 }
 
 ///|
 test "parser can build ast downstream while parsing" {
-  let ast = @markdown.AstBuffer::new()
-  @markdown.Processor::commonmark().parse_into("hello", ast.sink())
+  let ast = @markdown.Ast::new()
+  @markdown.commonmark().parse("hello", ast.sink())
   match ast.result() {
     Ok(root) => {
       assert_eq(root.children().length(), 1)
@@ -1564,7 +1485,7 @@ test "parser can build ast downstream while parsing" {
 
 ///|
 test "parser attaches block source ranges" {
-  let events = parse_events(@markdown.Processor::commonmark(), "# hi\n\ntext")
+  let events = parse_events(@markdown.commonmark(), "# hi\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1593,20 +1514,17 @@ test "parser attaches block source ranges" {
 
 ///|
 test "parse does not expose reusable internal event arrays" {
-  let events = parse_events(@markdown.Processor::commonmark(), "hello")
+  let events = parse_events(@markdown.commonmark(), "hello")
   assert_eq(events.length(), 3)
   ignore(events.pop())
   assert_eq(events.length(), 2)
-  assert_eq(
-    parse_events(@markdown.Processor::commonmark(), "hello").length(),
-    3,
-  )
+  assert_eq(parse_events(@markdown.commonmark(), "hello").length(), 3)
 }
 
 ///|
 test "event buffer collect returns a copy" {
-  let buffer = @markdown.EventBuffer::new()
-  @markdown.Processor::commonmark().parse_into("hello", buffer.sink())
+  let buffer = @markdown.Events::new()
+  @markdown.commonmark().parse("hello", buffer.sink())
   let collected = buffer.collect()
   assert_eq(collected.length(), 3)
   ignore(collected.pop())
@@ -1625,10 +1543,7 @@ test "event buffer collect returns a copy" {
 
 ///|
 test "parser attaches list source ranges" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "- one\n  continued\n- two",
-  )
+  let events = parse_events(@markdown.commonmark(), "- one\n  continued\n- two")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1657,10 +1572,7 @@ test "parser attaches list source ranges" {
 
 ///|
 test "parser attaches loose list source ranges across blank continuation" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "- one\n\n  two\n- three",
-  )
+  let events = parse_events(@markdown.commonmark(), "- one\n\n  two\n- three")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1689,10 +1601,7 @@ test "parser attaches loose list source ranges across blank continuation" {
 
 ///|
 test "parser attaches blockquote source ranges" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "> quote\n> more\n\ntext",
-  )
+  let events = parse_events(@markdown.commonmark(), "> quote\n> more\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1709,10 +1618,7 @@ test "parser attaches blockquote source ranges" {
 
 ///|
 test "parser attaches fenced code source ranges" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "```\ncode\n```\n\ntext",
-  )
+  let events = parse_events(@markdown.commonmark(), "```\ncode\n```\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1729,7 +1635,7 @@ test "parser attaches fenced code source ranges" {
 
 ///|
 test "parser attaches unclosed fenced code source ranges" {
-  let events = parse_events(@markdown.Processor::commonmark(), "```\ncode")
+  let events = parse_events(@markdown.commonmark(), "```\ncode")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1746,10 +1652,7 @@ test "parser attaches unclosed fenced code source ranges" {
 
 ///|
 test "parser attaches indented code source ranges" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "    code\n\ntext",
-  )
+  let events = parse_events(@markdown.commonmark(), "    code\n\ntext")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1766,7 +1669,7 @@ test "parser attaches indented code source ranges" {
 
 ///|
 test "four space indented blockquote marker is code" {
-  let events = parse_events(@markdown.Processor::commonmark(), "    > quote")
+  let events = parse_events(@markdown.commonmark(), "    > quote")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1783,7 +1686,7 @@ test "four space indented blockquote marker is code" {
 
 ///|
 test "four space indented heading marker is code" {
-  let events = parse_events(@markdown.Processor::commonmark(), "    # foo")
+  let events = parse_events(@markdown.commonmark(), "    # foo")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1800,7 +1703,7 @@ test "four space indented heading marker is code" {
 
 ///|
 test "four space indented thematic break marker is code" {
-  let events = parse_events(@markdown.Processor::commonmark(), "    ***")
+  let events = parse_events(@markdown.commonmark(), "    ***")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1817,7 +1720,7 @@ test "four space indented thematic break marker is code" {
 
 ///|
 test "four space indented setext underline stays paragraph" {
-  let events = parse_events(@markdown.Processor::commonmark(), "Foo\n    ---")
+  let events = parse_events(@markdown.commonmark(), "Foo\n    ---")
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
@@ -1826,7 +1729,7 @@ test "four space indented setext underline stays paragraph" {
 
 ///|
 test "four space indented fence does not interrupt paragraph" {
-  let events = parse_events(@markdown.Processor::commonmark(), "foo\n    ```")
+  let events = parse_events(@markdown.commonmark(), "foo\n    ```")
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
@@ -1835,7 +1738,7 @@ test "four space indented fence does not interrupt paragraph" {
 
 ///|
 test "four space indented html block marker is code" {
-  let events = parse_events(@markdown.Processor::commonmark(), "    <div>")
+  let events = parse_events(@markdown.commonmark(), "    <div>")
   match events[0] {
     Enter(el) =>
       match el.range() {
@@ -1852,10 +1755,7 @@ test "four space indented html block marker is code" {
 
 ///|
 test "four space indented list marker does not interrupt paragraph" {
-  let events = parse_events(
-    @markdown.Processor::commonmark(),
-    "paragraph\n    - item",
-  )
+  let events = parse_events(@markdown.commonmark(), "paragraph\n    - item")
   match events[0] {
     Enter(el) => assert_eq(el.tag().to_string(), "cm:paragraph")
     _ => abort("expected paragraph")
@@ -1873,7 +1773,7 @@ test "four space indented list marker does not interrupt paragraph" {
 
 ///|
 test "parser attaches thematic break source ranges" {
-  let events = parse_events(@markdown.Processor::commonmark(), "text\n\n---")
+  let events = parse_events(@markdown.commonmark(), "text\n\n---")
   match events[3] {
     Enter(el) =>
       match el.range() {
@@ -1891,7 +1791,7 @@ test "parser attaches thematic break source ranges" {
 ///|
 test "parser normalizes image alt text" {
   let events = parse_events(
-    @markdown.Processor::commonmark(),
+    @markdown.commonmark(),
     "![a\\*b &amp; c](/img.png)",
   )
   match events[1] {
@@ -1908,7 +1808,7 @@ test "parser normalizes image alt text" {
 ///|
 test "parser flattens image alt inline markup" {
   let events = parse_events(
-    @markdown.Processor::commonmark(),
+    @markdown.commonmark(),
     "![*em* **strong** `code`](/img.png)",
   )
   match events[1] {
@@ -1924,7 +1824,7 @@ test "parser flattens image alt inline markup" {
 ///|
 test "parser normalizes link destination and title attributes" {
   let events = parse_events(
-    @markdown.Processor::commonmark(),
+    @markdown.commonmark(),
     "[link](/a\\*b?x=&amp; \"a\\*b &amp; c\")",
   )
   match events[1] {
@@ -2024,7 +1924,7 @@ test "event transform and ast conversion keep extension tags" {
     Text("b"),
     Exit(@markdown.Tag::raw("x:note")),
   ]
-  let buffer = @markdown.EventBuffer::new()
+  let buffer = @markdown.Events::new()
   push_events(
     events,
     buffer
@@ -2197,7 +2097,7 @@ test "transform preserves source range while renaming and injecting attrs" {
     ),
     Exit(@markdown.Tag::raw("x:old")),
   ]
-  let buffer = @markdown.EventBuffer::new()
+  let buffer = @markdown.Events::new()
   push_events(
     events,
     buffer
@@ -2227,7 +2127,7 @@ test "transform preserves source range while renaming and injecting attrs" {
 
 ///|
 test "transform injects attrs on unknown extension tags" {
-  let buffer = @markdown.EventBuffer::new()
+  let buffer = @markdown.Events::new()
   push_events(
     [
       Enter(
@@ -2260,7 +2160,7 @@ test "transform injects attrs on unknown extension tags" {
 
 ///|
 test "transform text merge only merges adjacent text" {
-  let buffer = @markdown.EventBuffer::new()
+  let buffer = @markdown.Events::new()
   push_events(
     [Text("a"), Text("b"), SoftBreak, Text("c"), Text("d")],
     buffer.sink().text_merge(),
@@ -2286,7 +2186,7 @@ test "transform preserves event order and unknown tags" {
     Text("b"),
     Exit(@markdown.Tag::raw("x:unknown")),
   ]
-  let buffer = @markdown.EventBuffer::new()
+  let buffer = @markdown.Events::new()
   push_events(events, buffer.sink().softbreak_to_hardbreak())
   let transformed = buffer.collect()
   match transformed[0] {

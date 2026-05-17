@@ -1,5 +1,5 @@
 ///|
-fn cm_link_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_link_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 91 {
@@ -26,7 +26,7 @@ fn cm_link_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_image_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if i + 1 >= text.length() ||
@@ -57,7 +57,7 @@ fn cm_image_inline(ctx : InlineContext, sink : EventSink) -> Int {
 
 ///|
 fn image_alt_text(text : String, registry : RuleRegistry) -> String {
-  let buffer = EventBuffer::new()
+  let buffer = Events::new()
   parse_inlines(text, registry, buffer.sink())
   let mut out = ""
   for event in buffer.collect() {

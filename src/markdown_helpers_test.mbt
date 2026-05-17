@@ -1,7 +1,7 @@
 ///|
 fn render_html(processor : @markdown.Processor, source : String) -> String {
-  let html = @markdown.HtmlBuffer::new()
-  processor.parse_into(source, html.sink())
+  let html = @markdown.Html::new()
+  processor.parse(source, html.sink())
   html.to_string()
 }
 
@@ -10,16 +10,13 @@ fn parse_events(
   processor : @markdown.Processor,
   source : String,
 ) -> Array[@markdown.Event] {
-  let buffer = @markdown.EventBuffer::new()
-  processor.parse_into(source, buffer.sink())
+  let buffer = @markdown.Events::new()
+  processor.parse(source, buffer.sink())
   buffer.collect()
 }
 
 ///|
-fn push_events(
-  events : Array[@markdown.Event],
-  sink : @markdown.EventSink,
-) -> Unit {
+fn push_events(events : Array[@markdown.Event], sink : @markdown.Sink) -> Unit {
   for event in events {
     sink.emit(event)
   }
@@ -28,7 +25,7 @@ fn push_events(
 
 ///|
 fn render_events(events : Array[@markdown.Event]) -> String {
-  let html = @markdown.HtmlBuffer::new()
+  let html = @markdown.Html::new()
   push_events(events, html.sink())
   html.to_string()
 }
@@ -37,7 +34,7 @@ fn render_events(events : Array[@markdown.Event]) -> String {
 fn ast_from_events(
   events : Array[@markdown.Event],
 ) -> Result[@markdown.AstNode, @markdown.AstError] {
-  let ast = @markdown.AstBuffer::new()
+  let ast = @markdown.Ast::new()
   push_events(events, ast.sink())
   ast.result()
 }

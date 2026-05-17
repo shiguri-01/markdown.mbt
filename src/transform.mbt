@@ -1,10 +1,7 @@
 ///|
 /// Creates a sink that runs `f` before finishing downstream.
-pub fn EventSink::on_finish(
-  self : EventSink,
-  f : (EventSink) -> Unit,
-) -> EventSink {
-  EventSink::new(fn(event) { self.emit(event) }, finish=fn() {
+pub fn Sink::on_finish(self : Sink, f : (Sink) -> Unit) -> Sink {
+  Sink::new(fn(event) { self.emit(event) }, finish=fn() {
     f(self)
     self.finish()
   })
@@ -12,17 +9,17 @@ pub fn EventSink::on_finish(
 
 ///|
 /// Creates a sink that maps every event before forwarding it downstream.
-pub fn EventSink::map(self : EventSink, f : (Event) -> Event) -> EventSink {
-  EventSink::new(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
+pub fn Sink::map(self : Sink, f : (Event) -> Event) -> Sink {
+  Sink::new(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
     self.finish()
   })
 }
 
 ///|
 /// Creates a sink that merges adjacent `Text` events before forwarding.
-pub fn EventSink::text_merge(self : EventSink) -> EventSink {
+pub fn Sink::text_merge(self : Sink) -> Sink {
   let mut pending : String? = None
-  EventSink::new(
+  Sink::new(
     fn(event) {
       match event {
         Text(text) =>
@@ -53,7 +50,7 @@ pub fn EventSink::text_merge(self : EventSink) -> EventSink {
 
 ///|
 /// Creates a sink that rewrites every `SoftBreak` event to `HardBreak`.
-pub fn EventSink::softbreak_to_hardbreak(self : EventSink) -> EventSink {
+pub fn Sink::softbreak_to_hardbreak(self : Sink) -> Sink {
   self.map(fn(event) {
     match event {
       SoftBreak => HardBreak
@@ -64,11 +61,7 @@ pub fn EventSink::softbreak_to_hardbreak(self : EventSink) -> EventSink {
 
 ///|
 /// Creates a sink that renames matching `Enter` and `Exit` tags.
-pub fn EventSink::rename_tag(
-  self : EventSink,
-  from : Tag,
-  to : Tag,
-) -> EventSink {
+pub fn Sink::rename_tag(self : Sink, from : Tag, to : Tag) -> Sink {
   self.map(fn(event) {
     match event {
       Enter(el) =>
@@ -85,11 +78,7 @@ pub fn EventSink::rename_tag(
 
 ///|
 /// Creates a sink that appends an attribute to matching `Enter` elements.
-pub fn EventSink::inject_attr(
-  self : EventSink,
-  tag : Tag,
-  attr : Attr,
-) -> EventSink {
+pub fn Sink::inject_attr(self : Sink, tag : Tag, attr : Attr) -> Sink {
   self.map(fn(event) {
     match event {
       Enter(el) =>

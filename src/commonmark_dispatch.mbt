@@ -1,5 +1,5 @@
 ///|
-fn commonmark_block_dispatch(ctx : BlockContext, sink : EventSink) -> Int {
+fn commonmark_block_dispatch(ctx : BlockContext, sink : Sink) -> Int {
   let line = ctx.lines[ctx.index]
   let first = first_non_space_index(line)
   if first < 0 {

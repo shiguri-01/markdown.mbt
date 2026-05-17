@@ -142,12 +142,12 @@ fn readme_like_document_sections(count : Int) -> String {
   let out = StringBuilder::new()
   out.write_string("# markdown.mbt\n\n")
   out.write_string(
-    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling, plugin hooks, and HTML rendering.\n\n",
+    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling, rule hooks, and HTML rendering.\n\n",
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.HtmlBuffer::new()\n")
-  out.write_string("@markdown.parse_into(source, html.sink())\n")
+  out.write_string("let html = @markdown.Html::new()\n")
+  out.write_string("@markdown.commonmark().parse(source, html.sink())\n")
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {
@@ -166,7 +166,7 @@ fn readme_like_document_sections(count : Int) -> String {
     out.write_string("- Render known CommonMark nodes to HTML.\n")
     out.write_string("- Preserve extension elements for downstream tools.\n\n")
     out.write_string(
-      "> Note: plugins can add new rules without changing the default preset.\n\n",
+      "> Note: rules can add new rules without changing the default preset.\n\n",
     )
   }
   out.to_string()
@@ -288,31 +288,29 @@ fn mixed_document_sections(count : Int) -> String {
 ///|
 fn no_op_inline_rule(
   _ctx : @markdown.InlineContext,
-  _sink : @markdown.EventSink,
+  _sink : @markdown.Sink,
 ) -> Int {
   0
 }
 
 ///|
-fn many_extension_rules_plugin(count : Int) -> @markdown.Plugin {
-  let plugin = @markdown.Plugin::new("many-extension-rules")
+fn many_extension_rules_rule(count : Int) -> @markdown.Rule {
+  let mut rule = @markdown.Rule::new("many-extension-rules")
   for i in 0..<count {
-    ignore(
-      plugin.add(
-        @markdown.Rule::inline(
-          @markdown.RuleName::raw("x:inline:no_op:" + i.to_string()),
-          priority=-i,
-          no_op_inline_rule,
-        ),
+    rule = rule.extend(
+      @markdown.Rule::inline(
+        @markdown.RuleName::raw("x:inline:no_op:" + i.to_string()),
+        priority=-i,
+        no_op_inline_rule,
       ),
     )
   }
-  plugin
+  rule
 }
 
 ///|
 fn parse_event_count(input : String) -> Int {
-  parse_event_count_with(@markdown.Processor::commonmark(), input)
+  parse_event_count_with(@markdown.commonmark(), input)
 }
 
 ///|
@@ -320,16 +318,16 @@ fn parse_event_count_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let events = @markdown.EventBuffer::new()
-  processor.parse_into(input, events.sink())
+  let events = @markdown.Events::new()
+  processor.parse(input, events.sink())
   events.collect().length()
 }
 
 ///|
 fn parse_with_extension_event_count(input : String) -> Int {
   parse_event_count_with(
-    @markdown.Processor::commonmark().with_plugin(
-      many_extension_rules_plugin(50),
+    @markdown.commonmark().extend(
+      many_extension_rules_rule(50),
     ),
     input,
   )
@@ -337,7 +335,7 @@ fn parse_with_extension_event_count(input : String) -> Int {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  parse_render_length_with(@markdown.Processor::commonmark(), input)
+  parse_render_length_with(@markdown.commonmark(), input)
 }
 
 ///|
@@ -345,28 +343,28 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let html = @markdown.HtmlBuffer::new()
-  processor.parse_into(input, html.sink())
+  let html = @markdown.Html::new()
+  processor.parse(input, html.sink())
   html.to_string().length()
 }
 
 ///|
 fn render_length(events : Array[@markdown.Event]) -> Int {
-  let html = @markdown.HtmlBuffer::new()
+  let html = @markdown.Html::new()
   push_events(events, html.sink())
   html.to_string().length()
 }
 
 ///|
 fn transform_event_count(events : Array[@markdown.Event]) -> Int {
-  let out = @markdown.EventBuffer::new()
+  let out = @markdown.Events::new()
   push_events(events, out.sink().text_merge().softbreak_to_hardbreak())
   out.collect().length()
 }
 
 ///|
 fn ast_child_count(events : Array[@markdown.Event]) -> Int {
-  let ast = @markdown.AstBuffer::new()
+  let ast = @markdown.Ast::new()
   push_events(events, ast.sink())
   match ast.result() {
     Ok(root) => root.children().length()
@@ -376,13 +374,13 @@ fn ast_child_count(events : Array[@markdown.Event]) -> Int {
 
 ///|
 fn parse_events(input : String) -> Array[@markdown.Event] {
-  let events = @markdown.EventBuffer::new()
-  @markdown.parse_into(input, events.sink())
+  let events = @markdown.Events::new()
+  @markdown.commonmark().parse(input, events.sink())
   events.collect()
 }
 
 ///|
-fn push_events(events : Array[@markdown.Event], sink : @markdown.EventSink) -> Unit {
+fn push_events(events : Array[@markdown.Event], sink : @markdown.Sink) -> Unit {
   for event in events {
     sink.emit(event)
   }
@@ -450,9 +448,9 @@ test "markdown processing speed" (b : @bench.T) {
   let issue_thread = issue_thread_document()
   let large_issue_thread = issue_thread_large_document()
   let huge_issue_thread = issue_thread_huge_document()
-  let commonmark = @markdown.Processor::commonmark()
-  let commonmark_with_extensions = @markdown.Processor::commonmark().with_plugin(
-    many_extension_rules_plugin(50),
+  let commonmark = @markdown.commonmark()
+  let commonmark_with_extensions = @markdown.commonmark().extend(
+    many_extension_rules_rule(50),
   )
   let mixed_events = parse_events(mixed)
   b.bench(

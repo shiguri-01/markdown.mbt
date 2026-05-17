@@ -1,28 +1,28 @@
 ///|
 /// A downstream event consumer used by parsers, rules, renderers, and transforms.
-pub struct EventSink {
+pub struct Sink {
   priv emit_event : (Event) -> Unit
   priv finish_stream : () -> Unit
 }
 
 ///|
 /// Creates an event sink.
-pub fn EventSink::new(
+pub fn Sink::new(
   emit : (Event) -> Unit,
   finish? : () -> Unit = fn() { () },
-) -> EventSink {
+) -> Sink {
   { emit_event: emit, finish_stream: finish }
 }
 
 ///|
 /// Emits an event downstream.
-pub fn EventSink::emit(self : EventSink, event : Event) -> Unit {
+pub fn Sink::emit(self : Sink, event : Event) -> Unit {
   (self.emit_event)(event)
 }
 
 ///|
 /// Finishes the stream and lets downstream consumers flush buffered state.
-pub fn EventSink::finish(self : EventSink) -> Unit {
+pub fn Sink::finish(self : Sink) -> Unit {
   (self.finish_stream)()
 }
 
@@ -33,7 +33,7 @@ pub struct BlockContext {
   priv line_starts : Array[Int]
   priv index : Int
   priv registry : RuleRegistry
-  priv inline_rules : Array[Rule]
+  priv inline_rules : Array[RuleEntry]
 }
 
 ///|

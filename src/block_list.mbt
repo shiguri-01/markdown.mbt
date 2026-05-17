@@ -1,5 +1,5 @@
 ///|
-fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_list_block(ctx : BlockContext, sink : Sink) -> Int {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
     return 0
   }
@@ -107,8 +107,8 @@ fn cm_list_block(ctx : BlockContext, sink : EventSink) -> Int {
 fn emit_list_item_content(
   item_text : String,
   registry : RuleRegistry,
-  inline_rules : Array[Rule],
-  sink : EventSink,
+  inline_rules : Array[RuleEntry],
+  sink : Sink,
   loose? : Bool = false,
 ) -> Unit {
   if !loose &&
@@ -118,7 +118,7 @@ fn emit_list_item_content(
     parse_inlines_with_rules(item_text, registry, inline_rules, sink)
     return
   }
-  let buffer = EventBuffer::new()
+  let buffer = Events::new()
   parse_blocks_into(item_text, registry, buffer.sink())
   let events = buffer.collect()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {

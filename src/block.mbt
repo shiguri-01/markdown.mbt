@@ -1,5 +1,5 @@
 ///|
-fn cm_paragraph_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_paragraph_block(ctx : BlockContext, sink : Sink) -> Int {
   let mut i = ctx.index
   while i < ctx.lines.length() &&
         !is_blank(ctx.lines[i]) &&
@@ -42,7 +42,7 @@ fn paragraph_text(ctx : BlockContext, end : Int) -> String {
 }
 
 ///|
-fn emit_fallback_text(ctx : BlockContext, sink : EventSink) -> Int {
+fn emit_fallback_text(ctx : BlockContext, sink : Sink) -> Int {
   sink.emit(Text(ctx.lines[ctx.index]))
   1
 }
@@ -58,7 +58,7 @@ fn paragraph_line(line : String) -> String {
 }
 
 ///|
-fn cm_blank_block(ctx : BlockContext, _sink : EventSink) -> Int {
+fn cm_blank_block(ctx : BlockContext, _sink : Sink) -> Int {
   if is_blank(ctx.lines[ctx.index]) {
     1
   } else {
@@ -67,7 +67,7 @@ fn cm_blank_block(ctx : BlockContext, _sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_atx_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_atx_heading_block(ctx : BlockContext, sink : Sink) -> Int {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
     return 0
   }
@@ -102,7 +102,7 @@ fn cm_atx_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_setext_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_setext_heading_block(ctx : BlockContext, sink : Sink) -> Int {
   if ctx.index + 1 >= ctx.lines.length() {
     return 0
   }
@@ -130,7 +130,7 @@ fn cm_setext_heading_block(ctx : BlockContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_thematic_break_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_thematic_break_block(ctx : BlockContext, sink : Sink) -> Int {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
     return 0
   }
@@ -190,7 +190,7 @@ fn first_non_space_char(line : String) -> Int {
 }
 
 ///|
-fn cm_html_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_html_block(ctx : BlockContext, sink : Sink) -> Int {
   if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
     return 0
   }
@@ -243,7 +243,7 @@ fn html_block_terminator(line : String) -> String? {
 }
 
 ///|
-fn cm_fenced_code_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_fenced_code_block(ctx : BlockContext, sink : Sink) -> Int {
   let line = ctx.lines[ctx.index]
   let opening_indent = count_leading_spaces(line)
   if opening_indent > 3 {
@@ -303,7 +303,7 @@ fn strip_fenced_code_indent(line : String, indent : Int) -> String {
 }
 
 ///|
-fn cm_indented_code_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_indented_code_block(ctx : BlockContext, sink : Sink) -> Int {
   let line = ctx.lines[ctx.index]
   if count_leading_spaces(line) < 4 {
     return 0
@@ -358,7 +358,7 @@ fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
 }
 
 ///|
-fn cm_blockquote_block(ctx : BlockContext, sink : EventSink) -> Int {
+fn cm_blockquote_block(ctx : BlockContext, sink : Sink) -> Int {
   if !is_blockquote_marker_line(ctx.lines[ctx.index]) {
     return 0
   }

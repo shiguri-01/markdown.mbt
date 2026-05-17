@@ -2,7 +2,7 @@
 /// A configured Markdown processor.
 ///
 /// A processor owns the rule registry used to turn Markdown input into events.
-/// Add plugins before calling `parse`.
+/// Add rules before calling `parse`.
 pub struct Processor {
   priv registry : RuleRegistry
 }
@@ -17,30 +17,34 @@ pub fn Processor::new() -> Processor {
 }
 
 ///|
-/// Creates a processor with the built-in CommonMark plugin installed.
-pub fn Processor::commonmark() -> Processor {
-  Processor::new().with_plugin(commonmark_plugin())
-}
-
-///|
-/// Creates a processor with the built-in CommonMark plugin installed.
+/// Creates a processor with the built-in CommonMark rule preset installed.
 pub fn commonmark() -> Processor {
-  Processor::commonmark()
+  Processor::new().extend(commonmark_rules())
 }
 
 ///|
-/// Parses Markdown input with the built-in CommonMark processor into `sink`.
-pub fn parse_into(source : String, sink : EventSink) -> Unit {
-  commonmark().parse_into(source, sink)
+/// Parses CommonMark and renders it to HTML.
+pub fn to_html(source : String) -> String {
+  let html = Html::new()
+  commonmark().parse(source, html.sink())
+  html.to_string()
 }
 
 ///|
-/// Registers all rules from `plugin` on this processor.
+/// Parses CommonMark and returns the event-derived AST.
+pub fn to_ast(source : String) -> Result[AstNode, AstError] {
+  let ast = Ast::new()
+  commonmark().parse(source, ast.sink())
+  ast.result()
+}
+
+///|
+/// Applies `rule` to this processor.
 ///
-/// Plugin operations are applied in order. Registered rules are ordered by
+/// Rule operations are applied in order. Registered entries are ordered by
 /// priority, registration order, and same-chain `before`/`after` edges.
-pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
-  let registry = self.registry.copy().use_plugin(plugin)
+pub fn Processor::extend(self : Processor, rule : Rule) -> Processor {
+  let registry = self.registry.copy().use_rule(rule)
   { registry, }
 }
 
@@ -49,11 +53,7 @@ pub fn Processor::with_plugin(self : Processor, plugin : Plugin) -> Processor {
 ///
 /// Source core rules run before block parsing. Core event rules wrap the
 /// downstream sink, so transforms can participate in the parse pipeline.
-pub fn Processor::parse_into(
-  self : Processor,
-  input : String,
-  sink : EventSink,
-) -> Unit {
+pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
   if self.registry.has_commonmark_preset_only() &&
     is_plain_single_paragraph(input) {
@@ -78,14 +78,14 @@ pub fn Processor::parse_into(
 fn parse_blocks_into(
   input : String,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Unit {
   let source = split_lines(input)
   parse_block_lines_into(source.lines, source.line_starts, registry, sink)
 }
 
 ///|
-fn emit_plain_paragraph(input : String, sink : EventSink) -> Unit {
+fn emit_plain_paragraph(input : String, sink : Sink) -> Unit {
   sink.emit(
     Enter(
       Element::with_attrs(
@@ -142,7 +142,7 @@ fn parse_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Unit {
   if registry.has_commonmark_block_rules_only() {
     parse_commonmark_block_lines_into(lines, line_starts, registry, sink)
@@ -183,7 +183,7 @@ fn parse_commonmark_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Unit {
   let mut i = 0
   let inline_rules = registry.inline_parse_rules()
@@ -204,7 +204,7 @@ fn parse_commonmark_block_lines_into(
 fn parse_large_commonmark_blocks_into(
   input : String,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Bool {
   let source = split_lines(input)
   let mut i = 0
@@ -266,7 +266,7 @@ fn fast_atx_heading_block(
   index : Int,
   trimmed : String,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Unit {
   let mut level = 0
   while level < trimmed.length() && level < 6 && char_at(trimmed, level) == 35 {
@@ -291,11 +291,7 @@ fn fast_atx_heading_block(
 }
 
 ///|
-fn fast_fenced_code_block(
-  source : LineSource,
-  start : Int,
-  sink : EventSink,
-) -> Int {
+fn fast_fenced_code_block(source : LineSource, start : Int, sink : Sink) -> Int {
   let line = source.lines[start]
   let opening_indent = count_leading_spaces(line)
   let trimmed = trim(line)
@@ -343,7 +339,7 @@ fn fast_blockquote_block(
   source : LineSource,
   start : Int,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Int {
   let mut i = start
   let inner = StringBuilder::new()
@@ -375,7 +371,7 @@ fn fast_list_block(
   source : LineSource,
   start : Int,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Int {
   let first = trim(source.lines[start])
   let ordered = is_ordered_list_marker(first)
@@ -431,7 +427,7 @@ fn fast_paragraph_block(
   source : LineSource,
   start : Int,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Int {
   let mut i = start
   while i < source.lines.length() &&
@@ -480,7 +476,7 @@ fn fast_paragraph_text(source : LineSource, start : Int, end : Int) -> String {
 fn fast_commonmark_inlines(
   text : String,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Unit {
   let mut i = 0
   while i < text.length() {
@@ -532,7 +528,7 @@ fn is_fast_inline_special(text : String, index : Int) -> Bool {
 }
 
 ///|
-fn fast_code_span_inline(text : String, start : Int, sink : EventSink) -> Int {
+fn fast_code_span_inline(text : String, start : Int, sink : Sink) -> Int {
   let end = find_char(text, 96, start + 1)
   if end < 0 {
     return 0
@@ -580,7 +576,7 @@ fn fast_emphasis_inline(
   text : String,
   start : Int,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Int {
   if start + 1 < text.length() && char_at(text, start + 1) == 42 {
     let end = find_substring(text, "**", start + 2)
@@ -606,7 +602,7 @@ fn fast_link_inline(
   text : String,
   start : Int,
   registry : RuleRegistry,
-  sink : EventSink,
+  sink : Sink,
 ) -> Int {
   let close_text = find_char(text, 93, start + 1)
   if close_text < 0 ||
@@ -638,7 +634,7 @@ fn fast_link_inline(
 }
 
 ///|
-fn fast_raw_html_inline(text : String, start : Int, sink : EventSink) -> Int {
+fn fast_raw_html_inline(text : String, start : Int, sink : Sink) -> Int {
   let end = find_char(text, 62, start + 1)
   if end < 0 {
     return 0
@@ -652,7 +648,7 @@ fn fast_raw_html_inline(text : String, start : Int, sink : EventSink) -> Int {
 }
 
 ///|
-fn fast_entity_inline(text : String, start : Int, sink : EventSink) -> Int {
+fn fast_entity_inline(text : String, start : Int, sink : Sink) -> Int {
   let end = find_char(text, 59, start + 1)
   if end < 0 || end - start > 32 {
     return 0
@@ -708,7 +704,7 @@ fn apply_source_core_rules(input : String, registry : RuleRegistry) -> String {
 }
 
 ///|
-fn apply_core_rules(sink : EventSink, registry : RuleRegistry) -> EventSink {
+fn apply_core_rules(sink : Sink, registry : RuleRegistry) -> Sink {
   let mut current = sink
   let rules = registry.core_rules()
   for i = rules.length() - 1; i >= 0; i = i - 1 {

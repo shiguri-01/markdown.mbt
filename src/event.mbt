@@ -302,25 +302,25 @@ fn copy_events(events : Array[Event]) -> Array[Event] {
 }
 
 ///|
-/// A buffering downstream sink for callers that want an event array.
-pub struct EventBuffer {
+/// A downstream sink that collects events into an array.
+pub struct Events {
   priv events : Array[Event]
 }
 
 ///|
-/// Creates an empty event buffer.
-pub fn EventBuffer::new() -> EventBuffer {
+/// Creates an empty event collector.
+pub fn Events::new() -> Events {
   { events: [] }
 }
 
 ///|
-/// Returns a sink that appends emitted events to this buffer.
-pub fn EventBuffer::sink(self : EventBuffer) -> EventSink {
-  EventSink::new(fn(event) { self.events.push(copy_event(event)) })
+/// Returns a sink that appends emitted events to this collector.
+pub fn Events::sink(self : Events) -> Sink {
+  Sink::new(fn(event) { self.events.push(copy_event(event)) })
 }
 
 ///|
-/// Returns a copy of buffered events.
-pub fn EventBuffer::collect(self : EventBuffer) -> Array[Event] {
+/// Returns a copy of collected events.
+pub fn Events::collect(self : Events) -> Array[Event] {
   copy_events(self.events)
 }

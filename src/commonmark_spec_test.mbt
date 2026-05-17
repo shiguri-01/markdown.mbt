@@ -826,8 +826,8 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 
 ///|
 fn render_commonmark(markdown : String) -> String {
-  let html = @markdown.HtmlBuffer::new()
-  @markdown.parse_into(markdown, html.sink())
+  let html = @markdown.Html::new()
+  @markdown.commonmark().parse(markdown, html.sink())
   html.to_string()
 }
 
@@ -835,8 +835,8 @@ fn render_commonmark(markdown : String) -> String {
 fn ast_from_commonmark(
   markdown : String,
 ) -> Result[@markdown.AstNode, @markdown.AstError] {
-  let ast = @markdown.AstBuffer::new()
-  @markdown.parse_into(markdown, ast.sink())
+  let ast = @markdown.Ast::new()
+  @markdown.commonmark().parse(markdown, ast.sink())
   ast.result()
 }
 

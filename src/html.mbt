@@ -4,31 +4,31 @@
 /// CommonMark tags are mapped to their HTML representation. Unknown extension
 /// tags are rendered with their tag value, with tag and attribute text escaped.
 /// Raw HTML events are passed through unchanged.
-pub struct HtmlBuffer {
+pub struct Html {
   priv out : StringBuilder
   priv close_stack : Array[String]
 }
 
 ///|
-/// Creates an empty streaming HTML buffer.
-pub fn HtmlBuffer::new() -> HtmlBuffer {
+/// Creates an empty streaming HTML renderer.
+pub fn Html::new() -> Html {
   { out: StringBuilder::new(), close_stack: [] }
 }
 
 ///|
-/// Returns a sink that renders events into this buffer as they arrive.
-pub fn HtmlBuffer::sink(self : HtmlBuffer) -> EventSink {
-  EventSink::new(fn(event) { write_html_event(self, event) })
+/// Returns a sink that renders events as they arrive.
+pub fn Html::sink(self : Html) -> Sink {
+  Sink::new(fn(event) { write_html_event(self, event) })
 }
 
 ///|
 /// Returns the rendered HTML.
-pub fn HtmlBuffer::to_string(self : HtmlBuffer) -> String {
+pub fn Html::to_string(self : Html) -> String {
   self.out.to_string()
 }
 
 ///|
-fn write_html_event(buffer : HtmlBuffer, event : Event) -> Unit {
+fn write_html_event(buffer : Html, event : Event) -> Unit {
   match event {
     Enter(el) => buffer.close_stack.push(write_open_html(buffer.out, el))
     Exit(tag) =>

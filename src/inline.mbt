@@ -1,9 +1,5 @@
 ///|
-fn parse_inlines(
-  text : String,
-  registry : RuleRegistry,
-  sink : EventSink,
-) -> Unit {
+fn parse_inlines(text : String, registry : RuleRegistry, sink : Sink) -> Unit {
   parse_inlines_with_rules(text, registry, registry.inline_parse_rules(), sink)
 }
 
@@ -11,8 +7,8 @@ fn parse_inlines(
 fn parse_inlines_with_rules(
   text : String,
   registry : RuleRegistry,
-  rules : Array[Rule],
-  sink : EventSink,
+  rules : Array[RuleEntry],
+  sink : Sink,
 ) -> Unit {
   if rules.length() == 0 {
     if text.length() > 0 {
@@ -40,7 +36,7 @@ fn parse_inlines_with_rules(
 }
 
 ///|
-fn cm_text_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_text_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let start = ctx.index
   if start >= text.length() || is_inline_special(text, start) {
@@ -59,7 +55,7 @@ fn cm_text_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_escape_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_escape_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) == 92 &&
@@ -73,7 +69,7 @@ fn cm_escape_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_hard_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_hard_break_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if i + 1 < text.length() &&
@@ -98,7 +94,7 @@ fn cm_hard_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_soft_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_soft_break_inline(ctx : InlineContext, sink : Sink) -> Int {
   if char_at(ctx.text, ctx.index) == 10 {
     sink.emit(SoftBreak)
     1
@@ -108,7 +104,7 @@ fn cm_soft_break_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_code_span_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_code_span_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 96 {
@@ -143,7 +139,7 @@ fn find_code_span_end(text : String, start : Int, width : Int) -> Int {
 }
 
 ///|
-fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_autolink_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 60 {
@@ -174,7 +170,7 @@ fn cm_autolink_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_raw_html_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_raw_html_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 60 {
@@ -236,7 +232,7 @@ fn raw_html_inline_end(text : String, start : Int) -> Int? {
 }
 
 ///|
-fn cm_entity_inline(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_entity_inline(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   if char_at(text, i) != 38 {
@@ -257,7 +253,7 @@ fn cm_entity_inline(ctx : InlineContext, sink : EventSink) -> Int {
 }
 
 ///|
-fn cm_emphasis_delimiter(ctx : InlineContext, sink : EventSink) -> Int {
+fn cm_emphasis_delimiter(ctx : InlineContext, sink : Sink) -> Int {
   let text = ctx.text
   let i = ctx.index
   let marker = char_at(text, i)

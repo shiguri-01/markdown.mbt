@@ -12,54 +12,66 @@ priv enum RuleChain {
 ///
 /// The return value is the number of lines consumed. Return `0` when the rule
 /// does not match.
-pub type BlockRuleFn = (BlockContext, EventSink) -> Int
+pub type BlockRuleFn = (BlockContext, Sink) -> Int
 
 ///|
 /// An inline rule consumes characters from inline source and emits events.
 ///
 /// The return value is the number of source positions consumed. Return `0` when the rule
 /// does not match.
-pub type InlineRuleFn = (InlineContext, EventSink) -> Int
+pub type InlineRuleFn = (InlineContext, Sink) -> Int
 
 ///|
 /// A core rule wraps a downstream sink with stream transformation behavior.
-pub type CoreRuleFn = (EventSink) -> EventSink
+pub type CoreRuleFn = (Sink) -> Sink
 
 ///|
 type SourceCoreRuleFn = (String) -> String
 
 ///|
-/// A parser rule registered by a plugin.
-pub struct Rule {
-  priv name : RuleName
-  priv chain : RuleChain
-  priv before : Array[RuleName]
-  priv after : Array[RuleName]
-  priv priority : Int
-  priv order : Int
-  priv block : BlockRuleFn?
-  priv inline : InlineRuleFn?
-  priv core : CoreRuleFn?
-  priv source_core : SourceCoreRuleFn?
+/// An atomic parser entry installed into the rule registry.
+priv struct RuleEntry {
+  name : RuleName
+  chain : RuleChain
+  before : Array[RuleName]
+  after : Array[RuleName]
+  priority : Int
+  order : Int
+  block : BlockRuleFn?
+  inline : InlineRuleFn?
+  core : CoreRuleFn?
+  source_core : SourceCoreRuleFn?
 }
 
 ///|
-priv enum PluginOp {
-  AddRule(Rule)
+priv enum RuleOp {
+  RegisterRule(RuleEntry)
   DisableRule(RuleName)
   EnableRule(RuleName)
-  OverrideRule(Rule)
+  ReplaceRule(RuleEntry)
 }
 
 ///|
-/// A composable collection of parser rule operations.
+/// A composable Markdown syntax rule.
 ///
-/// Plugins preserve operation order when composed. This makes a plugin a small
-/// syntax extension, a larger preset such as CommonMark or GFM, or a local
-/// configuration patch that disables or overrides rules from other plugins.
-pub struct Plugin {
+/// A rule can be a single block, inline, delimiter, or core parser entry, or a
+/// larger rule made by composing smaller rules. Rules preserve operation order
+/// when composed, so a rule can model one extension or a whole preset.
+pub struct Rule {
   priv name : String
-  priv ops : Array[PluginOp]
+  priv ops : Array[RuleOp]
+}
+
+///|
+/// Creates an empty composable rule.
+pub fn Rule::new(name : String) -> Rule {
+  { name, ops: [] }
+}
+
+///|
+/// Returns the rule name.
+pub fn Rule::name(self : Rule) -> String {
+  self.name
 }
 
 ///|
@@ -71,7 +83,7 @@ pub fn Rule::block(
   after? : Array[RuleName] = [],
   f : BlockRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: BlockStart,
     before: copy_rule_names(before),
@@ -82,7 +94,7 @@ pub fn Rule::block(
     inline: None,
     core: None,
     source_core: None,
-  }
+  })
 }
 
 ///|
@@ -96,7 +108,7 @@ pub fn Rule::block_continue(
   after? : Array[RuleName] = [],
   f : BlockRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: BlockContinue,
     before: copy_rule_names(before),
@@ -107,7 +119,7 @@ pub fn Rule::block_continue(
     inline: None,
     core: None,
     source_core: None,
-  }
+  })
 }
 
 ///|
@@ -119,7 +131,7 @@ pub fn Rule::inline(
   after? : Array[RuleName] = [],
   f : InlineRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: Inline,
     before: copy_rule_names(before),
@@ -130,7 +142,7 @@ pub fn Rule::inline(
     inline: Some(f),
     core: None,
     source_core: None,
-  }
+  })
 }
 
 ///|
@@ -144,7 +156,7 @@ pub fn Rule::delimiter(
   after? : Array[RuleName] = [],
   f : InlineRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: Delimiter,
     before: copy_rule_names(before),
@@ -155,7 +167,7 @@ pub fn Rule::delimiter(
     inline: Some(f),
     core: None,
     source_core: None,
-  }
+  })
 }
 
 ///|
@@ -167,7 +179,7 @@ pub fn Rule::core(
   after? : Array[RuleName] = [],
   f : CoreRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: Core,
     before: copy_rule_names(before),
@@ -178,7 +190,7 @@ pub fn Rule::core(
     inline: None,
     core: Some(f),
     source_core: None,
-  }
+  })
 }
 
 ///|
@@ -189,7 +201,7 @@ fn Rule::source_core(
   after? : Array[RuleName] = [],
   f : SourceCoreRuleFn,
 ) -> Rule {
-  {
+  Rule::from_entry({
     name,
     chain: Core,
     before: copy_rule_names(before),
@@ -200,66 +212,55 @@ fn Rule::source_core(
     inline: None,
     core: None,
     source_core: Some(f),
-  }
+  })
 }
 
 ///|
-/// Creates an empty plugin.
-pub fn Plugin::new(name : String) -> Plugin {
-  { name, ops: [] }
+fn Rule::from_entry(entry : RuleEntry) -> Rule {
+  { name: entry.name.to_string(), ops: [RegisterRule(entry)] }
 }
 
 ///|
-/// Returns the plugin name.
-pub fn Plugin::name(self : Plugin) -> String {
-  self.name
-}
-
-///|
-/// Adds a rule to the plugin.
-pub fn Plugin::add(self : Plugin, rule : Rule) -> Plugin {
-  let ops = copy_plugin_ops(self.ops)
-  ops.push(AddRule(rule))
-  { name: self.name, ops }
-}
-
-///|
-/// Appends all operations from `plugin` to this plugin.
-///
-/// Composition is order preserving: operations already in `self` are applied
-/// before operations from `plugin`.
-pub fn Plugin::with_plugin(self : Plugin, plugin : Plugin) -> Plugin {
-  let ops = copy_plugin_ops(self.ops)
-  for op in plugin.ops {
-    ops.push(op)
+/// Appends all operations from `rule` to this rule.
+pub fn Rule::extend(self : Rule, rule : Rule) -> Rule {
+  let ops = copy_rule_ops(self.ops)
+  for op in rule.ops {
+    ops.push(copy_rule_op(op))
   }
   { name: self.name, ops }
 }
 
 ///|
-/// Disables a rule by name when this plugin is installed.
-pub fn Plugin::disable(self : Plugin, name : RuleName) -> Plugin {
-  let ops = copy_plugin_ops(self.ops)
+/// Disables a named parser entry when this rule is installed.
+pub fn Rule::disable(self : Rule, name : RuleName) -> Rule {
+  let ops = copy_rule_ops(self.ops)
   ops.push(DisableRule(name))
   { name: self.name, ops }
 }
 
 ///|
-/// Re-enables a rule by name when this plugin is installed.
-pub fn Plugin::enable(self : Plugin, name : RuleName) -> Plugin {
-  let ops = copy_plugin_ops(self.ops)
+/// Re-enables a named parser entry when this rule is installed.
+pub fn Rule::enable(self : Rule, name : RuleName) -> Rule {
+  let ops = copy_rule_ops(self.ops)
   ops.push(EnableRule(name))
   { name: self.name, ops }
 }
 
 ///|
-/// Overrides rules with the same name.
+/// Replaces parser entries with the same names as entries in `rule`.
 ///
-/// Overrides are remembered by the registry, so they apply to both current and
-/// later matching rules from composed plugins. If no base rule is ever
-/// registered, the override rule still participates as an ordinary rule.
-pub fn Plugin::override_rule(self : Plugin, rule : Rule) -> Plugin {
-  let ops = copy_plugin_ops(self.ops)
-  ops.push(OverrideRule(rule))
+/// Replacements are remembered by the registry, so they apply to both current
+/// and later matching entries from composed rules. If no base entry is ever
+/// registered, the replacement rule still participates as an ordinary rule.
+pub fn Rule::replace(self : Rule, rule : Rule) -> Rule {
+  let ops = copy_rule_ops(self.ops)
+  for op in rule.ops {
+    match op {
+      RegisterRule(entry) => ops.push(ReplaceRule(copy_rule_entry(entry)))
+      ReplaceRule(entry) => ops.push(ReplaceRule(copy_rule_entry(entry)))
+      DisableRule(name) => ops.push(DisableRule(name))
+      EnableRule(name) => ops.push(EnableRule(name))
+    }
+  }
   { name: self.name, ops }
 }
