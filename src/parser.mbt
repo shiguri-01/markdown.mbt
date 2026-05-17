@@ -46,7 +46,9 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
 
 ///|
 fn may_contain_reference_definition(input : String) -> Bool {
-  find_char(input, 91, 0) >= 0
+  let first_label_opener = find_char(input, 91, 0)
+  first_label_opener >= 0 &&
+  find_substring(input, "]:", first_label_opener + 1) >= 0
 }
 
 ///|
