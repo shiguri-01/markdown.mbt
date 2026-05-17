@@ -62,12 +62,16 @@
               bun
               cmark
               git
+              just
               lefthook
               markdown-compare
               moonbit-bin.moonbit.latest
-              why3
-              z3
             ];
+            shellHook = ''
+              if git rev-parse --git-dir >/dev/null 2>&1; then
+                lefthook install
+              fi
+            '';
           };
         }
       );

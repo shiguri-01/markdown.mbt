@@ -157,3 +157,21 @@ Event streams are tree-shaped. `Enter(element)` opens an element, `Exit(tag)`
 closes the most recent open element with the same tag, and text, breaks, and raw
 HTML events are leaves. `Ast` validates that contract. `Html` renders the stream
 as it arrives.
+
+## Development
+
+Use `just` from the Nix development shell:
+
+```bash
+nix develop
+just
+```
+
+```bash
+just check # all MoonBit modules
+just fmt   # all MoonBit modules
+just test  # library tests
+just verify
+just conformance
+just bench
+```
