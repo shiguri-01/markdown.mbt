@@ -37,10 +37,22 @@ pub fn ast(source : String) -> Result[AstNode, AstError] {
 pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
   let state = ParseState::new()
+  let source = split_lines(input)
   if may_contain_reference_definition(input) {
-    collect_reference_definitions_with_blocks(input, self.registry, state)
+    collect_reference_definitions_with_block_lines(
+      source.lines,
+      source.line_starts,
+      self.registry,
+      state,
+    )
   }
-  parse_blocks_into(input, self.registry, downstream, state)
+  parse_block_lines_into(
+    source.lines,
+    source.line_starts,
+    self.registry,
+    downstream,
+    state,
+  )
   downstream.finish()
 }
 
@@ -52,12 +64,19 @@ fn may_contain_reference_definition(input : String) -> Bool {
 }
 
 ///|
-fn collect_reference_definitions_with_blocks(
-  input : String,
+fn collect_reference_definitions_with_block_lines(
+  lines : Array[String],
+  line_starts : Array[Int],
   registry : RuleRegistry,
   state : ParseState,
 ) -> Unit {
-  parse_blocks_into(input, registry, Sink::new(fn(_) { () }), state)
+  parse_block_lines_into(
+    lines,
+    line_starts,
+    registry,
+    Sink::new(fn(_) { () }),
+    state,
+  )
 }
 
 ///|
