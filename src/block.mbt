@@ -143,8 +143,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
   if underline_index < 0 {
     return NoMatch
   }
-  let underline = trim(ctx.lines[underline_index])
-  let level = setext_heading_level(underline)
+  let level = setext_heading_level_line(ctx.lines[underline_index])
   let buffer = Events::new()
   let sink = buffer.sink()
   sink.emit(
@@ -185,8 +184,7 @@ fn is_setext_heading_paragraph_start(line : String) -> Bool {
 fn find_setext_underline(ctx : BlockContext) -> Int {
   let mut i = ctx.index + 1
   while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
-    if count_leading_spaces(ctx.lines[i]) <= 3 &&
-      setext_heading_level(trim(ctx.lines[i])) > 0 {
+    if setext_heading_level_line(ctx.lines[i]) > 0 {
       if setext_heading_content(ctx, i) != "" {
         return i
       }
@@ -214,11 +212,11 @@ fn setext_heading_content(ctx : BlockContext, underline_index : Int) -> String {
 
 ///|
 fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
+  let leading = count_leading_spaces(ctx.lines[ctx.index])
+  if leading > 3 || leading >= ctx.lines[ctx.index].length() {
     return NoMatch
   }
-  let line = trim(ctx.lines[ctx.index])
-  if is_thematic_break(line) {
+  if is_thematic_break_at(ctx.lines[ctx.index], leading) {
     block_match(
       1,
       EventFragment::element(
@@ -235,16 +233,32 @@ fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
 }
 
 ///|
-fn setext_heading_level(line : String) -> Int {
+fn setext_heading_level_line(line : String) -> Int {
+  let start = count_leading_spaces(line)
+  if start > 3 {
+    return 0
+  }
+  let mut end = line.length()
+  while end > start && is_space(char_at(line, end - 1)) {
+    end = end - 1
+  }
+  setext_heading_level_at(line, start, end)
+}
+
+///|
+fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
   if line.length() == 0 {
     return 0
   }
-  let c = first_non_space_char(line)
+  if start >= end {
+    return 0
+  }
+  let c = char_at(line, start)
   if c != 61 && c != 45 {
     return 0
   }
   let mut count = 0
-  for i in 0..<line.length() {
+  for i in start..<end {
     let n = char_at(line, i)
     if n == c {
       count = count + 1
@@ -259,16 +273,6 @@ fn setext_heading_level(line : String) -> Int {
   } else {
     2
   }
-}
-
-///|
-fn first_non_space_char(line : String) -> Int {
-  for i in 0..<line.length() {
-    if !is_space(char_at(line, i)) {
-      return char_at(line, i)
-    }
-  }
-  0
 }
 
 ///|
@@ -844,19 +848,20 @@ fn has_fence_marker_at(line : String, start : Int) -> Bool {
 }
 
 ///|
-fn is_closing_fence(line : String, opening : String) -> Bool {
+fn is_closing_fence_at(line : String, opening : String, start : Int) -> Bool {
   if opening == "" || line.length() < opening.length() {
     return false
   }
   let marker = char_at(opening, 0)
   let mut length = 0
-  while length < line.length() && char_at(line, length) == marker {
+  while start + length < line.length() &&
+        char_at(line, start + length) == marker {
     length = length + 1
   }
   if length < opening.length() {
     return false
   }
-  for i in length..<line.length() {
+  for i in (start + length)..<line.length() {
     if !is_space(char_at(line, i)) {
       return false
     }
@@ -866,7 +871,8 @@ fn is_closing_fence(line : String, opening : String) -> Bool {
 
 ///|
 fn is_closing_fence_line(line : String, opening : String) -> Bool {
-  count_leading_spaces(line) <= 3 && is_closing_fence(trim(line), opening)
+  let leading = count_leading_spaces(line)
+  leading <= 3 && is_closing_fence_at(line, opening, leading)
 }
 
 ///|
@@ -891,11 +897,6 @@ fn code_block_attrs(info : String) -> Array[Attr] {
 ///|
 fn contains_char(text : String, needle : Int) -> Bool {
   find_char(text, needle, 0) >= 0
-}
-
-///|
-fn is_thematic_break(line : String) -> Bool {
-  is_thematic_break_at(line, 0)
 }
 
 ///|
