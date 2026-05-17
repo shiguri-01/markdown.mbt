@@ -2,11 +2,11 @@
 package "shiguri/markdown"
 
 // Values
+pub fn ast(String) -> Result[AstNode, AstError]
+
 pub fn commonmark() -> Rule
 
-pub fn to_ast(String) -> Result[AstNode, AstError]
-
-pub fn to_html(String) -> String
+pub fn html(String) -> String
 
 // Errors
 

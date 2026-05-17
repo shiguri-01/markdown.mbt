@@ -15,7 +15,7 @@ pub fn Processor::new(rule? : Rule = commonmark()) -> Processor {
 
 ///|
 /// Parses CommonMark and renders it to HTML.
-pub fn to_html(source : String) -> String {
+pub fn html(source : String) -> String {
   let html = Html::new()
   Processor::new().parse(source, html.sink())
   html.to_string()
@@ -23,7 +23,7 @@ pub fn to_html(source : String) -> String {
 
 ///|
 /// Parses CommonMark and returns the event-derived AST.
-pub fn to_ast(source : String) -> Result[AstNode, AstError] {
+pub fn ast(source : String) -> Result[AstNode, AstError] {
   let ast = Ast::new()
   Processor::new().parse(source, ast.sink())
   ast.result()

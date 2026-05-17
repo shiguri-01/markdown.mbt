@@ -13,7 +13,7 @@ For common tasks, use the two shortcuts:
 ///|
 test {
   assert_eq(
-    @markdown.to_html("# Hello *MoonBit*"),
+    @markdown.html("# Hello *MoonBit*"),
     "<h1>Hello <em>MoonBit</em></h1>\n",
   )
 }
@@ -22,7 +22,7 @@ test {
 ```mbt check
 ///|
 test {
-  match @markdown.to_ast("hello") {
+  match @markdown.ast("hello") {
     Ok(root) => assert_eq(root.children().length(), 1)
     Err(_) => abort("expected AST")
   }
