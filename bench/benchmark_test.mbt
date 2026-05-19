@@ -257,66 +257,81 @@ test "markdown processing speed" (b : @bench.T) {
   b.bench(
     name="micro/plain_single/1mb",
     fn() { b.keep(parse_event_count_with(commonmark, one_mb_single_paragraph)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="syntax/long_delimiter_runs",
     fn() { b.keep(parse_event_count_with(commonmark, delimiter)) },
-    count=5,
+    count=10,
   )
   b.bench(
     name="syntax/reference_definitions",
     fn() { b.keep(parse_event_count_with(commonmark, references)) },
-    count=5,
+    count=10,
   )
   b.bench(
     name="parse/readme_like/16kb",
     fn() { b.keep(parse_event_count_with(commonmark, readme)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="parse/readme_like/200kb",
     fn() { b.keep(parse_event_count_with(commonmark, large_readme)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="parse/readme_like/1mb",
     fn() { b.keep(parse_event_count_with(commonmark, huge_readme)) },
-    count=3,
+    count=10,
+  )
+  b.bench(
+    name="parse/issue_thread/25kb",
+    fn() { b.keep(parse_event_count_with(commonmark, issue_thread)) },
+    count=10,
+  )
+  b.bench(
+    name="parse/issue_thread/200kb",
+    fn() { b.keep(parse_event_count_with(commonmark, large_issue_thread)) },
+    count=10,
+  )
+  b.bench(
+    name="parse/issue_thread/1mb",
+    fn() { b.keep(parse_event_count_with(commonmark, huge_issue_thread)) },
+    count=10,
   )
   b.bench(
     name="rules/many_inline_rules",
     fn() { b.keep(parse_event_count_with(commonmark_with_rules, readme)) },
-    count=5,
+    count=10,
   )
   b.bench(
     name="html/readme_like/16kb",
     fn() { b.keep(parse_render_length_with(commonmark, readme)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="html/readme_like/200kb",
     fn() { b.keep(parse_render_length_with(commonmark, large_readme)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="html/readme_like/1mb",
     fn() { b.keep(parse_render_length_with(commonmark, huge_readme)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="html/issue_thread/25kb",
     fn() { b.keep(parse_render_length_with(commonmark, issue_thread)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="html/issue_thread/200kb",
     fn() { b.keep(parse_render_length_with(commonmark, large_issue_thread)) },
-    count=3,
+    count=10,
   )
   b.bench(
     name="html/issue_thread/1mb",
     fn() { b.keep(parse_render_length_with(commonmark, huge_issue_thread)) },
-    count=3,
+    count=10,
   )
 }

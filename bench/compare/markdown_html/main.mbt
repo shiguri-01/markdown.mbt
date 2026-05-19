@@ -1,6 +1,14 @@
 ///|
 fn main {
   let args = @env.args()
+  if args.length() == 5 && args[1] == "--bench" {
+    run_bench(
+      args[2],
+      parse_positive_int(args[3]),
+      parse_non_negative_int(args[4]),
+    )
+    return
+  }
   if args.length() != 2 {
     print_help()
     return
@@ -14,12 +22,64 @@ fn main {
 ///|
 fn print_help() -> Unit {
   println("usage: markdown-html FIXTURE")
+  println("       markdown-html --bench FIXTURE REPEATS WARMUPS")
   println("")
   println("fixtures:")
   println("  readme_like_16kb")
   println("  readme_like_200kb")
   println("  issue_thread_25kb")
   println("  issue_thread_200kb")
+}
+
+///|
+fn run_bench(name : String, repeats : Int, warmups : Int) -> Unit {
+  let input = fixture(name)
+  let mut checksum = 0
+  for _ in 0..<warmups {
+    checksum += parse_render_length(input)
+  }
+  let times : Array[Double] = []
+  for _ in 0..<repeats {
+    let start = @bench.monotonic_clock_start()
+    checksum += parse_render_length(input)
+    times.push(@bench.monotonic_clock_end(start) / 1000.0)
+  }
+  if checksum == 0 {
+    abort("markdown renderer produced empty output")
+  }
+  println(times.to_json().stringify())
+}
+
+///|
+fn parse_render_length(input : String) -> Int {
+  let html = @markdown.Html::new()
+  @markdown.Processor::new().parse(input, html.sink())
+  html.to_string().length()
+}
+
+///|
+fn parse_positive_int(value : String) -> Int {
+  let parsed = parse_non_negative_int(value)
+  if parsed < 1 {
+    abort("expected positive integer: " + value)
+  }
+  parsed
+}
+
+///|
+fn parse_non_negative_int(value : String) -> Int {
+  if value == "" {
+    abort("expected integer")
+  }
+  let mut parsed = 0
+  for i in 0..<value.length() {
+    let digit = value[i].to_int() - 48
+    if digit < 0 || digit > 9 {
+      abort("expected integer: " + value)
+    }
+    parsed = parsed * 10 + digit
+  }
+  parsed
 }
 
 ///|

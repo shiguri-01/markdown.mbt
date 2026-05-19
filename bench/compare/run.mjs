@@ -7,7 +7,7 @@ import MarkdownIt from "markdown-it";
 const root = process.cwd();
 const outDir = path.join(root, "bench", "compare", ".generated");
 const fixtureDir = path.join(outDir, "fixtures");
-const moonRunner = path.join(
+const moonNativeRunner = path.join(
   root,
   "bench",
   "compare",
@@ -17,6 +17,17 @@ const moonRunner = path.join(
   "release",
   "build",
   "markdown-html.exe",
+);
+const moonWasmRunner = path.join(
+  root,
+  "bench",
+  "compare",
+  "markdown_html",
+  "_build",
+  "wasm-gc",
+  "release",
+  "build",
+  "markdown-html.wasm",
 );
 
 function readmeLikeDocumentSections(count) {
@@ -126,7 +137,22 @@ function run(command, args) {
   }
 }
 
-function buildMoonRunner() {
+function runCapture(command, args) {
+  const result = Bun.spawnSync([command, ...args], {
+    cwd: root,
+    stdout: "pipe",
+    stderr: "pipe",
+    env: { ...process.env, LC_ALL: "C" },
+  });
+  const stdout = new TextDecoder().decode(result.stdout);
+  if (!result.success) {
+    const stderr = new TextDecoder().decode(result.stderr);
+    throw new Error(`${command} failed with exit code ${result.exitCode}\n${stderr}`);
+  }
+  return stdout;
+}
+
+function buildMoonRunners() {
   run("moon", [
     "-C",
     path.join(root, "bench", "compare", "markdown_html"),
@@ -135,8 +161,19 @@ function buildMoonRunner() {
     "native",
     "--release",
   ]);
-  if (!fs.existsSync(moonRunner)) {
-    throw new Error(`MoonBit runner was not built at ${moonRunner}`);
+  run("moon", [
+    "-C",
+    path.join(root, "bench", "compare", "markdown_html"),
+    "build",
+    "--target",
+    "wasm-gc",
+    "--release",
+  ]);
+  if (!fs.existsSync(moonNativeRunner)) {
+    throw new Error(`MoonBit native runner was not built at ${moonNativeRunner}`);
+  }
+  if (!fs.existsSync(moonWasmRunner)) {
+    throw new Error(`MoonBit wasm-gc runner was not built at ${moonWasmRunner}`);
   }
 }
 
@@ -148,6 +185,45 @@ function timedExternal(command, args, repeats, warmups) {
   for (let i = 0; i < repeats; i += 1) {
     const start = Bun.nanoseconds();
     run(command, args);
+    times.push(Number(Bun.nanoseconds() - start) / 1_000_000);
+  }
+  return times;
+}
+
+function timedMoonbitRunner(command, args, fixture, repeats, warmups) {
+  const stdout = runCapture(command, [
+    ...args,
+    "--bench",
+    fixture,
+    String(repeats),
+    String(warmups),
+  ]);
+  const times = JSON.parse(stdout);
+  if (!Array.isArray(times) || times.length !== repeats) {
+    throw new Error(`MoonBit runner returned invalid timings: ${stdout}`);
+  }
+  return times.map((value) => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      throw new Error(`MoonBit runner returned invalid timing: ${stdout}`);
+    }
+    return value;
+  });
+}
+
+function timedBunMarkdown(input, repeats, warmups) {
+  for (let i = 0; i < warmups; i += 1) {
+    const html = Bun.markdown.html(input);
+    if (html.length === 0) {
+      throw new Error("Bun.markdown produced empty output");
+    }
+  }
+  const times = [];
+  for (let i = 0; i < repeats; i += 1) {
+    const start = Bun.nanoseconds();
+    const html = Bun.markdown.html(input);
+    if (html.length === 0) {
+      throw new Error("Bun.markdown produced empty output");
+    }
     times.push(Number(Bun.nanoseconds() - start) / 1_000_000);
   }
   return times;
@@ -200,7 +276,7 @@ function writeFixtures(sourceFixtures) {
 
 function main() {
   const { repeats, warmups } = parseArgs(process.argv);
-  buildMoonRunner();
+  buildMoonRunners();
   const sourceFixtures = writeFixtures(fixtures());
   const md = new MarkdownIt("commonmark", {
     html: true,
@@ -211,16 +287,34 @@ function main() {
   const rows = [];
   for (const fixture of sourceFixtures) {
     rows.push({
-      parser: "markdown.mbt",
+      parser: "markdown.mbt/native",
       fixture: fixture.name,
       bytes: fixture.bytes,
-      times: timedExternal(moonRunner, [fixture.name], repeats, warmups),
+      times: timedMoonbitRunner(moonNativeRunner, [], fixture.name, repeats, warmups),
+    });
+    rows.push({
+      parser: "markdown.mbt/wasm-gc",
+      fixture: fixture.name,
+      bytes: fixture.bytes,
+      times: timedMoonbitRunner(
+        "moonrun",
+        [moonWasmRunner],
+        fixture.name,
+        repeats,
+        warmups,
+      ),
     });
     rows.push({
       parser: "cmark",
       fixture: fixture.name,
       bytes: fixture.bytes,
       times: timedExternal("cmark", [fixture.file], repeats, warmups),
+    });
+    rows.push({
+      parser: "Bun.markdown",
+      fixture: fixture.name,
+      bytes: fixture.bytes,
+      times: timedBunMarkdown(fixture.input, repeats, warmups),
     });
     rows.push({
       parser: "markdown-it/bun",
