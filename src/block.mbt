@@ -550,48 +550,32 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   }
   let mut i = ctx.index
   let mut used_lazy = false
-  let mut inner_may_contain_reference = false
-  let inner = StringBuilder::new()
+  let first = strip_blockquote_marker(ctx.lines[i])
+  if is_single_line_blockquote(ctx, first, i + 1) {
+    return emit_single_line_blockquote(ctx, first)
+  }
+  let inner = BlockPayload::new(first)
+  i = i + 1
+  let result = append_blockquote_lazy_lines(ctx, inner, first, i)
+  i = result.next_index
+  if result.used_lazy {
+    used_lazy = true
+  }
   while i < ctx.lines.length() && is_blockquote_marker_line(ctx.lines[i]) {
-    if i > ctx.index {
-      inner.write_string("\n")
-    }
     let stripped = strip_blockquote_marker(ctx.lines[i])
-    if !inner_may_contain_reference &&
-      may_contain_reference_definition(stripped) {
-      inner_may_contain_reference = true
-    }
-    inner.write_string(stripped)
+    inner.append(stripped)
     i = i + 1
-    let allow_lazy = stripped != "" &&
-      count_leading_spaces(stripped) < 4 &&
-      (
-        !is_paragraph_interrupt(stripped) ||
-        is_blockquote_marker_line(stripped) ||
-        is_ordered_list_marker(trim(stripped)) ||
-        is_unordered_list_marker(trim(stripped))
-      )
-    while i < ctx.lines.length() &&
-          !is_blank(ctx.lines[i]) &&
-          !is_blockquote_marker_line(ctx.lines[i]) &&
-          allow_lazy &&
-          !is_paragraph_interrupt(ctx.lines[i]) {
-      inner.write_string("\n")
-      let line = paragraph_line(ctx.lines[i])
-      if !inner_may_contain_reference && may_contain_reference_definition(line) {
-        inner_may_contain_reference = true
-      }
-      inner.write_string(line)
+    let result = append_blockquote_lazy_lines(ctx, inner, stripped, i)
+    i = result.next_index
+    if result.used_lazy {
       used_lazy = true
-      i = i + 1
     }
   }
-  if ctx.collect_only && !inner_may_contain_reference {
+  if ctx.collect_only && !inner.may_contain_reference {
     return block_match(i - ctx.index, EventFragment::empty())
   }
-  let inner_text = inner.to_string()
   if ctx.collect_only {
-    collect_reference_definitions_in_blocks(inner_text, ctx.registry, ctx.state)
+    inner.collect_references(ctx.registry, ctx.state)
     return block_match(i - ctx.index, EventFragment::empty())
   }
   let buffer = Events::new()
@@ -605,11 +589,19 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       ),
     ),
   )
+  let lazy_starts_with_block = used_lazy &&
+    blockquote_inner_starts_with_block(inner)
+  let inner_text = if inner.may_contain_reference ||
+    (used_lazy && !lazy_starts_with_block) {
+    inner.to_text()
+  } else {
+    ""
+  }
   match parse_reference_definition(trim(inner_text)) {
     Some(definition) => ctx.state.add_reference(definition)
     None =>
-      if used_lazy && blockquote_inner_starts_with_block(inner_text) {
-        parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
+      if lazy_starts_with_block {
+        inner.parse_into(ctx.registry, sink, ctx.state)
       } else if used_lazy {
         sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
         parse_inlines_with_rules(
@@ -620,13 +612,13 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
           ctx.state,
         )
         sink.emit(Exit(tag_name("cm:paragraph")))
-      } else if inner_text != "" &&
-        !contains_char(inner_text, 10) &&
-        count_leading_spaces(inner_text) < 4 &&
-        !is_paragraph_interrupt(inner_text) {
+      } else if inner.length == 1 &&
+        inner.first != "" &&
+        count_leading_spaces(inner.first) < 4 &&
+        !is_paragraph_interrupt(inner.first) {
         sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
         parse_inlines_with_rules(
-          paragraph_line(inner_text),
+          paragraph_line(inner.first),
           ctx.registry,
           ctx.inline_rules,
           sink,
@@ -634,7 +626,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
         )
         sink.emit(Exit(tag_name("cm:paragraph")))
       } else {
-        parse_blocks_into(inner_text, ctx.registry, sink, ctx.state)
+        inner.parse_into(ctx.registry, sink, ctx.state)
       }
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
@@ -642,10 +634,120 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
 }
 
 ///|
-fn blockquote_inner_starts_with_block(text : String) -> Bool {
-  let first_break = find_char(text, 10, 0)
-  let first = if first_break < 0 { text } else { text[:first_break].to_owned() }
-  is_paragraph_interrupt(first)
+fn is_single_line_blockquote(
+  ctx : BlockContext,
+  stripped : String,
+  next : Int,
+) -> Bool {
+  if next >= ctx.lines.length() || is_blockquote_marker_line(ctx.lines[next]) {
+    return next >= ctx.lines.length()
+  }
+  is_blank(ctx.lines[next]) ||
+  !blockquote_allows_lazy(stripped) ||
+  is_paragraph_interrupt(ctx.lines[next])
+}
+
+///|
+fn emit_single_line_blockquote(
+  ctx : BlockContext,
+  inner : String,
+) -> BlockRuleResult {
+  if ctx.collect_only {
+    if may_contain_reference_definition(inner) {
+      let payload = BlockPayload::new(inner)
+      payload.collect_references(ctx.registry, ctx.state)
+    }
+    return block_match(1, EventFragment::empty())
+  }
+  let buffer = Events::new()
+  let sink = buffer.owned_sink()
+  sink.emit(
+    Enter(
+      Element::with_attrs(
+        tag_name("cm:block_quote"),
+        [],
+        range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
+      ),
+    ),
+  )
+  if may_contain_reference_definition(inner) {
+    match parse_reference_definition(trim(inner)) {
+      Some(definition) => ctx.state.add_reference(definition)
+      None => emit_single_line_blockquote_content(ctx, inner, sink)
+    }
+  } else {
+    emit_single_line_blockquote_content(ctx, inner, sink)
+  }
+  sink.emit(Exit(tag_name("cm:block_quote")))
+  block_match(1, buffer.into_fragment())
+}
+
+///|
+fn emit_single_line_blockquote_content(
+  ctx : BlockContext,
+  inner : String,
+  sink : Sink,
+) -> Unit {
+  if inner != "" &&
+    count_leading_spaces(inner) < 4 &&
+    !is_paragraph_interrupt(inner) {
+    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+    parse_inlines_with_rules(
+      paragraph_line(inner),
+      ctx.registry,
+      ctx.inline_rules,
+      sink,
+      ctx.state,
+    )
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else {
+    BlockPayload::new(inner).parse_into(ctx.registry, sink, ctx.state)
+  }
+}
+
+///|
+priv struct BlockquoteLazyResult {
+  next_index : Int
+  used_lazy : Bool
+}
+
+///|
+fn append_blockquote_lazy_lines(
+  ctx : BlockContext,
+  inner : BlockPayload,
+  stripped : String,
+  start : Int,
+) -> BlockquoteLazyResult {
+  let allow_lazy = blockquote_allows_lazy(stripped)
+  let mut i = start
+  let mut used_lazy = false
+  while i < ctx.lines.length() &&
+        !is_blank(ctx.lines[i]) &&
+        !is_blockquote_marker_line(ctx.lines[i]) &&
+        allow_lazy &&
+        !is_paragraph_interrupt(ctx.lines[i]) {
+    inner.append(paragraph_line(ctx.lines[i]))
+    used_lazy = true
+    i = i + 1
+  }
+  { next_index: i, used_lazy }
+}
+
+///|
+fn blockquote_allows_lazy(stripped : String) -> Bool {
+  stripped != "" &&
+  count_leading_spaces(stripped) < 4 &&
+  (
+    !is_paragraph_interrupt(stripped) ||
+    is_blockquote_marker_line(stripped) ||
+    is_ordered_list_marker(trim(stripped)) ||
+    is_unordered_list_marker(trim(stripped))
+  )
+}
+
+///|
+fn blockquote_inner_starts_with_block(inner : BlockPayload) -> Bool {
+  is_paragraph_interrupt(inner.first)
 }
 
 ///|

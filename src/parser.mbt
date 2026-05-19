@@ -70,43 +70,11 @@ fn collect_reference_definitions_with_block_lines(
   registry : RuleRegistry,
   state : ParseState,
 ) -> Unit {
-  parse_block_lines_into(
+  parse_block_lines_range_into(
     lines,
     line_starts,
-    registry,
-    Sink::new(fn(_) { () }),
-    state,
-    collect_only=true,
-  )
-}
-
-///|
-fn parse_blocks_into(
-  input : String,
-  registry : RuleRegistry,
-  sink : Sink,
-  state : ParseState,
-) -> Unit {
-  let source = split_lines(input)
-  parse_block_lines_into(
-    source.lines,
-    source.line_starts,
-    registry,
-    sink,
-    state,
-  )
-}
-
-///|
-fn collect_reference_definitions_in_blocks(
-  input : String,
-  registry : RuleRegistry,
-  state : ParseState,
-) -> Unit {
-  let source = split_lines(input)
-  parse_block_lines_into(
-    source.lines,
-    source.line_starts,
+    0,
+    lines.length(),
     registry,
     Sink::new(fn(_) { () }),
     state,
@@ -123,7 +91,31 @@ fn parse_block_lines_into(
   state : ParseState,
   collect_only? : Bool = false,
 ) -> Unit {
-  let mut i = 0
+  parse_block_lines_range_into(
+    lines,
+    line_starts,
+    0,
+    lines.length(),
+    registry,
+    sink,
+    state,
+    collect_only~,
+  )
+}
+
+///|
+fn parse_block_lines_range_into(
+  lines : Array[String],
+  line_starts : Array[Int],
+  start : Int,
+  end : Int,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  collect_only? : Bool = false,
+) -> Unit {
+  let mut i = start
+  let stop = if end > lines.length() { lines.length() } else { end }
   let inline_rules = if collect_only {
     []
   } else {
@@ -131,7 +123,7 @@ fn parse_block_lines_into(
   }
   let block_continue_rules = registry.block_continue_rules()
   let block_start_rules = registry.block_rules()
-  while i < lines.length() {
+  while i < stop {
     let mut consumed = 0
     let ctx = {
       lines,
@@ -193,6 +185,148 @@ fn parse_block_lines_into(
     }
     i = i + consumed
   }
+}
+
+///|
+priv struct BlockPayload {
+  first : String
+  mut lines : Array[String]?
+  mut line_starts : Array[Int]?
+  mut next_start : Int
+  mut length : Int
+  mut may_contain_reference : Bool
+}
+
+///|
+fn BlockPayload::new(first : String) -> BlockPayload {
+  {
+    first,
+    lines: None,
+    line_starts: None,
+    next_start: first.length() + 1,
+    length: 1,
+    may_contain_reference: may_contain_reference_definition(first),
+  }
+}
+
+///|
+fn BlockPayload::append(self : BlockPayload, line : String) -> Unit {
+  self.materialize()
+  match self.lines {
+    Some(lines) => lines.push(line)
+    None => ()
+  }
+  match self.line_starts {
+    Some(line_starts) => line_starts.push(self.next_start)
+    None => ()
+  }
+  self.next_start = self.next_start + line.length() + 1
+  self.length = self.length + 1
+  if !self.may_contain_reference && may_contain_reference_definition(line) {
+    self.may_contain_reference = true
+  }
+}
+
+///|
+fn BlockPayload::materialize(self : BlockPayload) -> Unit {
+  match self.lines {
+    Some(_) => ()
+    None => {
+      self.lines = Some([self.first])
+      self.line_starts = Some([0])
+    }
+  }
+}
+
+///|
+fn BlockPayload::source(self : BlockPayload) -> LineSource {
+  match (self.lines, self.line_starts) {
+    (Some(lines), Some(line_starts)) => { lines, line_starts }
+    _ => { lines: [self.first], line_starts: [0] }
+  }
+}
+
+///|
+fn BlockPayload::to_text(self : BlockPayload) -> String {
+  match self.lines {
+    Some(lines) => block_lines_text(lines)
+    None => self.first
+  }
+}
+
+///|
+fn BlockPayload::is_not_empty(self : BlockPayload) -> Bool {
+  match self.lines {
+    Some(lines) => block_lines_not_empty(lines)
+    None => self.first != ""
+  }
+}
+
+///|
+fn BlockPayload::parse_into(
+  self : BlockPayload,
+  registry : RuleRegistry,
+  sink : Sink,
+  state : ParseState,
+  collect_only? : Bool = false,
+) -> Unit {
+  let source = self.source()
+  parse_block_lines_range_into(
+    source.lines,
+    source.line_starts,
+    0,
+    source.lines.length(),
+    registry,
+    sink,
+    state,
+    collect_only~,
+  )
+}
+
+///|
+fn BlockPayload::collect_references(
+  self : BlockPayload,
+  registry : RuleRegistry,
+  state : ParseState,
+) -> Unit {
+  self.parse_into(registry, Sink::new(fn(_) { () }), state, collect_only=true)
+}
+
+///|
+fn block_lines_not_empty(lines : Array[String]) -> Bool {
+  for line in lines {
+    if line != "" {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn block_lines_text(lines : Array[String]) -> String {
+  block_lines_text_range(lines, 0, lines.length())
+}
+
+///|
+fn block_lines_text_range(
+  lines : Array[String],
+  start : Int,
+  end : Int,
+) -> String {
+  if end <= start {
+    return ""
+  }
+  if end == start + 1 {
+    return lines[start]
+  }
+  let text = StringBuilder::new()
+  for i in start..<end {
+    if i > start {
+      text.write_string("\n")
+    }
+    text.write_string(lines[i])
+  }
+  text.to_string()
 }
 
 ///|

@@ -14,9 +14,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
   let list_attrs = list_attrs(ordered, line)
   let mut i = ctx.index
   let mut loose = false
-  let item_texts : Array[String] = []
-  let item_starts : Array[Int] = []
-  let item_ends : Array[Int] = []
+  let item_sources : Array[ListItemSource] = []
   while i < ctx.lines.length() {
     let item_start = i
     if i > ctx.index && is_thematic_break_marker_line(ctx.lines[i]) {
@@ -38,20 +36,20 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       strip_unordered_marker(current)
     }
     let content_indent = list_item_content_indent(ctx.lines[i], ordered)
-    let mut item_text = if count_leading_spaces(item) >= 4 {
+    let first_line = if count_leading_spaces(item) >= 4 {
       item
     } else {
       trim(item)
     }
+    let item_payload = BlockPayload::new(first_line)
     i = i + 1
-    let continuation = collect_list_continuation(
+    i = collect_list_continuation_into(
+      item_payload,
       ctx.lines,
       i,
       true,
       content_indent,
     )
-    item_text = item_text + continuation.text
-    i = continuation.next_index
     let mut item_end = i
     let mut blank_count = 0
     while i < ctx.lines.length() && is_blank(ctx.lines[i]) {
@@ -60,26 +58,25 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     }
     if blank_count > 0 &&
       i < ctx.lines.length() &&
-      item_text != "" &&
+      item_payload.is_not_empty() &&
       is_list_continuation_after_blank(ctx.lines[i], content_indent) {
       if is_loose_list_blank_continuation(
           ctx.lines[i],
           content_indent,
-          item_text,
+          item_payload,
         ) {
         loose = true
       }
       for _ in 0..<blank_count {
-        item_text = item_text + "\n"
+        item_payload.append("")
       }
-      let continuation = collect_list_continuation(
+      i = collect_list_continuation_into(
+        item_payload,
         ctx.lines,
         i,
         false,
         content_indent,
       )
-      item_text = item_text + continuation.text
-      i = continuation.next_index
       item_end = i
     } else if blank_count > 0 &&
       i < ctx.lines.length() &&
@@ -103,26 +100,25 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       }
       if more_blanks > 0 &&
         i < ctx.lines.length() &&
-        item_text != "" &&
+        item_payload.is_not_empty() &&
         is_list_continuation_after_blank(ctx.lines[i], content_indent) {
         if is_loose_list_blank_continuation(
             ctx.lines[i],
             content_indent,
-            item_text,
+            item_payload,
           ) {
           loose = true
         }
         for _ in 0..<more_blanks {
-          item_text = item_text + "\n"
+          item_payload.append("")
         }
-        let continuation = collect_list_continuation(
+        i = collect_list_continuation_into(
+          item_payload,
           ctx.lines,
           i,
           false,
           content_indent,
         )
-        item_text = item_text + continuation.text
-        i = continuation.next_index
         item_end = i
       } else if more_blanks > 0 &&
         i < ctx.lines.length() &&
@@ -140,14 +136,17 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
         collecting = false
       }
     }
+    let item_source = {
+      payload: item_payload,
+      source_start: item_start,
+      source_end: item_end,
+    }
     if ctx.collect_only {
-      if may_contain_reference_definition(item_text) {
-        collect_list_item_references(item_text, ctx.registry, ctx.state)
+      if item_source.payload.may_contain_reference {
+        collect_list_item_references(item_source, ctx.registry, ctx.state)
       }
     } else {
-      item_texts.push(item_text)
-      item_starts.push(item_start)
-      item_ends.push(item_end)
+      item_sources.push(item_source)
     }
   }
   if ctx.collect_only {
@@ -164,18 +163,24 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       ),
     ),
   )
-  for n in 0..<item_texts.length() {
+  for item_source in item_sources {
     sink.emit(
       Enter(
         Element::with_attrs(
           tag_name("cm:item"),
           [],
-          range=Some(block_source_range(ctx, item_starts[n], item_ends[n])),
+          range=Some(
+            block_source_range(
+              ctx,
+              item_source.source_start,
+              item_source.source_end,
+            ),
+          ),
         ),
       ),
     )
     emit_list_item_content(
-      item_texts[n],
+      item_source,
       ctx.registry,
       ctx.inline_rules,
       sink,
@@ -189,15 +194,19 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
 }
 
 ///|
+priv struct ListItemSource {
+  payload : BlockPayload
+  source_start : Int
+  source_end : Int
+}
+
+///|
 fn collect_list_item_references(
-  item_text : String,
+  item_source : ListItemSource,
   registry : RuleRegistry,
   state : ParseState,
 ) -> Unit {
-  match parse_reference_definition(trim(item_text)) {
-    Some(definition) => state.add_reference(definition)
-    None => collect_reference_definitions_in_blocks(item_text, registry, state)
-  }
+  item_source.payload.collect_references(registry, state)
 }
 
 ///|
@@ -208,31 +217,36 @@ fn is_list_marker_item_content(text : String) -> Bool {
 
 ///|
 fn emit_list_item_content(
-  item_text : String,
+  item_source : ListItemSource,
   registry : RuleRegistry,
   inline_rules : Array[RuleEntry],
   sink : Sink,
   state : ParseState,
   loose? : Bool = false,
 ) -> Unit {
-  match parse_reference_definition(trim(item_text)) {
-    Some(definition) => {
-      state.add_reference(definition)
-      return
+  if item_source.payload.may_contain_reference &&
+    item_source.payload.length == 1 {
+    match parse_reference_definition(trim(item_source.payload.first)) {
+      Some(definition) => {
+        state.add_reference(definition)
+        return
+      }
+      None => ()
     }
-    None => ()
   }
+  let single_line = item_source.payload.length == 1
+  let item_line = if single_line { item_source.payload.first } else { "" }
   if !loose &&
-    item_text != "" &&
-    !contains_char(item_text, 10) &&
-    count_leading_spaces(item_text) < 4 &&
-    !is_list_marker_item_content(item_text) &&
-    !is_paragraph_interrupt(item_text) {
-    parse_inlines_with_rules(item_text, registry, inline_rules, sink, state)
+    single_line &&
+    item_line != "" &&
+    count_leading_spaces(item_line) < 4 &&
+    !is_list_marker_item_content(item_line) &&
+    !is_paragraph_interrupt(item_line) {
+    parse_inlines_with_rules(item_line, registry, inline_rules, sink, state)
     return
   }
   let buffer = Events::new()
-  parse_blocks_into(item_text, registry, buffer.owned_sink(), state)
+  item_source.payload.parse_into(registry, buffer.owned_sink(), state)
   let events = buffer.owned_events()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {
@@ -293,43 +307,34 @@ fn is_tight_list_block_child(tag : Tag) -> Bool {
 }
 
 ///|
-priv struct ListContinuation {
-  text : String
-  next_index : Int
-}
-
-///|
-fn collect_list_continuation(
+fn collect_list_continuation_into(
+  payload : BlockPayload,
   lines : Array[String],
   start : Int,
   allow_lazy : Bool,
   content_indent : Int,
-) -> ListContinuation {
+) -> Int {
   let mut i = start
-  let text = StringBuilder::new()
   while i < lines.length() &&
         !is_blank(lines[i]) &&
         !is_list_sibling_marker(lines[i], content_indent) {
     let leading = count_leading_spaces(lines[i])
     if leading >= content_indent {
-      text.write_string("\n")
-      text.write_view(lines[i][content_indent:])
+      payload.append(lines[i][content_indent:].to_owned())
       i = i + 1
     } else if leading >= 2 &&
       !is_ordered_list_marker(trim(lines[i])) &&
       !is_unordered_list_marker(trim(lines[i])) {
-      text.write_string("\n")
-      text.write_view(lines[i][2:])
+      payload.append(lines[i][2:].to_owned())
       i = i + 1
     } else if allow_lazy && !is_paragraph_interrupt(lines[i]) {
-      text.write_string("\n")
-      text.write_string(list_lazy_continuation_line(lines[i]))
+      payload.append(list_lazy_continuation_line(lines[i]))
       i = i + 1
     } else {
       break
     }
   }
-  { text: text.to_string(), next_index: i }
+  i
 }
 
 ///|
@@ -378,26 +383,30 @@ fn is_list_continuation_after_blank(
 fn is_loose_list_blank_continuation(
   line : String,
   content_indent : Int,
-  item_text : String,
+  payload : BlockPayload,
 ) -> Bool {
   let leading = count_leading_spaces(line)
-  !has_open_fenced_code(item_text) &&
+  !has_open_fenced_code_payload(payload) &&
   (
     leading == content_indent ||
-    (leading >= content_indent + 4 && !has_nested_list_marker(item_text))
+    (leading >= content_indent + 4 && !has_nested_list_marker_payload(payload))
   )
 }
 
 ///|
-fn has_open_fenced_code(text : String) -> Bool {
+fn has_open_fenced_code_payload(payload : BlockPayload) -> Bool {
   let mut fence = ""
-  for line in text.split("\n") {
+  if payload.length == 1 {
+    return fence_marker(trim(payload.first)) != ""
+  }
+  let source = payload.source()
+  for line in source.lines {
     if fence == "" {
-      let marker = fence_marker(trim(line.to_owned()))
+      let marker = fence_marker(trim(line))
       if marker != "" {
         fence = marker
       }
-    } else if is_closing_fence_line(line.to_owned(), fence) {
+    } else if is_closing_fence_line(line, fence) {
       fence = ""
     }
   }
@@ -405,9 +414,14 @@ fn has_open_fenced_code(text : String) -> Bool {
 }
 
 ///|
-fn has_nested_list_marker(text : String) -> Bool {
-  for line in text.split("\n") {
-    let trimmed = trim(line.to_owned())
+fn has_nested_list_marker_payload(payload : BlockPayload) -> Bool {
+  if payload.length == 1 {
+    let trimmed = trim(payload.first)
+    return is_ordered_list_marker(trimmed) || is_unordered_list_marker(trimmed)
+  }
+  let source = payload.source()
+  for line in source.lines {
+    let trimmed = trim(line)
     if is_ordered_list_marker(trimmed) || is_unordered_list_marker(trimmed) {
       return true
     }
