@@ -40,6 +40,30 @@ fn delimiter_document() -> String {
 }
 
 ///|
+fn emphasis_mixed_document() -> String {
+  repeat_text_to_size(
+    "This parser paragraph mixes *emphasis*, **strong text**, [links](https://example.test/path), and `literal * markers _ inside code` while keeping normal prose around them.\n\n",
+    200_000,
+  )
+}
+
+///|
+fn delimiter_literal_document() -> String {
+  repeat_text_to_size(
+    "literal a_b_c paths foo_bar_baz and escaped \\*stars\\* plus \\_underscores\\_ with punctuation ***** _____ around ordinary words.\n\n",
+    200_000,
+  )
+}
+
+///|
+fn emphasis_nested_document() -> String {
+  repeat_text_to_size(
+    "***outer strong-em*** then **strong with *inner emphasis* text** and *emphasis with **inner strong** text* plus [*linked emphasis*](url).\n\n",
+    200_000,
+  )
+}
+
+///|
 fn reference_document() -> String {
   let mut out = ""
   for i in 0..<120 {
@@ -222,6 +246,9 @@ fn parse_render_length_with(
 test "benchmark fixtures produce work" {
   assert_eq(one_mb_single_paragraph_document().length(), 1_000_000)
   assert_true(parse_event_count(delimiter_document()) > 0)
+  assert_true(parse_event_count(emphasis_mixed_document()) > 0)
+  assert_true(parse_event_count(delimiter_literal_document()) > 0)
+  assert_true(parse_event_count(emphasis_nested_document()) > 0)
   assert_true(parse_event_count(reference_document()) > 0)
   assert_true(parse_event_count(readme_like_document()) > 0)
   assert_true(parse_event_count(readme_like_large_document()) > 0)
@@ -230,6 +257,9 @@ test "benchmark fixtures produce work" {
   assert_true(parse_event_count(issue_thread_large_document()) > 0)
   assert_true(parse_event_count(issue_thread_huge_document()) > 0)
   assert_eq(readme_like_document().length(), 15_686)
+  assert_eq(emphasis_mixed_document().length(), 200_000)
+  assert_eq(delimiter_literal_document().length(), 200_000)
+  assert_eq(emphasis_nested_document().length(), 200_000)
   assert_eq(readme_like_large_document().length(), 198_302)
   assert_eq(readme_like_huge_document().length(), 1_002_602)
   assert_eq(issue_thread_document().length(), 25_153)
@@ -243,6 +273,9 @@ test "benchmark fixtures produce work" {
 test "markdown processing speed" (b : @bench.T) {
   let one_mb_single_paragraph = one_mb_single_paragraph_document()
   let delimiter = delimiter_document()
+  let emphasis_mixed = emphasis_mixed_document()
+  let delimiter_literal = delimiter_literal_document()
+  let emphasis_nested = emphasis_nested_document()
   let references = reference_document()
   let readme = readme_like_document()
   let large_readme = readme_like_large_document()
@@ -263,6 +296,21 @@ test "markdown processing speed" (b : @bench.T) {
     name="syntax/long_delimiter_runs",
     fn() { b.keep(parse_event_count_with(commonmark, delimiter)) },
     count=5,
+  )
+  b.bench(
+    name="syntax/emphasis_mixed/200kb",
+    fn() { b.keep(parse_event_count_with(commonmark, emphasis_mixed)) },
+    count=3,
+  )
+  b.bench(
+    name="syntax/delimiter_literal/200kb",
+    fn() { b.keep(parse_event_count_with(commonmark, delimiter_literal)) },
+    count=3,
+  )
+  b.bench(
+    name="syntax/emphasis_nested/200kb",
+    fn() { b.keep(parse_event_count_with(commonmark, emphasis_nested)) },
+    count=3,
   )
   b.bench(
     name="syntax/reference_definitions",
