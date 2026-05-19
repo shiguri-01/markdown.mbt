@@ -66,6 +66,8 @@
               lefthook
               markdown-compare
               moonbit-bin.moonbit.latest
+            ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+              pkgs.perf
             ];
             shellHook = ''
               if git rev-parse --git-dir >/dev/null 2>&1; then

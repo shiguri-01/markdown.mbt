@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/bench" @bench,
+  "moonbitlang/core/env",
+  "shiguri/markdown" @markdown,
+}
+
+options(
+  "is-main": true,
+)
