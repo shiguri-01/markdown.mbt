@@ -301,10 +301,14 @@ fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
 
 ///|
 fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
+  let raw_line = ctx.lines[ctx.index]
+  let leading = count_leading_spaces(raw_line)
+  if leading > 3 ||
+    leading >= raw_line.length() ||
+    char_at(raw_line, leading) != 60 {
     return NoMatch
   }
-  let line = trim(ctx.lines[ctx.index])
+  let line = if leading == 0 { raw_line } else { raw_line[leading:].to_owned() }
   match html_block_terminator(line) {
     Some(terminator) => {
       let mut i = ctx.index
@@ -355,6 +359,9 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn html_block_terminator(line : String) -> String? {
+  if line.length() == 0 || char_at(line, 0) != 60 {
+    return None
+  }
   let tag_end = html_script_pre_style_terminator(line)
   match tag_end {
     Some(terminator) => return Some(terminator)
