@@ -116,6 +116,17 @@ test "reference links resolve forward and ignore code definitions" {
 }
 
 ///|
+test "deferred commonmark path resolves nested definitions after block parse" {
+  assert_eq(
+    render_html(
+      @markdown.commonmark(),
+      "[t]\n\n[b]\n\n[l]\n\n[i]\n\n[h]\n\n[t]: /top\n\n    [i]: /code\n\n<div>\n[h]: /html\n</div>\n\n> [b]: /quote\n> [b]\n\n- [l]: /list\n- [l]\n",
+    ),
+    "<p><a href=\"/top\">t</a></p>\n<p><a href=\"/quote\">b</a></p>\n<p><a href=\"/list\">l</a></p>\n<p>[i]</p>\n<p>[h]</p>\n<pre><code>[i]: /code\n</code></pre>\n<div>\n[h]: /html\n</div>\n<blockquote>\n<p><a href=\"/quote\">b</a></p>\n</blockquote>\n<ul>\n<li></li>\n<li><a href=\"/list\">l</a></li>\n</ul>\n",
+  )
+}
+
+///|
 test "reference definitions in block quotes and lists do not emit" {
   assert_eq(
     render_html(
@@ -153,6 +164,60 @@ test "lists preserve tight loose and normalized child blocks" {
       "- > quoted\n- ```\n  [x]: /code\n  ```\n- [x]: /real\n- [x]\n",
     ),
     "<ul>\n<li>\n<blockquote>\n<p>quoted</p>\n</blockquote>\n</li>\n<li>\n<pre><code>[x]: /code\n</code></pre>\n</li>\n<li></li>\n<li><a href=\"/real\">x</a></li>\n</ul>\n",
+  )
+}
+
+///|
+test "custom block rules keep two pass reference behavior" {
+  let blocker = @markdown.Rule::block(
+    @markdown.RuleName::raw("x:block:block-reference"),
+    priority=100,
+    fn(ctx) {
+      if ctx.current_line().has_prefix("[x]:") {
+        block_result(1, @markdown.EventFragment::text("blocked"))
+      } else {
+        NoMatch
+      }
+    },
+  )
+  assert_eq(
+    render_html(
+      @markdown.commonmark().extend(blocker),
+      "[x]\n\n[x]: /blocked\n",
+    ),
+    "<p>[x]</p>\nblocked",
+  )
+}
+
+///|
+test "custom inline rules keep two pass reference behavior" {
+  let marker = @markdown.Rule::inline(
+    @markdown.RuleName::raw("x:inline:marker"),
+    priority=100,
+    fn(ctx) {
+      if ctx.scanner().has_prefix("@") {
+        inline_result(1, @markdown.EventFragment::text("marker"))
+      } else {
+        NoMatch
+      }
+    },
+  )
+  assert_eq(
+    render_html(@markdown.commonmark().extend(marker), "[x] @\n\n[x]: /url\n"),
+    "<p><a href=\"/url\">x</a> marker</p>\n",
+  )
+}
+
+///|
+test "custom core rules keep two pass reference behavior" {
+  let core = @markdown.Rule::core(@markdown.RuleName::raw("x:core:identity"), fn(
+    sink,
+  ) {
+    sink
+  })
+  assert_eq(
+    render_html(@markdown.commonmark().extend(core), "[x]\n\n[x]: /url\n"),
+    "<p><a href=\"/url\">x</a></p>\n",
   )
 }
 

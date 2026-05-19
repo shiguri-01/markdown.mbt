@@ -39,6 +39,17 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let state = ParseState::new()
   let source = split_lines(input)
   if may_contain_reference_definition(input) {
+    if self.registry.can_use_commonmark_deferred_block_parse() {
+      parse_commonmark_deferred_blocks_into(
+        source.lines,
+        source.line_starts,
+        self.registry,
+        downstream,
+        state,
+      )
+      downstream.finish()
+      return
+    }
     collect_reference_definitions_with_block_lines(
       source.lines,
       source.line_starts,

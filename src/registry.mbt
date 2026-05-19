@@ -169,6 +169,39 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
+fn RuleRegistry::can_use_commonmark_deferred_block_parse(
+  self : RuleRegistry,
+) -> Bool {
+  if self.overrides.length() != 0 ||
+    self.block_continue_rules().length() != 0 ||
+    self.core_rules().length() != 0 {
+    return false
+  }
+  let block_rules = self.block_rules()
+  if block_rules.length() != 11 {
+    return false
+  }
+  let inline_rules = self.inline_parse_rules()
+  has_commonmark_block_rules(block_rules) &&
+  has_commonmark_inline_pipeline_rules(inline_rules)
+}
+
+///|
+fn has_commonmark_block_rules(rules : Array[RuleEntry]) -> Bool {
+  has_rule_named(rules, "cm:block:blank") &&
+  has_rule_named(rules, "cm:block:fenced_code") &&
+  has_rule_named(rules, "cm:block:indented_code") &&
+  has_rule_named(rules, "cm:block:thematic_break") &&
+  has_rule_named(rules, "cm:block:setext_heading") &&
+  has_rule_named(rules, "cm:block:html") &&
+  has_rule_named(rules, "cm:block:atx_heading") &&
+  has_rule_named(rules, "cm:block:block_quote") &&
+  has_rule_named(rules, "cm:block:list") &&
+  has_rule_named(rules, "cm:block:reference_definition") &&
+  has_rule_named(rules, "cm:block:paragraph")
+}
+
+///|
 fn inline_parse_mode(rules : Array[RuleEntry]) -> InlineParseMode {
   if has_commonmark_inline_pipeline_rules(rules) {
     CommonMarkInlinePipeline
