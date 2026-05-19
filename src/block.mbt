@@ -31,6 +31,7 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
       inline_text,
       ctx.registry,
       ctx.inline_rules,
+      ctx.inline_mode,
       sink,
       ctx.state,
     )
@@ -132,6 +133,7 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
     content,
     ctx.registry,
     ctx.inline_rules,
+    ctx.inline_mode,
     sink,
     ctx.state,
   )
@@ -167,6 +169,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     setext_heading_content(ctx, underline_index),
     ctx.registry,
     ctx.inline_rules,
+    ctx.inline_mode,
     sink,
     ctx.state,
   )
@@ -608,6 +611,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
           inner_text,
           ctx.registry,
           ctx.inline_rules,
+          ctx.inline_mode,
           sink,
           ctx.state,
         )
@@ -621,6 +625,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
           paragraph_line(inner.first),
           ctx.registry,
           ctx.inline_rules,
+          ctx.inline_mode,
           sink,
           ctx.state,
         )
@@ -696,6 +701,7 @@ fn emit_single_line_blockquote_content(
       paragraph_line(inner),
       ctx.registry,
       ctx.inline_rules,
+      ctx.inline_mode,
       sink,
       ctx.state,
     )

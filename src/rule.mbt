@@ -90,6 +90,12 @@ priv struct RuleEntry {
 }
 
 ///|
+priv enum InlineParseMode {
+  CommonMarkInlinePipeline
+  CustomInlinePipeline
+}
+
+///|
 priv enum RuleOp {
   RegisterRule(RuleEntry)
   DisableRule(RuleName)

@@ -34,6 +34,7 @@ pub struct BlockContext {
   priv index : Int
   priv registry : RuleRegistry
   priv inline_rules : Array[RuleEntry]
+  priv inline_mode : InlineParseMode
   priv state : ParseState
   priv collect_only : Bool
 }

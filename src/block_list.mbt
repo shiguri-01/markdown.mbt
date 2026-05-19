@@ -183,6 +183,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       item_source,
       ctx.registry,
       ctx.inline_rules,
+      ctx.inline_mode,
       sink,
       ctx.state,
       loose~,
@@ -220,6 +221,7 @@ fn emit_list_item_content(
   item_source : ListItemSource,
   registry : RuleRegistry,
   inline_rules : Array[RuleEntry],
+  inline_mode : InlineParseMode,
   sink : Sink,
   state : ParseState,
   loose? : Bool = false,
@@ -242,7 +244,9 @@ fn emit_list_item_content(
     count_leading_spaces(item_line) < 4 &&
     !is_list_marker_item_content(item_line) &&
     !is_paragraph_interrupt(item_line) {
-    parse_inlines_with_rules(item_line, registry, inline_rules, sink, state)
+    parse_inlines_with_rules(
+      item_line, registry, inline_rules, inline_mode, sink, state,
+    )
     return
   }
   let buffer = Events::new()

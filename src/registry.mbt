@@ -169,13 +169,22 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
+fn inline_parse_mode(rules : Array[RuleEntry]) -> InlineParseMode {
+  if has_commonmark_inline_pipeline_rules(rules) {
+    CommonMarkInlinePipeline
+  } else {
+    CustomInlinePipeline
+  }
+}
+
+///|
 fn has_commonmark_inline_pipeline_rules(rules : Array[RuleEntry]) -> Bool {
   if rules.length() != 11 {
     return false
   }
   for rule in rules {
-    if !rule.name.value.has_prefix("cm:inline:") &&
-      !rule.name.value.has_prefix("cm:delimiter:") {
+    if !has_prefix_at(rule.name.value, "cm:inline:", 0) &&
+      !has_prefix_at(rule.name.value, "cm:delimiter:", 0) {
       return false
     }
   }

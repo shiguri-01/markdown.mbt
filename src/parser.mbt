@@ -121,6 +121,11 @@ fn parse_block_lines_range_into(
   } else {
     registry.inline_parse_rules()
   }
+  let inline_mode = if collect_only {
+    CustomInlinePipeline
+  } else {
+    inline_parse_mode(inline_rules)
+  }
   let block_continue_rules = registry.block_continue_rules()
   let block_start_rules = registry.block_rules()
   while i < stop {
@@ -131,6 +136,7 @@ fn parse_block_lines_range_into(
       index: i,
       registry,
       inline_rules,
+      inline_mode,
       state,
       collect_only,
     }

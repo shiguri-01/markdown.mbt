@@ -5,10 +5,12 @@ fn parse_inlines(
   sink : Sink,
   state : ParseState,
 ) -> Unit {
+  let rules = registry.inline_parse_rules()
   parse_inlines_with_rules(
     text,
     registry,
-    registry.inline_parse_rules(),
+    rules,
+    inline_parse_mode(rules),
     sink,
     state,
   )
@@ -19,20 +21,24 @@ fn parse_inlines_with_rules(
   text : String,
   registry : RuleRegistry,
   rules : Array[RuleEntry],
+  inline_mode : InlineParseMode,
   sink : Sink,
   state : ParseState,
 ) -> Unit {
-  if has_commonmark_inline_pipeline_rules(rules) {
-    parse_commonmark_inline_range(
-      text,
-      0,
-      text.length(),
-      registry,
-      sink,
-      state,
-      true,
-    )
-    return
+  match inline_mode {
+    CommonMarkInlinePipeline => {
+      parse_commonmark_inline_range(
+        text,
+        0,
+        text.length(),
+        registry,
+        sink,
+        state,
+        true,
+      )
+      return
+    }
+    CustomInlinePipeline => ()
   }
   if rules.length() == 0 {
     if text.length() > 0 {
