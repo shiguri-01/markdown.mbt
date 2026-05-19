@@ -44,6 +44,51 @@ test "commonmark inline text keeps ordinary spaces together" {
 }
 
 ///|
+test "commonmark emphasis delimiter interactions" {
+  assert_eq(
+    render_html(@markdown.commonmark(), "*a **b** c*"),
+    "<p><em>a <strong>b</strong> c</em></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "**a *b* c**"),
+    "<p><strong>a <em>b</em> c</strong></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "***a***"),
+    "<p><em><strong>a</strong></em></p>\n",
+  )
+  assert_eq(render_html(@markdown.commonmark(), "a_b_c"), "<p>a_b_c</p>\n")
+}
+
+///|
+test "commonmark priority spans and links preserve delimiter behavior" {
+  assert_eq(
+    render_html(@markdown.commonmark(), "`*not em*`"),
+    "<p><code>*not em*</code></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "<span>*not em*</span>"),
+    "<p><span><em>not em</em></span></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "[*em*](url)"),
+    "<p><a href=\"url\"><em>em</em></a></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "*[link](url)*"),
+    "<p><em><a href=\"url\">link</a></em></p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "[a [b](url)](url)"),
+    "<p>[a <a href=\"url\">b</a>](url)</p>\n",
+  )
+  assert_eq(
+    render_html(@markdown.commonmark(), "![*em* **strong** `code`](/img.png)"),
+    "<p><img src=\"/img.png\" alt=\"em strong code\" /></p>\n",
+  )
+}
+
+///|
 test "commonmark list item ast has no renderer-only block attribute" {
   match @markdown.ast("- one\n\n- two\n") {
     Ok(root) => {
