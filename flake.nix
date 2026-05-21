@@ -33,6 +33,13 @@
         system:
         let
           pkgs = pkgsFor system;
+          moonbit-node = pkgs.runCommand "moonbit-node" {
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+          } ''
+            mkdir -p $out/bin
+            makeWrapper ${pkgs.nodejs}/bin/node $out/bin/node
+            makeWrapper ${pkgs.nodejs}/bin/node $out/bin/node.cmd
+          '';
           markdown-compare = pkgs.buildNpmPackage {
             pname = "markdown-compare";
             version = "0.1.0";
@@ -48,6 +55,7 @@
                 --add-flags $out/lib/node_modules/markdown-compare/run.mjs \
                 --prefix PATH : ${
                   pkgs.lib.makeBinPath [
+                    moonbit-node
                     pkgs.bun
                     pkgs.cmark
                     pkgs.moonbit-bin.moonbit.latest
@@ -58,14 +66,15 @@
         in
         {
           default = pkgs.mkShell {
-            packages = with pkgs; [
-              bun
-              cmark
-              git
-              just
-              lefthook
+            packages = [
+              moonbit-node
+              pkgs.bun
+              pkgs.cmark
+              pkgs.git
+              pkgs.just
+              pkgs.lefthook
               markdown-compare
-              moonbit-bin.moonbit.latest
+              pkgs.moonbit-bin.moonbit.latest
             ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
               pkgs.perf
             ];
