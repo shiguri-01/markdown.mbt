@@ -14,7 +14,7 @@ pub fn html(String) -> String
 pub struct Ast {
   // private fields
 }
-pub fn Ast::new() -> Self
+pub fn Ast::Ast() -> Self
 pub fn Ast::result(Self) -> Result[AstNode, AstError]
 pub fn Ast::sink(Self) -> Sink
 
@@ -35,8 +35,8 @@ pub fn AstNode::text(Self) -> String?
 pub struct Attr {
   // private fields
 }
+pub fn Attr::Attr(AttrName, String) -> Self
 pub fn Attr::name(Self) -> AttrName
-pub fn Attr::new(AttrName, String) -> Self
 pub fn Attr::value(Self) -> String
 
 pub struct AttrName {
@@ -75,9 +75,9 @@ pub fn ConsumedLines::to_int(Self) -> Int
 pub struct Element {
   // private fields
 }
+pub fn Element::Element(Tag) -> Self
 pub fn Element::attr(Self, AttrName) -> String?
 pub fn Element::attrs(Self) -> Array[Attr]
-pub fn Element::new(Tag) -> Self
 pub fn Element::range(Self) -> SourceRange?
 pub fn Element::tag(Self) -> Tag
 pub fn Element::with_attrs(Tag, Array[Attr], range? : SourceRange?) -> Self
@@ -88,7 +88,7 @@ pub(all) enum Event {
   Text(String)
   SoftBreak
   HardBreak
-  Html(String)
+  RawHtml(String)
 }
 
 pub struct EventFragment {
@@ -107,14 +107,14 @@ pub fn EventFragment::text(String) -> Self
 pub struct Events {
   // private fields
 }
+pub fn Events::Events() -> Self
 pub fn Events::collect(Self) -> Array[Event]
-pub fn Events::new() -> Self
 pub fn Events::sink(Self) -> Sink
 
 pub struct Html {
   // private fields
 }
-pub fn Html::new() -> Self
+pub fn Html::Html() -> Self
 pub fn Html::sink(Self) -> Sink
 pub fn Html::to_string(Self) -> String
 
@@ -143,12 +143,13 @@ pub fn InlineScanner::slice(Self, Int, Int) -> String?
 pub struct Processor {
   // private fields
 }
-pub fn Processor::new(rule? : Rule) -> Self
+pub fn Processor::Processor(rule? : Rule) -> Self
 pub fn Processor::parse(Self, String, Sink) -> Unit
 
 pub struct Rule {
   // private fields
 }
+pub fn Rule::Rule(String) -> Self
 pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Sink) -> Sink) -> Self
@@ -158,7 +159,6 @@ pub fn Rule::enable(Self, RuleName) -> Self
 pub fn Rule::extend(Self, Self) -> Self
 pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
 pub fn Rule::name(Self) -> String
-pub fn Rule::new(String) -> Self
 pub fn Rule::replace(Self, Self) -> Self
 
 pub struct RuleName {
@@ -172,11 +172,11 @@ pub fn RuleName::to_string(Self) -> String
 pub struct Sink {
   // private fields
 }
+pub fn Sink::Sink((Event) -> Unit, finish? : () -> Unit) -> Self
 pub fn Sink::emit(Self, Event) -> Unit
 pub fn Sink::finish(Self) -> Unit
 pub fn Sink::inject_attr(Self, Tag, Attr) -> Self
 pub fn Sink::map(Self, (Event) -> Event) -> Self
-pub fn Sink::new((Event) -> Unit, finish? : () -> Unit) -> Self
 pub fn Sink::on_finish(Self, (Self) -> Unit) -> Self
 pub fn Sink::rename_tag(Self, Tag, Tag) -> Self
 pub fn Sink::softbreak_to_hardbreak(Self) -> Self

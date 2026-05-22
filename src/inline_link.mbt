@@ -59,7 +59,7 @@ fn link_inline_match(
   registry : RuleRegistry,
   state : ParseState,
 ) -> InlineRuleResult {
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
   parse_inlines(text[start + 1:close_text].to_owned(), registry, sink, state)
@@ -119,7 +119,7 @@ fn image_alt_text(
   registry : RuleRegistry,
   state : ParseState,
 ) -> String {
-  let buffer = Events::new()
+  let buffer = Events()
   parse_inlines(text, registry, buffer.owned_sink(), state)
   let out = StringBuilder::new(size_hint=text.length())
   for event in buffer.owned_events() {
@@ -127,7 +127,7 @@ fn image_alt_text(
       Text(text) => out.write_string(text)
       SoftBreak => out.write_string("\n")
       HardBreak => out.write_string("\n")
-      Html(raw) => out.write_string(raw)
+      RawHtml(raw) => out.write_string(raw)
       Enter(el) =>
         if el.tag.value == "cm:image" {
           out.write_string(attr_value(el.attrs, "alt", ""))

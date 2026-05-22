@@ -7,7 +7,7 @@ priv struct RuleRegistry {
 }
 
 ///|
-fn RuleRegistry::new() -> RuleRegistry {
+fn RuleRegistry::RuleRegistry() -> RuleRegistry {
   { rules: [], disabled: [], overrides: [], next_order: 0 }
 }
 

@@ -114,7 +114,7 @@ pub struct Rule {
 
 ///|
 /// Creates an empty composable rule.
-pub fn Rule::new(name : String) -> Rule {
+pub fn Rule::Rule(name : String) -> Rule {
   { name, ops: [] }
 }
 

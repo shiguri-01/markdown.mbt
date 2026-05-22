@@ -11,7 +11,7 @@ priv struct ParseState {
 }
 
 ///|
-fn ParseState::new() -> ParseState {
+fn ParseState::ParseState() -> ParseState {
   { references: [] }
 }
 

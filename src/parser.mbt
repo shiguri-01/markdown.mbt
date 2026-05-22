@@ -9,23 +9,23 @@ pub struct Processor {
 
 ///|
 /// Creates a processor from `rule`, defaulting to CommonMark.
-pub fn Processor::new(rule? : Rule = commonmark()) -> Processor {
-  { registry: RuleRegistry::new().use_rule(rule) }
+pub fn Processor::Processor(rule? : Rule = commonmark()) -> Processor {
+  { registry: RuleRegistry().use_rule(rule) }
 }
 
 ///|
 /// Parses CommonMark and renders it to HTML.
 pub fn html(source : String) -> String {
-  let html = Html::new()
-  Processor::new().parse(source, html.sink())
+  let html = Html()
+  Processor().parse(source, html.sink())
   html.to_string()
 }
 
 ///|
 /// Parses CommonMark and returns the event-derived AST.
 pub fn ast(source : String) -> Result[AstNode, AstError] {
-  let ast = Ast::new()
-  Processor::new().parse(source, ast.sink())
+  let ast = Ast()
+  Processor().parse(source, ast.sink())
   ast.result()
 }
 
@@ -36,7 +36,7 @@ pub fn ast(source : String) -> Result[AstNode, AstError] {
 /// the parse pipeline.
 pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
-  let state = ParseState::new()
+  let state = ParseState()
   let source = split_lines(input)
   if may_contain_reference_definition(input) {
     if self.registry.can_use_commonmark_deferred_block_parse() {
@@ -87,7 +87,7 @@ fn collect_reference_definitions_with_block_lines(
     0,
     lines.length(),
     registry,
-    Sink::new(fn(_) { () }),
+    Sink(fn(_) { () }),
     state,
     collect_only=true,
   )
@@ -215,7 +215,7 @@ priv struct BlockPayload {
 }
 
 ///|
-fn BlockPayload::new(first : String) -> BlockPayload {
+fn BlockPayload::BlockPayload(first : String) -> BlockPayload {
   {
     first,
     lines: None,
@@ -306,7 +306,7 @@ fn BlockPayload::collect_references(
   registry : RuleRegistry,
   state : ParseState,
 ) -> Unit {
-  self.parse_into(registry, Sink::new(fn(_) { () }), state, collect_only=true)
+  self.parse_into(registry, Sink(fn(_) { () }), state, collect_only=true)
 }
 
 ///|

@@ -11,7 +11,7 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
   } else if ctx.collect_only {
     block_match(i - ctx.index, EventFragment::empty())
   } else {
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
     sink.emit(
       Enter(
@@ -118,7 +118,7 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
   } else {
     trim(strip_closing_hashes(line[level:].to_owned()))
   }
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(
     Enter(
@@ -154,7 +154,7 @@ fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
     return block_match(underline_index - ctx.index + 1, EventFragment::empty())
   }
   let level = setext_heading_level_line(ctx.lines[underline_index])
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(
     Enter(
@@ -564,7 +564,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   if is_single_line_blockquote(ctx, first, i + 1) {
     return emit_single_line_blockquote(ctx, first)
   }
-  let inner = BlockPayload::new(first)
+  let inner = BlockPayload(first)
   i = i + 1
   let result = append_blockquote_lazy_lines(ctx, inner, first, i)
   i = result.next_index
@@ -588,7 +588,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     inner.collect_references(ctx.registry, ctx.state)
     return block_match(i - ctx.index, EventFragment::empty())
   }
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(
     Enter(
@@ -613,7 +613,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       if lazy_starts_with_block {
         inner.parse_into(ctx.registry, sink, ctx.state)
       } else if used_lazy {
-        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
         parse_inlines_with_rules(
           inner_text,
           ctx.registry,
@@ -627,7 +627,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
         inner.first != "" &&
         count_leading_spaces(inner.first) < 4 &&
         !is_paragraph_interrupt(inner.first) {
-        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
         parse_inlines_with_rules(
           paragraph_line(inner.first),
           ctx.registry,
@@ -666,12 +666,12 @@ fn emit_single_line_blockquote(
 ) -> BlockRuleResult {
   if ctx.collect_only {
     if may_contain_reference_definition(inner) {
-      let payload = BlockPayload::new(inner)
+      let payload = BlockPayload(inner)
       payload.collect_references(ctx.registry, ctx.state)
     }
     return block_match(1, EventFragment::empty())
   }
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(
     Enter(
@@ -703,7 +703,7 @@ fn emit_single_line_blockquote_content(
   if inner != "" &&
     count_leading_spaces(inner) < 4 &&
     !is_paragraph_interrupt(inner) {
-    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
     parse_inlines_with_rules(
       paragraph_line(inner),
       ctx.registry,
@@ -714,7 +714,7 @@ fn emit_single_line_blockquote_content(
     )
     sink.emit(Exit(tag_name("cm:paragraph")))
   } else {
-    BlockPayload::new(inner).parse_into(ctx.registry, sink, ctx.state)
+    BlockPayload(inner).parse_into(ctx.registry, sink, ctx.state)
   }
 }
 

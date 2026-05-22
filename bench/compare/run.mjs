@@ -39,8 +39,8 @@ function readmeLikeDocumentSections(count) {
   );
   out.push("## Installation\n\n");
   out.push("```moonbit\n");
-  out.push("let html = @markdown.Html::new()\n");
-  out.push("@markdown.Processor::new().parse(source, html.sink())\n");
+  out.push("let html = @markdown.Html()\n");
+  out.push("@markdown.Processor().parse(source, html.sink())\n");
   out.push("```\n\n");
   out.push("## Features\n\n");
   for (let i = 0; i < count; i += 1) {

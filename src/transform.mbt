@@ -1,7 +1,7 @@
 ///|
 /// Creates a sink that runs `f` before finishing downstream.
 pub fn Sink::on_finish(self : Sink, f : (Sink) -> Unit) -> Sink {
-  Sink::new(fn(event) { self.emit(event) }, finish=fn() {
+  Sink(fn(event) { self.emit(event) }, finish=fn() {
     f(self)
     self.finish()
   })
@@ -10,7 +10,7 @@ pub fn Sink::on_finish(self : Sink, f : (Sink) -> Unit) -> Sink {
 ///|
 /// Creates a sink that maps every event before forwarding it downstream.
 pub fn Sink::map(self : Sink, f : (Event) -> Event) -> Sink {
-  Sink::new(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
+  Sink(fn(event) { self.emit(copy_event(f(event))) }, finish=fn() {
     self.finish()
   })
 }
@@ -19,7 +19,7 @@ pub fn Sink::map(self : Sink, f : (Event) -> Event) -> Sink {
 /// Creates a sink that merges adjacent `Text` events before forwarding.
 pub fn Sink::text_merge(self : Sink) -> Sink {
   let mut pending : String? = None
-  Sink::new(
+  Sink(
     fn(event) {
       match event {
         Text(text) =>

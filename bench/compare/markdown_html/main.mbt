@@ -14,8 +14,8 @@ fn main {
     return
   }
   let input = fixture(args[1])
-  let html = @markdown.Html::new()
-  @markdown.Processor::new().parse(input, html.sink())
+  let html = @markdown.Html()
+  @markdown.Processor().parse(input, html.sink())
   println(html.to_string())
 }
 
@@ -52,8 +52,8 @@ fn run_bench(name : String, repeats : Int, warmups : Int) -> Unit {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  let html = @markdown.Html::new()
-  @markdown.Processor::new().parse(input, html.sink())
+  let html = @markdown.Html()
+  @markdown.Processor().parse(input, html.sink())
   html.to_string().length()
 }
 
@@ -102,8 +102,8 @@ fn readme_like_document_sections(count : Int) -> String {
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html::new()\n")
-  out.write_string("@markdown.Processor::new().parse(source, html.sink())\n")
+  out.write_string("let html = @markdown.Html()\n")
+  out.write_string("@markdown.Processor().parse(source, html.sink())\n")
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {

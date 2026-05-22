@@ -200,12 +200,12 @@ pub(all) enum Event {
   Text(String)
   SoftBreak
   HardBreak
-  Html(String)
+  RawHtml(String)
 }
 
 ///|
 /// Creates an attribute.
-pub fn Attr::new(name : AttrName, value : String) -> Attr {
+pub fn Attr::Attr(name : AttrName, value : String) -> Attr {
   { name, value }
 }
 
@@ -223,7 +223,7 @@ pub fn Attr::value(self : Attr) -> String {
 
 ///|
 /// Creates an element without attributes or source range.
-pub fn Element::new(tag : Tag) -> Element {
+pub fn Element::Element(tag : Tag) -> Element {
   { tag, attrs: [], range: None }
 }
 
@@ -288,7 +288,7 @@ fn copy_event(event : Event) -> Event {
     Text(text) => Text(text)
     SoftBreak => SoftBreak
     HardBreak => HardBreak
-    Html(raw) => Html(raw)
+    RawHtml(raw) => RawHtml(raw)
   }
 }
 
@@ -334,7 +334,7 @@ pub fn EventFragment::hard_break() -> EventFragment {
 ///|
 /// Creates a raw HTML event fragment.
 pub fn EventFragment::html(raw : String) -> EventFragment {
-  { events: [Html(raw)] }
+  { events: [RawHtml(raw)] }
 }
 
 ///|
@@ -425,19 +425,19 @@ pub struct Events {
 
 ///|
 /// Creates an empty event collector.
-pub fn Events::new() -> Events {
+pub fn Events::Events() -> Events {
   { events: [] }
 }
 
 ///|
 /// Returns a sink that appends emitted events to this collector.
 pub fn Events::sink(self : Events) -> Sink {
-  Sink::new(fn(event) { self.events.push(copy_event(event)) })
+  Sink(fn(event) { self.events.push(copy_event(event)) })
 }
 
 ///|
 fn Events::owned_sink(self : Events) -> Sink {
-  Sink::new(fn(event) { self.events.push(event) })
+  Sink(fn(event) { self.events.push(event) })
 }
 
 ///|

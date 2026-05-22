@@ -41,7 +41,7 @@ fn run_profile(
   warmups : Int,
 ) -> Unit {
   let input = fixture(fixture_name)
-  let processor = @markdown.Processor::new()
+  let processor = @markdown.Processor()
   let mut checksum = 0
   for _ in 0..<warmups {
     checksum += run_once(mode, processor, input)
@@ -77,7 +77,7 @@ fn parse_event_count_with(
   input : String,
 ) -> Int {
   let mut count = 0
-  let sink = @markdown.Sink::new(fn(_event) { count = count + 1 })
+  let sink = @markdown.Sink(fn(_event) { count = count + 1 })
   processor.parse(input, sink)
   count
 }
@@ -87,7 +87,7 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let html = @markdown.Html::new()
+  let html = @markdown.Html()
   processor.parse(input, html.sink())
   html.to_string().length()
 }
@@ -207,8 +207,8 @@ fn readme_like_document_sections(count : Int) -> String {
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html::new()\n")
-  out.write_string("@markdown.Processor::new().parse(source, html.sink())\n")
+  out.write_string("let html = @markdown.Html()\n")
+  out.write_string("@markdown.Processor().parse(source, html.sink())\n")
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {

@@ -168,7 +168,7 @@ fn deferred_block_context(
 
 ///|
 fn deferred_block_sink(items : Array[DeferredBlockItem]) -> Sink {
-  Sink::new(fn(event) { append_deferred_event(items, event) })
+  Sink(fn(event) { append_deferred_event(items, event) })
 }
 
 ///|
@@ -368,7 +368,7 @@ fn deferred_blockquote_block(
   if is_single_line_blockquote(ctx, first, i + 1) {
     return deferred_single_line_blockquote(ctx, items, first)
   }
-  let inner = BlockPayload::new(first)
+  let inner = BlockPayload(first)
   i = i + 1
   let result = append_blockquote_lazy_lines(ctx, inner, first, i)
   i = result.next_index
@@ -409,14 +409,14 @@ fn deferred_blockquote_block(
       if lazy_starts_with_block {
         parse_payload_with_block_context(inner, ctx, items)
       } else if used_lazy {
-        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
         emit_block_inline(items, ctx, sink, inner_text)
         sink.emit(Exit(tag_name("cm:paragraph")))
       } else if inner.length == 1 &&
         inner.first != "" &&
         count_leading_spaces(inner.first) < 4 &&
         !is_paragraph_interrupt(inner.first) {
-        sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
         emit_block_inline(items, ctx, sink, paragraph_line(inner.first))
         sink.emit(Exit(tag_name("cm:paragraph")))
       } else {
@@ -465,11 +465,11 @@ fn deferred_single_line_blockquote_content(
   if inner != "" &&
     count_leading_spaces(inner) < 4 &&
     !is_paragraph_interrupt(inner) {
-    sink.emit(Enter(Element::new(tag_name("cm:paragraph"))))
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
     emit_block_inline(items, ctx, sink, paragraph_line(inner))
     sink.emit(Exit(tag_name("cm:paragraph")))
   } else {
-    parse_payload_with_block_context(BlockPayload::new(inner), ctx, items)
+    parse_payload_with_block_context(BlockPayload(inner), ctx, items)
   }
 }
 
@@ -519,7 +519,7 @@ fn deferred_list_block(
     } else {
       trim(item)
     }
-    let item_payload = BlockPayload::new(first_line)
+    let item_payload = BlockPayload(first_line)
     i = i + 1
     i = collect_list_continuation_into(
       item_payload,

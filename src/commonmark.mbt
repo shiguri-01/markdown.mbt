@@ -4,7 +4,7 @@
 /// The preset registers block, inline, delimiter, and core entries under `cm:`
 /// rule names.
 pub fn commonmark() -> Rule {
-  Rule::new("commonmark")
+  Rule("commonmark")
   .extend(
     Rule::block(rule_name("cm:block:blank"), priority=100, cm_blank_block),
   )

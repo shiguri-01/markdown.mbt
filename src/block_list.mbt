@@ -41,7 +41,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     } else {
       trim(item)
     }
-    let item_payload = BlockPayload::new(first_line)
+    let item_payload = BlockPayload(first_line)
     i = i + 1
     i = collect_list_continuation_into(
       item_payload,
@@ -152,7 +152,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
   if ctx.collect_only {
     return block_match(i - ctx.index, EventFragment::empty())
   }
-  let buffer = Events::new()
+  let buffer = Events()
   let sink = buffer.owned_sink()
   sink.emit(
     Enter(
@@ -249,7 +249,7 @@ fn emit_list_item_content(
     )
     return
   }
-  let buffer = Events::new()
+  let buffer = Events()
   item_source.payload.parse_into(registry, buffer.owned_sink(), state)
   let events = buffer.owned_events()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {

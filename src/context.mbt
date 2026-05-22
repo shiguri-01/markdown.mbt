@@ -7,7 +7,7 @@ pub struct Sink {
 
 ///|
 /// Creates an event sink.
-pub fn Sink::new(
+pub fn Sink::Sink(
   emit : (Event) -> Unit,
   finish? : () -> Unit = fn() { () },
 ) -> Sink {

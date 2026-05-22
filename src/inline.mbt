@@ -163,7 +163,7 @@ fn cm_code_span_inline(ctx : InlineContext) -> InlineRuleResult {
   }
   inline_match(
     end - i + width,
-    EventFragment::element(Element::new(tag_name("cm:code_span")), children=[
+    EventFragment::element(Element(tag_name("cm:code_span")), children=[
       EventFragment::text(normalize_code_span(text[i + width:end].to_owned())),
     ]),
   )
@@ -332,14 +332,14 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     if end < 0 {
       return emphasis_partial_run_fallback(ctx, run)
     }
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
     let strong_count = run / 2
     if run % 2 == 1 {
-      sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+      sink.emit(Enter(Element(tag_name("cm:emphasis"))))
     }
     for _ in 0..<strong_count {
-      sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+      sink.emit(Enter(Element(tag_name("cm:strong"))))
     }
     parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
     for _ in 0..<strong_count {
@@ -354,10 +354,10 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     if end < 0 {
       return emphasis_partial_run_fallback(ctx, run)
     }
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
-    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
-    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+    sink.emit(Enter(Element(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element(tag_name("cm:strong"))))
     parse_inlines(text[i + 3:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:strong")))
     sink.emit(Exit(tag_name("cm:emphasis")))
@@ -367,9 +367,9 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     if end < 0 {
       return emphasis_partial_run_fallback(ctx, run)
     }
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
-    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+    sink.emit(Enter(Element(tag_name("cm:strong"))))
     parse_inlines(text[i + 2:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:strong")))
     inline_match(end - i + 2, buffer.into_fragment())
@@ -381,9 +381,9 @@ fn cm_emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
     if emphasis_would_split_link_text(text, i, end) {
       return NoMatch
     }
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
-    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element(tag_name("cm:emphasis"))))
     parse_inlines(text[i + 1:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:emphasis")))
     inline_match(end - i + 1, buffer.into_fragment())
@@ -401,10 +401,10 @@ fn emphasis_partial_run_fallback(
   if run >= 3 {
     let end = find_closing_run(text, marker, i + run, 2)
     if end >= 0 {
-      let buffer = Events::new()
+      let buffer = Events()
       let sink = buffer.owned_sink()
       sink.emit(Text(text[i:i + run - 2].to_owned()))
-      sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+      sink.emit(Enter(Element(tag_name("cm:strong"))))
       parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
       sink.emit(Exit(tag_name("cm:strong")))
       return inline_match(end - i + 2, buffer.into_fragment())
@@ -415,10 +415,10 @@ fn emphasis_partial_run_fallback(
     if run == 2 && delimiter_run_len(text, end, marker) >= 2 {
       return NoMatch
     }
-    let buffer = Events::new()
+    let buffer = Events()
     let sink = buffer.owned_sink()
     sink.emit(Text(text[i:i + run - 1].to_owned()))
-    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element(tag_name("cm:emphasis"))))
     parse_inlines(text[i + run:end].to_owned(), ctx.registry, sink, ctx.state)
     sink.emit(Exit(tag_name("cm:emphasis")))
     return inline_match(end - i + 1, buffer.into_fragment())

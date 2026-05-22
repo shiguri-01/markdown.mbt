@@ -34,8 +34,8 @@ For everything else, build a processor and choose a sink:
 ```mbt check
 ///|
 test {
-  let html = @markdown.Html::new()
-  @markdown.Processor::new().parse("# Hello", html.sink())
+  let html = @markdown.Html()
+  @markdown.Processor().parse("# Hello", html.sink())
   assert_eq(html.to_string(), "<h1>Hello</h1>\n")
 }
 ```
@@ -43,8 +43,8 @@ test {
 ```mbt check
 ///|
 test {
-  let events = @markdown.Events::new()
-  @markdown.Processor::new().parse("hello", events.sink())
+  let events = @markdown.Events()
+  @markdown.Processor().parse("hello", events.sink())
   match events.collect().get(1) {
     Some(Text(text)) => assert_eq(text, "hello")
     _ => abort("expected text")
@@ -82,7 +82,7 @@ test {
               Match(
                 ConsumedChars(end + 1),
                 @markdown.EventFragment::element(
-                  @markdown.Element::new(@markdown.Tag::raw("x:math")),
+                  Element(@markdown.Tag::raw("x:math")),
                   children=[@markdown.EventFragment::text(text)],
                 ),
               )
@@ -93,9 +93,9 @@ test {
     },
   )
 
-  let html = @markdown.Html::new()
+  let html = @markdown.Html()
   let rule = @markdown.commonmark().extend(math)
-  @markdown.Processor::new(rule~).parse("Euler: $x + y$", html.sink())
+  @markdown.Processor(rule~).parse("Euler: $x + y$", html.sink())
   assert_eq(html.to_string(), "<p>Euler: <x:math>x + y</x:math></p>\n")
 }
 ```
@@ -103,13 +103,13 @@ test {
 ```mbt check
 ///|
 test {
-  let no_raw_html = @markdown.Rule::new("no-raw-html")
+  let no_raw_html = @markdown.Rule("no-raw-html")
     .disable(@markdown.RuleName::commonmark("block:html"))
     .disable(@markdown.RuleName::commonmark("inline:raw_html"))
 
-  let html = @markdown.Html::new()
+  let html = @markdown.Html()
   let rule = @markdown.commonmark().extend(no_raw_html)
-  @markdown.Processor::new(rule~).parse("<span>raw</span>", html.sink())
+  @markdown.Processor(rule~).parse("<span>raw</span>", html.sink())
   assert_eq(html.to_string(), "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
 }
 ```
@@ -122,9 +122,9 @@ built-in sinks, or transform an existing sink.
 ```mbt check
 ///|
 test {
-  let ast = @markdown.Ast::new()
+  let ast = @markdown.Ast()
   let sink = ast.sink().text_merge()
-  sink.emit(Enter(@markdown.Element::new(@markdown.Tag::raw("x:note"))))
+  sink.emit(Enter(Element(@markdown.Tag::raw("x:note"))))
   sink.emit(Text("a"))
   sink.emit(Text("b"))
   sink.emit(Exit(@markdown.Tag::raw("x:note")))

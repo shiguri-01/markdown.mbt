@@ -12,14 +12,14 @@ pub struct Html {
 
 ///|
 /// Creates an empty streaming HTML renderer.
-pub fn Html::new() -> Html {
+pub fn Html::Html() -> Html {
   { out: StringBuilder::new(), close_stack: [], pending_item_open: false }
 }
 
 ///|
 /// Returns a sink that renders events as they arrive.
 pub fn Html::sink(self : Html) -> Sink {
-  Sink::new(fn(event) { write_html_event(self, event) })
+  Sink(fn(event) { write_html_event(self, event) })
 }
 
 ///|
@@ -65,7 +65,7 @@ fn write_html_event(buffer : Html, event : Event) -> Unit {
       flush_pending_item_open(buffer, false)
       buffer.out.write_string("<br />\n")
     }
-    Html(raw) => {
+    RawHtml(raw) => {
       flush_pending_item_open(buffer, contains_char(raw, 10))
       buffer.out.write_string(raw)
     }

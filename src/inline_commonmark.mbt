@@ -135,7 +135,7 @@ fn emit_commonmark_code_span(
   if close < 0 {
     return 0
   }
-  sink.emit(Enter(Element::new(tag_name("cm:code_span"))))
+  sink.emit(Enter(Element(tag_name("cm:code_span"))))
   sink.emit(Text(normalize_code_span(text[start + width:close].to_owned())))
   sink.emit(Exit(tag_name("cm:code_span")))
   close - start + width
@@ -173,7 +173,7 @@ fn emit_commonmark_angle_span(
   match raw_html_inline_end(text, start) {
     Some(close) =>
       if close <= end {
-        sink.emit(Html(text[start:close].to_owned()))
+        sink.emit(RawHtml(text[start:close].to_owned()))
         return close - start
       }
     None => ()
@@ -183,7 +183,7 @@ fn emit_commonmark_angle_span(
       if close <= end {
         let raw = text[start:close].to_owned()
         if looks_like_raw_html(raw) {
-          sink.emit(Html(raw))
+          sink.emit(RawHtml(raw))
           return close - start
         }
       }
@@ -513,9 +513,9 @@ fn emit_commonmark_emphasis_element(
     tag_name("cm:emphasis")
   }
   if width == 3 {
-    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element(tag_name("cm:emphasis"))))
   }
-  sink.emit(Enter(Element::new(tag)))
+  sink.emit(Enter(Element(tag)))
   parse_commonmark_inline_range(
     text, start, end, registry, sink, state, allow_links,
   )
@@ -573,7 +573,7 @@ fn emit_commonmark_split_opening_run(
   } else {
     tag_name("cm:emphasis")
   }
-  sink.emit(Enter(Element::new(tag)))
+  sink.emit(Enter(Element(tag)))
   let content = text[start + width:outer_close].to_owned()
   parse_commonmark_inline_range(
     content,
@@ -666,7 +666,7 @@ fn emit_commonmark_split_mixed_opening_run(
   } else {
     tag_name("cm:emphasis")
   }
-  sink.emit(Enter(Element::new(tag)))
+  sink.emit(Enter(Element(tag)))
   let content = text[start + outer_width:outer_close].to_owned()
   parse_commonmark_inline_range(
     content,
@@ -774,10 +774,10 @@ fn emit_commonmark_long_emphasis_run(
   }
   let strong_count = run / 2
   if run % 2 == 1 {
-    sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+    sink.emit(Enter(Element(tag_name("cm:emphasis"))))
   }
   for _ in 0..<strong_count {
-    sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+    sink.emit(Enter(Element(tag_name("cm:strong"))))
   }
   parse_commonmark_inline_range(
     text,
@@ -888,7 +888,7 @@ fn emit_commonmark_partial_emphasis(
     )
     if close >= 0 {
       sink.emit(Text(text[start:start + run - 2].to_owned()))
-      sink.emit(Enter(Element::new(tag_name("cm:strong"))))
+      sink.emit(Enter(Element(tag_name("cm:strong"))))
       parse_commonmark_inline_range(
         text,
         start + run,
@@ -912,7 +912,7 @@ fn emit_commonmark_partial_emphasis(
     )
     if close >= 0 {
       sink.emit(Text(text[start:start + run - 1].to_owned()))
-      sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+      sink.emit(Enter(Element(tag_name("cm:emphasis"))))
       parse_commonmark_inline_range(
         text,
         start + run,
@@ -946,7 +946,7 @@ fn emit_commonmark_partial_emphasis(
         )
         if later >= 0 {
           let later_run = delimiter_run_len(text, later, marker)
-          sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+          sink.emit(Enter(Element(tag_name("cm:emphasis"))))
           parse_commonmark_inline_range(
             text,
             start + 1,
@@ -962,7 +962,7 @@ fn emit_commonmark_partial_emphasis(
       }
       if close_run > 1 &&
         has_delimiter_run_between(text, marker, start + 1, close) {
-        sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+        sink.emit(Enter(Element(tag_name("cm:emphasis"))))
         parse_commonmark_inline_range(
           text,
           start + 1,
@@ -977,7 +977,7 @@ fn emit_commonmark_partial_emphasis(
       }
     }
     if close >= 0 && !has_delimiter_run_between(text, marker, start + 1, close) {
-      sink.emit(Enter(Element::new(tag_name("cm:emphasis"))))
+      sink.emit(Enter(Element(tag_name("cm:emphasis"))))
       parse_commonmark_inline_range(
         text,
         start + 1,

@@ -27,8 +27,8 @@ test "commonmark block and inline html rendering" {
 
 ///|
 test "commonmark inline text keeps ordinary spaces together" {
-  let events = @markdown.Events::new()
-  @markdown.Processor::new().parse("hello world from moonbit", events.sink())
+  let events = @markdown.Events()
+  @markdown.Processor().parse("hello world from moonbit", events.sink())
   let collected = events.collect()
   assert_eq(collected.length(), 3)
   match collected[1] {
@@ -261,7 +261,7 @@ test "panic consumed lines must be positive" {
 ///|
 test "event fragment element is balanced" {
   let fragment = @markdown.EventFragment::element(
-    @markdown.Element::new(@markdown.Tag::raw("x:note")),
+    Element(@markdown.Tag::raw("x:note")),
     children=[@markdown.EventFragment::text("body")],
   )
   let events = fragment.events()
@@ -288,14 +288,14 @@ test "event fragment rejects invalid event streams" {
   )
   assert_true(
     @markdown.EventFragment::from_events([
-      Enter(@markdown.Element::new(@markdown.Tag::raw("x:open"))),
+      Enter(Element(@markdown.Tag::raw("x:open"))),
       Exit(@markdown.Tag::raw("x:other")),
     ])
     is None,
   )
   assert_true(
     @markdown.EventFragment::from_events([
-      Enter(@markdown.Element::new(@markdown.Tag::raw("x:open"))),
+      Enter(Element(@markdown.Tag::raw("x:open"))),
       Text("body"),
     ])
     is None,
@@ -335,7 +335,7 @@ test "matched inline emits fragment and consumes exact chars" {
         inline_result(
           2,
           @markdown.EventFragment::element(
-            @markdown.Element::new(@markdown.Tag::raw("x:marker")),
+            Element(@markdown.Tag::raw("x:marker")),
             children=[@markdown.EventFragment::text("marked")],
           ),
         )
@@ -361,7 +361,7 @@ test "matched block emits fragment and consumes exact lines" {
           1,
           @markdown.EventFragment::element(
             @markdown.Element::with_attrs(@markdown.Tag::raw("x:admonition"), [
-              @markdown.Attr::new(
+              Attr(
                 @markdown.AttrName::raw("kind"),
                 ctx.current_line()[4:].to_owned(),
               ),
@@ -403,7 +403,7 @@ test "delimiter rules run before inline rules and honor ordering" {
       }
     },
   )
-  let rule = @markdown.Rule::new("order").extend(inline).extend(delimiter)
+  let rule = @markdown.Rule("order").extend(inline).extend(delimiter)
   assert_eq(
     render_html(@markdown.commonmark().extend(rule), "^"),
     "<p>delimiter</p>\n",
@@ -434,9 +434,7 @@ test "block continue runs before block start" {
       }
     },
   )
-  let rule = @markdown.Rule::new("block-continue")
-    .extend(start)
-    .extend(continuation)
+  let rule = @markdown.Rule("block-continue").extend(start).extend(continuation)
   assert_eq(render_html(@markdown.commonmark().extend(rule), "%"), "continue")
 }
 
@@ -453,14 +451,14 @@ test "rule priority disable enable and replace remain intact" {
       }
     },
   )
-  let disabled = @markdown.Rule::new("config")
+  let disabled = @markdown.Rule("config")
     .extend(marker)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
   assert_eq(
     render_html(@markdown.commonmark().extend(disabled), "@"),
     "<p>@</p>\n",
   )
-  let enabled = @markdown.Rule::new("config")
+  let enabled = @markdown.Rule("config")
     .extend(marker)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
     .enable(@markdown.RuleName::raw("x:inline:marker"))
@@ -479,9 +477,7 @@ test "rule priority disable enable and replace remain intact" {
       }
     },
   )
-  let replaced = @markdown.Rule::new("config")
-    .extend(marker)
-    .replace(replacement)
+  let replaced = @markdown.Rule("config").extend(marker).replace(replacement)
   assert_eq(
     render_html(@markdown.commonmark().extend(replaced), "@"),
     "<p>replacement</p>\n",

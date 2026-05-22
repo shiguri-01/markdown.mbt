@@ -87,8 +87,8 @@ fn readme_like_document_sections(count : Int) -> String {
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html::new()\n")
-  out.write_string("@markdown.Processor::new().parse(source, html.sink())\n")
+  out.write_string("let html = @markdown.Html()\n")
+  out.write_string("@markdown.Processor().parse(source, html.sink())\n")
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {
@@ -164,7 +164,7 @@ fn no_op_inline_rule(
 
 ///|
 fn many_inline_rules_rule(count : Int) -> @markdown.Rule {
-  let mut rule = @markdown.Rule::new("many-inline-rules")
+  let mut rule = @markdown.Rule("many-inline-rules")
   for i in 0..<count {
     rule = rule.extend(
       @markdown.Rule::inline(
@@ -179,7 +179,7 @@ fn many_inline_rules_rule(count : Int) -> @markdown.Rule {
 
 ///|
 fn parse_event_count(input : String) -> Int {
-  parse_event_count_with(@markdown.Processor::new(), input)
+  parse_event_count_with(@markdown.Processor(), input)
 }
 
 ///|
@@ -188,7 +188,7 @@ fn parse_event_count_with(
   input : String,
 ) -> Int {
   let mut count = 0
-  let sink = @markdown.Sink::new(fn(_event) { count = count + 1 })
+  let sink = @markdown.Sink(fn(_event) { count = count + 1 })
   processor.parse(input, sink)
   count
 }
@@ -196,7 +196,7 @@ fn parse_event_count_with(
 ///|
 fn parse_with_rules_event_count(input : String) -> Int {
   parse_event_count_with(
-    @markdown.Processor::new(
+    @markdown.Processor(
       rule=@markdown.commonmark().extend(many_inline_rules_rule(50)),
     ),
     input,
@@ -205,7 +205,7 @@ fn parse_with_rules_event_count(input : String) -> Int {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  parse_render_length_with(@markdown.Processor::new(), input)
+  parse_render_length_with(@markdown.Processor(), input)
 }
 
 ///|
@@ -213,7 +213,7 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let html = @markdown.Html::new()
+  let html = @markdown.Html()
   processor.parse(input, html.sink())
   html.to_string().length()
 }
@@ -250,8 +250,8 @@ test "markdown processing speed" (b : @bench.T) {
   let issue_thread = issue_thread_document()
   let large_issue_thread = issue_thread_large_document()
   let huge_issue_thread = issue_thread_huge_document()
-  let commonmark = @markdown.Processor::new()
-  let commonmark_with_rules = @markdown.Processor::new(
+  let commonmark = @markdown.Processor()
+  let commonmark_with_rules = @markdown.Processor(
     rule=@markdown.commonmark().extend(many_inline_rules_rule(50)),
   )
   b.bench(

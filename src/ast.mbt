@@ -38,14 +38,14 @@ pub struct Ast {
 
 ///|
 /// Creates an empty streaming AST builder.
-pub fn Ast::new() -> Ast {
+pub fn Ast::Ast() -> Ast {
   { stack: [root_ast_node()], result: None }
 }
 
 ///|
 /// Returns a sink that builds an AST as events arrive.
 pub fn Ast::sink(self : Ast) -> Sink {
-  Sink::new(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
+  Sink(fn(event) { self.accept(event) }, finish=fn() { self.finish() })
 }
 
 ///|
@@ -174,15 +174,15 @@ fn Ast::accept(self : Ast, event : Event) -> Unit {
     HardBreak =>
       self.stack[self.stack.length() - 1].children.push({
         kind: ElementNode,
-        element: Some(Element::new(tag_name("cm:hard_break"))),
+        element: Some(Element(tag_name("cm:hard_break"))),
         children: [],
         text: "",
         range: None,
       })
-    Html(raw) =>
+    RawHtml(raw) =>
       self.stack[self.stack.length() - 1].children.push({
         kind: ElementNode,
-        element: Some(Element::new(tag_name("cm:html"))),
+        element: Some(Element(tag_name("cm:html"))),
         children: [
           {
             kind: TextNode,
