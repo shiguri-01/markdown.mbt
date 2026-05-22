@@ -38,7 +38,7 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
   let state = ParseState()
   let source = split_lines(input)
-  if may_contain_reference_definition(input) {
+  if source.may_contain_reference {
     if self.registry.can_use_commonmark_deferred_block_parse() {
       parse_commonmark_deferred_blocks_into(
         source.lines,
@@ -258,8 +258,14 @@ fn BlockPayload::materialize(self : BlockPayload) -> Unit {
 ///|
 fn BlockPayload::source(self : BlockPayload) -> LineSource {
   match (self.lines, self.line_starts) {
-    (Some(lines), Some(line_starts)) => { lines, line_starts }
-    _ => { lines: [self.first], line_starts: [0] }
+    (Some(lines), Some(line_starts)) =>
+      { lines, line_starts, may_contain_reference: self.may_contain_reference }
+    _ =>
+      {
+        lines: [self.first],
+        line_starts: [0],
+        may_contain_reference: self.may_contain_reference,
+      }
   }
 }
 
@@ -364,32 +370,55 @@ fn apply_core_rules(sink : Sink, registry : RuleRegistry) -> Sink {
 priv struct LineSource {
   lines : Array[String]
   line_starts : Array[Int]
+  may_contain_reference : Bool
 }
 
 ///|
 fn split_lines(input : String) -> LineSource {
   if input.length() == 0 {
-    return { lines: [], line_starts: [] }
+    return { lines: [], line_starts: [], may_contain_reference: false }
   }
   if find_char(input, '\n', 0) < 0 {
-    return { lines: [expand_leading_tabs(input)], line_starts: [0] }
+    return {
+      lines: [expand_leading_tabs(input)],
+      line_starts: [0],
+      may_contain_reference: may_contain_reference_definition(input),
+    }
   }
   let lines : Array[String] = []
   let line_starts : Array[Int] = []
-  let mut offset = 0
-  for line in input.split("\n") {
-    lines.push(expand_leading_tabs(line.to_owned()))
-    line_starts.push(offset)
-    offset = offset + line.length() + 1
+  let mut line_start = 0
+  let mut seen_label_opener = false
+  let mut may_contain_reference = false
+  let input_length = input.length()
+  for i = 0; i < input_length; i = i + 1 {
+    let c = char_at(input, i)
+    if !may_contain_reference {
+      if c == '[' {
+        seen_label_opener = true
+      } else if seen_label_opener &&
+        c == ']' &&
+        i + 1 < input_length &&
+        char_at(input, i + 1) == ':' {
+        may_contain_reference = true
+      }
+    }
+    if c == '\n' {
+      lines.push(expand_leading_tabs(input[line_start:i].to_owned()))
+      line_starts.push(line_start)
+      line_start = i + 1
+    }
   }
-  if input.length() > 0 &&
-    char_at(input, input.length() - 1) == '\n' &&
-    lines.length() > 0 &&
-    lines[lines.length() - 1] == "" {
-    ignore(lines.pop())
-    ignore(line_starts.pop())
+  if line_start < input_length || char_at(input, input_length - 1) != '\n' {
+    let line = if line_start == 0 {
+      input
+    } else {
+      input[line_start:].to_owned()
+    }
+    lines.push(expand_leading_tabs(line))
+    line_starts.push(line_start)
   }
-  { lines, line_starts }
+  { lines, line_starts, may_contain_reference }
 }
 
 ///|

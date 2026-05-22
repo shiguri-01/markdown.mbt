@@ -155,6 +155,14 @@ test "reference definitions in block quotes and lists do not emit" {
 }
 
 ///|
+test "multiline reference labels resolve forward references" {
+  assert_eq(
+    render_html(@markdown.commonmark(), "[foo bar]\n\n[foo\nbar]: /url\n"),
+    "<p><a href=\"/url\">foo bar</a></p>\n",
+  )
+}
+
+///|
 test "block quotes preserve lazy nested and reference content" {
   assert_eq(
     render_html(
