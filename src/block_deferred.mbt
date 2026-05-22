@@ -508,17 +508,16 @@ fn deferred_list_block(
     if marker_indent > 3 {
       break
     }
-    let current = trim(ctx.lines[i])
-    if !same_list_marker(
-        current, ordered, ordered_delimiter, unordered_delimiter,
+    if !same_list_marker_line_at(
+        ctx.lines[i],
+        marker_indent,
+        ordered,
+        ordered_delimiter,
+        unordered_delimiter,
       ) {
       break
     }
-    let item = if ordered {
-      strip_ordered_marker(current)
-    } else {
-      strip_unordered_marker(current)
-    }
+    let item = strip_list_marker_line_at(ctx.lines[i], marker_indent, ordered)
     let content_indent = list_item_content_indent(ctx.lines[i], ordered)
     let first_line = if count_leading_spaces(item) >= 4 {
       item
@@ -564,8 +563,8 @@ fn deferred_list_block(
       item_end = i
     } else if blank_count > 0 &&
       i < ctx.lines.length() &&
-      same_list_marker(
-        trim(ctx.lines[i]),
+      same_list_marker_line(
+        ctx.lines[i],
         ordered,
         ordered_delimiter,
         unordered_delimiter,
@@ -606,8 +605,8 @@ fn deferred_list_block(
         item_end = i
       } else if more_blanks > 0 &&
         i < ctx.lines.length() &&
-        same_list_marker(
-          trim(ctx.lines[i]),
+        same_list_marker_line(
+          ctx.lines[i],
           ordered,
           ordered_delimiter,
           unordered_delimiter,

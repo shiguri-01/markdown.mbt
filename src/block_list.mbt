@@ -20,17 +20,16 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     if marker_indent > 3 {
       break
     }
-    let current = trim(ctx.lines[i])
-    if !same_list_marker(
-        current, ordered, ordered_delimiter, unordered_delimiter,
+    if !same_list_marker_line_at(
+        ctx.lines[i],
+        marker_indent,
+        ordered,
+        ordered_delimiter,
+        unordered_delimiter,
       ) {
       break
     }
-    let item = if ordered {
-      strip_ordered_marker(current)
-    } else {
-      strip_unordered_marker(current)
-    }
+    let item = strip_list_marker_line_at(ctx.lines[i], marker_indent, ordered)
     let content_indent = list_item_content_indent(ctx.lines[i], ordered)
     let first_line = if count_leading_spaces(item) >= 4 {
       item
@@ -76,8 +75,8 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       item_end = i
     } else if blank_count > 0 &&
       i < ctx.lines.length() &&
-      same_list_marker(
-        trim(ctx.lines[i]),
+      same_list_marker_line(
+        ctx.lines[i],
         ordered,
         ordered_delimiter,
         unordered_delimiter,
@@ -118,8 +117,8 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
         item_end = i
       } else if more_blanks > 0 &&
         i < ctx.lines.length() &&
-        same_list_marker(
-          trim(ctx.lines[i]),
+        same_list_marker_line(
+          ctx.lines[i],
           ordered,
           ordered_delimiter,
           unordered_delimiter,
@@ -430,17 +429,49 @@ fn has_nested_list_marker_payload(payload : BlockPayload) -> Bool {
 }
 
 ///|
-fn same_list_marker(
+fn same_list_marker_line(
   line : String,
   ordered : Bool,
   ordered_delimiter : Int,
   unordered_delimiter : Int,
 ) -> Bool {
+  let leading = count_leading_spaces(line)
+  if leading > 3 {
+    return false
+  }
+  same_list_marker_line_at(
+    line, leading, ordered, ordered_delimiter, unordered_delimiter,
+  )
+}
+
+///|
+fn same_list_marker_line_at(
+  line : String,
+  leading : Int,
+  ordered : Bool,
+  ordered_delimiter : Int,
+  unordered_delimiter : Int,
+) -> Bool {
   if ordered {
-    is_ordered_list_marker(line) &&
-    ordered_list_delimiter(line) == ordered_delimiter
+    let marker = ordered_marker_end_at(line, leading)
+    is_ordered_list_marker_at(line, leading, marker) &&
+    char_at(line, marker) == ordered_delimiter
   } else {
-    is_unordered_list_marker(line) && char_at(line, 0) == unordered_delimiter
+    is_unordered_list_marker_at(line, leading) &&
+    char_at(line, leading) == unordered_delimiter
+  }
+}
+
+///|
+fn strip_list_marker_line_at(
+  line : String,
+  leading : Int,
+  ordered : Bool,
+) -> String {
+  if ordered {
+    strip_ordered_marker_at(line, leading)
+  } else {
+    strip_unordered_marker_at(line, leading)
   }
 }
 
@@ -505,13 +536,13 @@ fn is_unordered_list_marker_at(line : String, start : Int) -> Bool {
 }
 
 ///|
-fn strip_unordered_marker(line : String) -> String {
-  if line.length() <= 1 {
+fn strip_unordered_marker_at(line : String, start : Int) -> String {
+  if start + 1 >= line.length() {
     ""
-  } else if char_at(line, 1) == '\t' {
-    expand_tabs_from_column(line[2:].to_owned(), 4, 2)
+  } else if char_at(line, start + 1) == '\t' {
+    expand_tabs_from_column(line[start + 2:].to_owned(), 4, 2)
   } else {
-    line[2:].to_owned()
+    line[start + 2:].to_owned()
   }
 }
 
@@ -576,15 +607,16 @@ fn ordered_list_delimiter(line : String) -> Int {
 }
 
 ///|
-fn strip_ordered_marker(line : String) -> String {
-  let marker = ordered_marker_end(line)
+fn strip_ordered_marker_at(line : String, start : Int) -> String {
+  let marker = ordered_marker_end_at(line, start)
   if marker + 2 > line.length() {
     ""
   } else if marker + 1 < line.length() && char_at(line, marker + 1) == '\t' {
+    let marker_width = marker - start
     expand_tabs_from_column(
       line[marker + 2:].to_owned(),
-      ((marker + 1) / 4 + 1) * 4,
-      ((marker + 1) / 4 + 1) * 4 - marker - 2,
+      ((marker_width + 1) / 4 + 1) * 4,
+      ((marker_width + 1) / 4 + 1) * 4 - marker_width - 2,
     )
   } else {
     line[marker + 2:].to_owned()
