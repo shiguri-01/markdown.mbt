@@ -75,7 +75,7 @@ fn paragraph_line(line : String) -> String {
 ///|
 fn strip_trailing_spaces(line : String) -> String {
   let mut end = line.length()
-  while end > 0 && char_at(line, end - 1) == 32 {
+  while end > 0 && char_at(line, end - 1) == ' ' {
     end = end - 1
   }
   if end == line.length() {
@@ -96,19 +96,15 @@ fn cm_blank_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return NoMatch
-  }
+  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
   let mut level = 0
-  while level < line.length() && level < 6 && char_at(line, level) == 35 {
+  while level < line.length() && level < 6 && char_at(line, level) == '#' {
     level = level + 1
   }
-  if level == 0 {
-    return NoMatch
-  }
-  if level < line.length() && !is_space(char_at(line, level)) {
-    return NoMatch
+  guard level > 0 else { NoMatch }
+  guard level >= line.length() || is_space(char_at(line, level)) else {
+    NoMatch
   }
   if ctx.collect_only {
     return block_match(1, EventFragment::empty())
@@ -143,13 +139,9 @@ fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
-  if !is_setext_heading_paragraph_start(ctx.lines[ctx.index]) {
-    return NoMatch
-  }
+  guard is_setext_heading_paragraph_start(ctx.lines[ctx.index]) else { NoMatch }
   let underline_index = find_setext_underline(ctx)
-  if underline_index < 0 {
-    return NoMatch
-  }
+  guard underline_index >= 0 else { NoMatch }
   if ctx.collect_only {
     return block_match(underline_index - ctx.index + 1, EventFragment::empty())
   }
@@ -234,9 +226,7 @@ fn setext_heading_content(ctx : BlockContext, underline_index : Int) -> String {
 ///|
 fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
   let leading = count_leading_spaces(ctx.lines[ctx.index])
-  if leading > 3 || leading >= ctx.lines[ctx.index].length() {
-    return NoMatch
-  }
+  guard leading <= 3 && leading < ctx.lines[ctx.index].length() else { NoMatch }
   if is_thematic_break_at(ctx.lines[ctx.index], leading) {
     if ctx.collect_only {
       return block_match(1, EventFragment::empty())
@@ -278,7 +268,7 @@ fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
     return 0
   }
   let c = char_at(line, start)
-  if c != 61 && c != 45 {
+  if c != '=' && c != '-' {
     return 0
   }
   let mut count = 0
@@ -292,7 +282,7 @@ fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
   }
   if count == 0 {
     0
-  } else if c == 61 {
+  } else if c == '=' {
     1
   } else {
     2
@@ -303,10 +293,10 @@ fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
 fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
   let raw_line = ctx.lines[ctx.index]
   let leading = count_leading_spaces(raw_line)
-  if leading > 3 ||
-    leading >= raw_line.length() ||
-    char_at(raw_line, leading) != 60 {
-    return NoMatch
+  guard leading <= 3 &&
+    leading < raw_line.length() &&
+    char_at(raw_line, leading) == '<' else {
+    NoMatch
   }
   let line = if leading == 0 { raw_line } else { raw_line[leading:].to_owned() }
   match html_block_terminator(line) {
@@ -337,9 +327,9 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
     }
     None => ()
   }
-  if !looks_like_html_block_start(line) &&
-    !looks_like_complete_open_or_close_tag(line) {
-    return NoMatch
+  guard looks_like_html_block_start(line) ||
+    looks_like_complete_open_or_close_tag(line) else {
+    NoMatch
   }
   let mut i = ctx.index
   if ctx.collect_only {
@@ -359,9 +349,7 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn html_block_terminator(line : String) -> String? {
-  if line.length() == 0 || char_at(line, 0) != 60 {
-    return None
-  }
+  guard line.length() > 0 && char_at(line, 0) == '<' else { None }
   let tag_end = html_script_pre_style_terminator(line)
   match tag_end {
     Some(terminator) => return Some(terminator)
@@ -382,13 +370,9 @@ fn html_block_terminator(line : String) -> String? {
 
 ///|
 fn html_script_pre_style_terminator(line : String) -> String? {
-  if !line.has_prefix("<") {
-    return None
-  }
+  guard line.has_prefix("<") else { None }
   let mut i = 1
-  if i >= line.length() || !is_ascii_alpha(char_at(line, i)) {
-    return None
-  }
+  guard i < line.length() && is_ascii_alpha(char_at(line, i)) else { None }
   let start = i
   while i < line.length() && is_ascii_alpha(char_at(line, i)) {
     i = i + 1
@@ -405,17 +389,13 @@ fn html_script_pre_style_terminator(line : String) -> String? {
 fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
   let line = ctx.lines[ctx.index]
   let opening_indent = count_leading_spaces(line)
-  if opening_indent > 3 {
-    return NoMatch
-  }
+  guard opening_indent <= 3 else { NoMatch }
   let trimmed = trim(line)
   let fence = fence_marker(trimmed)
-  if fence == "" {
-    return NoMatch
-  }
-  if char_at(fence, 0) == 96 &&
-    contains_char(trim(trimmed[fence.length():].to_owned()), 96) {
-    return NoMatch
+  guard fence != "" else { NoMatch }
+  guard !(char_at(fence, 0) == '`' &&
+    contains_char(trim(trimmed[fence.length():].to_owned()), '`')) else {
+    NoMatch
   }
   let mut i = ctx.index + 1
   if ctx.collect_only {
@@ -555,9 +535,7 @@ fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
 
 ///|
 fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
-  if !is_blockquote_marker_line(ctx.lines[ctx.index]) {
-    return NoMatch
-  }
+  guard is_blockquote_marker_line(ctx.lines[ctx.index]) else { NoMatch }
   let mut i = ctx.index
   let mut used_lazy = false
   let first = strip_blockquote_marker(ctx.lines[i])
@@ -766,7 +744,7 @@ fn blockquote_inner_starts_with_block(inner : BlockPayload) -> Bool {
 ///|
 fn is_blockquote_marker_line(line : String) -> Bool {
   let leading = count_leading_spaces(line)
-  leading <= 3 && leading < line.length() && char_at(line, leading) == 62
+  leading <= 3 && leading < line.length() && char_at(line, leading) == '>'
 }
 
 ///|
@@ -798,14 +776,14 @@ fn strip_blockquote_marker(line : String) -> String {
   let mut pos = first + 1
   let mut column = first + 1
   let mut prefix_spaces = 0
-  if pos < line.length() && char_at(line, pos) == 32 {
+  if pos < line.length() && char_at(line, pos) == ' ' {
     pos = pos + 1
     column = column + 1
-  } else if pos < line.length() && char_at(line, pos) == 9 {
+  } else if pos < line.length() && char_at(line, pos) == '\t' {
     let spaces = 4 - column % 4
     pos = pos + 1
     column = column + spaces
-    prefix_spaces = if pos < line.length() && char_at(line, pos) == 9 {
+    prefix_spaces = if pos < line.length() && char_at(line, pos) == '\t' {
       column - first - 2
     } else {
       0
@@ -826,7 +804,7 @@ fn expand_tabs_from_column(
   }
   let mut column = start_column
   for i in 0..<text.length() {
-    if char_at(text, i) == 9 {
+    if char_at(text, i) == '\t' {
       let spaces = 4 - column % 4
       for _ in 0..<spaces {
         out.write_string(" ")
@@ -856,7 +834,7 @@ fn is_atx_heading_start_at(line : String, start : Int) -> Bool {
   let mut level = 0
   while start + level < line.length() &&
         level < 6 &&
-        char_at(line, start + level) == 35 {
+        char_at(line, start + level) == '#' {
     level = level + 1
   }
   level > 0 &&
@@ -884,7 +862,7 @@ fn is_fence_marker_line(line : String) -> Bool {
 ///|
 fn is_html_block_paragraph_interrupt(line : String) -> Bool {
   let leading = count_leading_spaces(line)
-  if leading > 3 || leading >= line.length() || char_at(line, leading) != 60 {
+  if leading > 3 || leading >= line.length() || char_at(line, leading) != '<' {
     return false
   }
   let trimmed = if leading == 0 { line } else { line[leading:].to_owned() }
@@ -893,11 +871,11 @@ fn is_html_block_paragraph_interrupt(line : String) -> Bool {
 
 ///|
 fn looks_like_html_block_start(line : String) -> Bool {
-  if line.length() < 3 || char_at(line, 0) != 60 {
+  if line.length() < 3 || char_at(line, 0) != '<' {
     return false
   }
   let mut i = 1
-  if char_at(line, i) == 47 {
+  if char_at(line, i) == '/' {
     i = i + 1
   }
   if i >= line.length() || !is_ascii_alpha(char_at(line, i)) {
@@ -912,8 +890,8 @@ fn looks_like_html_block_start(line : String) -> Bool {
   (
     i >= line.length() ||
     is_space(char_at(line, i)) ||
-    char_at(line, i) == 62 ||
-    char_at(line, i) == 47
+    char_at(line, i) == '>' ||
+    char_at(line, i) == '/'
   )
 }
 
@@ -931,8 +909,8 @@ fn looks_like_complete_open_or_close_tag(line : String) -> Bool {
 ///|
 fn looks_like_html_declaration(line : String) -> Bool {
   line.length() >= 3 &&
-  char_at(line, 0) == 60 &&
-  char_at(line, 1) == 33 &&
+  char_at(line, 0) == '<' &&
+  char_at(line, 1) == '!' &&
   is_ascii_alpha(char_at(line, 2))
 }
 
@@ -1008,7 +986,7 @@ fn fence_marker(line : String) -> String {
     return ""
   }
   let marker = char_at(line, 0)
-  if marker != 96 && marker != 126 {
+  if marker != '`' && marker != '~' {
     return ""
   }
   let mut length = 0
@@ -1028,7 +1006,7 @@ fn has_fence_marker_at(line : String, start : Int) -> Bool {
     return false
   }
   let marker = char_at(line, start)
-  if marker != 96 && marker != 126 {
+  if marker != '`' && marker != '~' {
     return false
   }
   let mut length = 0
@@ -1094,7 +1072,7 @@ fn contains_char(text : String, needle : Int) -> Bool {
 ///|
 fn is_thematic_break_at(line : String, start : Int) -> Bool {
   let c = char_at(line, start)
-  if c != 45 && c != 42 && c != 95 {
+  if c != '-' && c != '*' && c != '_' {
     return false
   }
   let mut count = 0
@@ -1116,7 +1094,7 @@ fn strip_closing_hashes(line : String) -> String {
     end = end - 1
   }
   let mut hash_start = end
-  while hash_start > 0 && char_at(line, hash_start - 1) == 35 {
+  while hash_start > 0 && char_at(line, hash_start - 1) == '#' {
     hash_start = hash_start - 1
   }
   if hash_start == end ||

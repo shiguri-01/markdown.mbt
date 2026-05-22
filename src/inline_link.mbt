@@ -2,29 +2,21 @@
 fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
-  if char_at(text, i) != 91 {
-    return NoMatch
-  }
+  guard char_at(text, i) == '[' else { NoMatch }
   let close_text = find_link_text_end(text, i + 1)
-  if close_text < 0 {
-    return NoMatch
+  guard close_text >= 0 else { NoMatch }
+  guard !link_text_range_may_contain_link(text, i + 1, close_text) else {
+    NoMatch
   }
-  if link_text_range_may_contain_link(text, i + 1, close_text) {
-    return NoMatch
+  guard !link_text_has_unclosed_priority_span(text, i + 1, close_text) else {
+    NoMatch
   }
-  if link_text_has_unclosed_priority_span(text, i + 1, close_text) {
-    return NoMatch
-  }
-  if close_text + 1 < text.length() && char_at(text, close_text + 1) == 40 {
+  if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
-    if close_dest < 0 {
-      return NoMatch
-    }
+    guard close_dest >= 0 else { NoMatch }
     let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-    if attrs.length() == 0 {
-      return NoMatch
-    }
-    return link_inline_match(
+    guard attrs.length() > 0 else { NoMatch }
+    link_inline_match(
       text,
       i,
       close_text,
@@ -33,19 +25,20 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
       ctx.registry,
       ctx.state,
     )
-  }
-  match reference_attrs_for_link_text(text, i, close_text, ctx.state) {
-    Some(resolved) =>
-      link_inline_match(
-        text,
-        i,
-        close_text,
-        resolved.end,
-        resolved.attrs,
-        ctx.registry,
-        ctx.state,
-      )
-    None => NoMatch
+  } else {
+    match reference_attrs_for_link_text(text, i, close_text, ctx.state) {
+      Some(resolved) =>
+        link_inline_match(
+          text,
+          i,
+          close_text,
+          resolved.end,
+          resolved.attrs,
+          ctx.registry,
+          ctx.state,
+        )
+      None => NoMatch
+    }
   }
 }
 
@@ -71,45 +64,42 @@ fn link_inline_match(
 fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
-  if i + 1 >= text.length() ||
-    char_at(text, i) != 33 ||
-    char_at(text, i + 1) != 91 {
-    return NoMatch
+  guard i + 1 < text.length() &&
+    char_at(text, i) == '!' &&
+    char_at(text, i + 1) == '[' else {
+    NoMatch
   }
   let close_text = find_link_text_end(text, i + 2)
-  if close_text < 0 ||
-    link_text_has_unclosed_priority_span(text, i + 2, close_text) {
-    return NoMatch
+  guard close_text >= 0 &&
+    !link_text_has_unclosed_priority_span(text, i + 2, close_text) else {
+    NoMatch
   }
   let alt = image_alt_text(
     text[i + 2:close_text].to_owned(),
     ctx.registry,
     ctx.state,
   )
-  if close_text + 1 < text.length() && char_at(text, close_text + 1) == 40 {
+  if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
-    if close_dest < 0 {
-      return NoMatch
-    }
+    guard close_dest >= 0 else { NoMatch }
     let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-    if attrs.length() == 0 {
-      return NoMatch
-    }
+    guard attrs.length() > 0 else { NoMatch }
     attrs.push({ name: attr_name("alt"), value: alt })
-    return inline_match(
+    inline_match(
       close_dest - i + 1,
       EventFragment::element(Element::with_attrs(tag_name("cm:image"), attrs)),
     )
-  }
-  match reference_attrs_for_image_alt(text, i, close_text, alt, ctx.state) {
-    Some(resolved) =>
-      inline_match(
-        resolved.end - i,
-        EventFragment::element(
-          Element::with_attrs(tag_name("cm:image"), resolved.attrs),
-        ),
-      )
-    None => NoMatch
+  } else {
+    match reference_attrs_for_image_alt(text, i, close_text, alt, ctx.state) {
+      Some(resolved) =>
+        inline_match(
+          resolved.end - i,
+          EventFragment::element(
+            Element::with_attrs(tag_name("cm:image"), resolved.attrs),
+          ),
+        )
+      None => NoMatch
+    }
   }
 }
 
@@ -149,20 +139,20 @@ fn find_link_text_end_before(text : String, start : Int, end : Int) -> Int {
   let mut depth = 0
   while i < end {
     let c = char_at(text, i)
-    if c == 92 && i + 1 < end {
+    if c == '\\' && i + 1 < end {
       i = i + 2
-    } else if c == 96 {
-      let width = delimiter_run_len(text, i, 96)
+    } else if c == '`' {
+      let width = delimiter_run_len(text, i, '`')
       let close = find_code_span_end_before(text, i + width, width, end)
       if close >= 0 {
         i = close + width
       } else {
         i = i + width
       }
-    } else if c == 91 {
+    } else if c == '[' {
       depth = depth + 1
       i = i + 1
-    } else if c == 93 {
+    } else if c == ']' {
       if depth == 0 {
         return i
       }
@@ -180,13 +170,13 @@ fn normalize_attribute_text(text : String) -> String {
   let out = StringBuilder::new(size_hint=text.length())
   let mut i = 0
   while i < text.length() {
-    if char_at(text, i) == 92 &&
+    if char_at(text, i) == '\\' &&
       i + 1 < text.length() &&
       is_ascii_punctuation(char_at(text, i + 1)) {
       out.write_view(text[i + 1:i + 2])
       i = i + 2
-    } else if char_at(text, i) == 38 {
-      let end = find_char(text, 59, i + 1)
+    } else if char_at(text, i) == '&' {
+      let end = find_char(text, ';', i + 1)
       if end > i {
         let name = text[i + 1:end].to_owned()
         match decode_entity(name) {
@@ -213,7 +203,7 @@ fn normalize_attribute_text(text : String) -> String {
 
 ///|
 fn find_link_destination_end(text : String, start : Int) -> Int {
-  if start < text.length() && char_at(text, start) == 60 {
+  if start < text.length() && char_at(text, start) == '<' {
     let close_angle = find_angle_link_destination_close(text, start + 1)
     if close_angle < 0 {
       return -1
@@ -222,18 +212,18 @@ fn find_link_destination_end(text : String, start : Int) -> Int {
     while i < text.length() && is_space(char_at(text, i)) {
       i = i + 1
     }
-    return find_char(text, 41, i)
+    return find_char(text, ')', i)
   }
   let mut i = start
   let mut depth = 0
   while i < text.length() {
     let c = char_at(text, i)
-    if c == 92 && i + 1 < text.length() {
+    if c == '\\' && i + 1 < text.length() {
       i = i + 2
-    } else if c == 40 {
+    } else if c == '(' {
       depth = depth + 1
       i = i + 1
-    } else if c == 41 {
+    } else if c == ')' {
       if depth == 0 {
         return i
       }
@@ -251,11 +241,11 @@ fn find_angle_link_destination_close(text : String, start : Int) -> Int {
   let mut i = start
   while i < text.length() {
     let c = char_at(text, i)
-    if c == 92 && i + 1 < text.length() {
+    if c == '\\' && i + 1 < text.length() {
       i = i + 2
-    } else if c == 10 || c == 13 || c == 60 {
+    } else if c == '\n' || c == '\r' || c == '<' {
       return -1
-    } else if c == 62 {
+    } else if c == '>' {
       return i
     } else {
       i = i + 1
@@ -272,8 +262,8 @@ fn link_text_range_may_contain_link(
 ) -> Bool {
   let mut i = start
   while i < end {
-    if char_at(text, i) == 91 {
-      if i > start && char_at(text, i - 1) == 33 {
+    if char_at(text, i) == '[' {
+      if i > start && char_at(text, i - 1) == '!' {
         i = i + 1
         continue
       }
@@ -281,8 +271,8 @@ fn link_text_range_may_contain_link(
       if close_text > i &&
         close_text + 1 < end &&
         (
-          char_at(text, close_text + 1) == 40 ||
-          char_at(text, close_text + 1) == 91
+          char_at(text, close_text + 1) == '(' ||
+          char_at(text, close_text + 1) == '['
         ) {
         return true
       }
@@ -303,18 +293,18 @@ fn link_text_has_unclosed_priority_span(
   let mut i = start
   while i < end {
     let c = char_at(text, i)
-    if c == 96 {
-      let width = delimiter_run_len(text, i, 96)
+    if c == '`' {
+      let width = delimiter_run_len(text, i, '`')
       let close = find_code_span_end(text, i + width, width)
       if close < 0 || close >= end {
         return true
       }
       i = close + width
-    } else if c == 60 {
+    } else if c == '<' {
       match raw_html_inline_end(text, i) {
         Some(close) => if close > end { return true } else { i = close }
         None => {
-          let close = find_char(text, 62, i + 1)
+          let close = find_char(text, '>', i + 1)
           if close >= end && looks_like_raw_html_start_at(text, i) {
             return true
           }
@@ -339,9 +329,9 @@ fn looks_like_raw_html_start_at(text : String, start : Int) -> Bool {
   start + 1 < text.length() &&
   (
     is_ascii_alpha(char_at(text, start + 1)) ||
-    char_at(text, start + 1) == 47 ||
-    char_at(text, start + 1) == 33 ||
-    char_at(text, start + 1) == 63
+    char_at(text, start + 1) == '/' ||
+    char_at(text, start + 1) == '!' ||
+    char_at(text, start + 1) == '?'
   )
 }
 
@@ -381,8 +371,8 @@ fn parse_link_attrs(spec : String) -> Array[Attr] {
 fn is_valid_link_destination(destination : String) -> Bool {
   let trimmed = trim(destination)
   if trimmed.length() >= 2 &&
-    char_at(trimmed, 0) == 60 &&
-    char_at(trimmed, trimmed.length() - 1) == 62 {
+    char_at(trimmed, 0) == '<' &&
+    char_at(trimmed, trimmed.length() - 1) == '>' {
     is_valid_angle_link_destination(trimmed[1:trimmed.length() - 1].to_owned())
   } else {
     !contains_unescaped_space(trimmed) &&
@@ -394,7 +384,7 @@ fn is_valid_link_destination(destination : String) -> Bool {
 fn contains_unescaped_angle_bracket(text : String) -> Bool {
   for i in 0..<text.length() {
     let c = char_at(text, i)
-    if (c == 60 || c == 62) && !is_escaped_char(text, i) {
+    if (c == '<' || c == '>') && !is_escaped_char(text, i) {
       return true
     }
   }
@@ -405,7 +395,7 @@ fn contains_unescaped_angle_bracket(text : String) -> Bool {
 fn is_valid_angle_link_destination(destination : String) -> Bool {
   for i in 0..<destination.length() {
     let c = char_at(destination, i)
-    if c == 60 || c == 62 || c == 10 || c == 13 {
+    if c == '<' || c == '>' || c == '\n' || c == '\r' {
       return false
     }
   }
@@ -416,8 +406,8 @@ fn is_valid_angle_link_destination(destination : String) -> Bool {
 fn normalize_link_destination(destination : String) -> String {
   let trimmed = trim(destination)
   let decoded = if trimmed.length() >= 2 &&
-    char_at(trimmed, 0) == 60 &&
-    char_at(trimmed, trimmed.length() - 1) == 62 {
+    char_at(trimmed, 0) == '<' &&
+    char_at(trimmed, trimmed.length() - 1) == '>' {
     normalize_attribute_text(trimmed[1:trimmed.length() - 1].to_owned())
   } else {
     normalize_attribute_text(trimmed)
@@ -468,7 +458,7 @@ fn first_uri_encode_index(input : String, encode_brackets~ : Bool) -> Int {
       is_ascii_hex_digit(char_at(input, i + 1)) &&
       is_ascii_hex_digit(char_at(input, i + 2)) {
       i = i + 3
-    } else if encode_brackets && (c == 91 || c == 93) {
+    } else if encode_brackets && (c == '[' || c == ']') {
       return i
     } else if is_uri_safe_char(c) {
       i = i + 1
@@ -482,33 +472,33 @@ fn first_uri_encode_index(input : String, encode_brackets~ : Bool) -> Int {
 ///|
 fn is_uri_safe_char(c : Int) -> Bool {
   is_ascii_alnum(c) ||
-  c == 45 ||
-  c == 46 ||
-  c == 95 ||
-  c == 126 ||
-  c == 33 ||
-  c == 36 ||
-  c == 38 ||
-  c == 39 ||
-  c == 40 ||
-  c == 41 ||
-  c == 42 ||
-  c == 43 ||
-  c == 44 ||
-  c == 59 ||
-  c == 61 ||
-  c == 58 ||
-  c == 47 ||
-  c == 63 ||
-  c == 35 ||
-  c == 91 ||
-  c == 93 ||
-  c == 64
+  c == '-' ||
+  c == '.' ||
+  c == '_' ||
+  c == '~' ||
+  c == '!' ||
+  c == '$' ||
+  c == '&' ||
+  c == '\'' ||
+  c == '(' ||
+  c == ')' ||
+  c == '*' ||
+  c == '+' ||
+  c == ',' ||
+  c == ';' ||
+  c == '=' ||
+  c == ':' ||
+  c == '/' ||
+  c == '?' ||
+  c == '#' ||
+  c == '[' ||
+  c == ']' ||
+  c == '@'
 }
 
 ///|
 fn is_ascii_hex_digit(c : Int) -> Bool {
-  (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102)
+  (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')
 }
 
 ///|
@@ -538,9 +528,9 @@ fn write_percent_byte(out : StringBuilder, byte : Int) -> Unit {
 ///|
 fn hex_digit(value : Int) -> String {
   if value < 10 {
-    ascii_char(48 + value)
+    ascii_char('0' + value)
   } else {
-    ascii_char(55 + value)
+    ascii_char('A' + value - 10)
   }
 }
 
@@ -548,7 +538,7 @@ fn hex_digit(value : Int) -> String {
 fn contains_unescaped_space(text : String) -> Bool {
   let mut i = 0
   while i < text.length() {
-    if char_at(text, i) == 92 &&
+    if char_at(text, i) == '\\' &&
       i + 1 < text.length() &&
       is_ascii_punctuation(char_at(text, i + 1)) {
       i = i + 2
@@ -566,8 +556,8 @@ fn find_link_title_split(spec : String) -> Int {
   for i in 0..<spec.length() {
     if is_space(char_at(spec, i)) && i + 2 < spec.length() {
       let open = char_at(spec, i + 1)
-      let close = if open == 40 { 41 } else { open }
-      if (open == 34 || open == 39 || open == 40) &&
+      let close : Int = if open == '(' { ')' } else { open }
+      if (open == '"' || open == '\'' || open == '(') &&
         char_at(spec, spec.length() - 1) == close &&
         !is_escaped_char(spec, spec.length() - 1) &&
         !contains_unescaped_title_close(
@@ -595,7 +585,7 @@ fn contains_unescaped_title_close(text : String, close : Int) -> Bool {
 fn is_escaped_char(text : String, index : Int) -> Bool {
   let mut count = 0
   let mut i = index - 1
-  while i >= 0 && char_at(text, i) == 92 {
+  while i >= 0 && char_at(text, i) == '\\' {
     count = count + 1
     i = i - 1
   }

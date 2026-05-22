@@ -5,13 +5,19 @@ fn char_at(text : String, index : Int) -> Int {
 
 ///|
 fn trim(input : String) -> String {
-  let mut start = 0
-  let mut end = input.length()
-  while start < end && is_space(char_at(input, start)) {
-    start = start + 1
+  let start = for start = 0; start < input.length(); start = start + 1 {
+    if !is_space(char_at(input, start)) {
+      break start
+    }
+  } nobreak {
+    input.length()
   }
-  while end > start && is_space(char_at(input, end - 1)) {
-    end = end - 1
+  let end = for end = input.length(); end > start; end = end - 1 {
+    if !is_space(char_at(input, end - 1)) {
+      break end
+    }
+  } nobreak {
+    start
   }
   if start == 0 && end == input.length() {
     input
@@ -42,16 +48,18 @@ fn first_non_space_index(input : String) -> Int {
 
 ///|
 fn is_space(c : Int) -> Bool {
-  c == 32 || c == 9 || c == 10 || c == 13
+  c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
 ///|
 fn count_leading_spaces(input : String) -> Int {
-  let mut count = 0
-  while count < input.length() && char_at(input, count) == 32 {
-    count = count + 1
+  for count = 0; count < input.length(); count = count + 1 {
+    if char_at(input, count) != ' ' {
+      break count
+    }
+  } nobreak {
+    input.length()
   }
-  count
 }
 
 ///|

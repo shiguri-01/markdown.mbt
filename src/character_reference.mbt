@@ -95,8 +95,8 @@ fn unicode_scalar_to_string(value : Int) -> String {
 
 ///|
 fn decimal_digit_value(c : Int) -> Int {
-  if c >= 48 && c <= 57 {
-    c - 48
+  if c >= '0' && c <= '9' {
+    c - '0'
   } else {
     -1
   }
@@ -104,12 +104,12 @@ fn decimal_digit_value(c : Int) -> Int {
 
 ///|
 fn hex_digit_value(c : Int) -> Int {
-  if c >= 48 && c <= 57 {
-    c - 48
-  } else if c >= 65 && c <= 70 {
-    c - 55
-  } else if c >= 97 && c <= 102 {
-    c - 87
+  if c >= '0' && c <= '9' {
+    c - '0'
+  } else if c >= 'A' && c <= 'F' {
+    c - 'A' + 10
+  } else if c >= 'a' && c <= 'f' {
+    c - 'a' + 10
   } else {
     -1
   }

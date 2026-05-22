@@ -1,14 +1,10 @@
 ///|
 fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return NoMatch
-  }
+  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
   let ordered = is_ordered_list_marker(line)
   let unordered = is_unordered_list_marker(line)
-  if !ordered && !unordered {
-    return NoMatch
-  }
+  guard ordered || unordered else { NoMatch }
   let ordered_delimiter = if ordered { ordered_list_delimiter(line) } else { 0 }
   let unordered_delimiter = if unordered { char_at(line, 0) } else { 0 }
   let list_attrs = list_attrs(ordered, line)
@@ -364,7 +360,7 @@ fn list_item_content_indent(line : String, ordered : Bool) -> Int {
   let marker_width = if ordered { ordered_marker_end(current) + 1 } else { 1 }
   let mut spaces = 0
   let mut i = marker_width
-  while i < current.length() && char_at(current, i) == 32 && spaces < 5 {
+  while i < current.length() && char_at(current, i) == ' ' && spaces < 5 {
     spaces = spaces + 1
     i = i + 1
   }
@@ -501,9 +497,9 @@ fn is_unordered_list_marker(line : String) -> Bool {
 fn is_unordered_list_marker_at(line : String, start : Int) -> Bool {
   start < line.length() &&
   (
-    char_at(line, start) == 45 ||
-    char_at(line, start) == 42 ||
-    char_at(line, start) == 43
+    char_at(line, start) == '-' ||
+    char_at(line, start) == '*' ||
+    char_at(line, start) == '+'
   ) &&
   (start + 1 >= line.length() || is_space(char_at(line, start + 1)))
 }
@@ -512,7 +508,7 @@ fn is_unordered_list_marker_at(line : String, start : Int) -> Bool {
 fn strip_unordered_marker(line : String) -> String {
   if line.length() <= 1 {
     ""
-  } else if char_at(line, 1) == 9 {
+  } else if char_at(line, 1) == '\t' {
     expand_tabs_from_column(line[2:].to_owned(), 4, 2)
   } else {
     line[2:].to_owned()
@@ -550,7 +546,7 @@ fn is_ordered_list_marker(line : String) -> Bool {
 fn is_ordered_list_marker_at(line : String, start : Int, marker : Int) -> Bool {
   marker > start &&
   marker < line.length() &&
-  (char_at(line, marker) == 46 || char_at(line, marker) == 41) &&
+  (char_at(line, marker) == '.' || char_at(line, marker) == ')') &&
   (marker + 1 >= line.length() || is_space(char_at(line, marker + 1)))
 }
 
@@ -564,7 +560,7 @@ fn ordered_list_start(line : String) -> Int {
 fn ordered_list_start_at(line : String, start : Int, marker : Int) -> Int {
   let mut value = 0
   for i in start..<marker {
-    value = value * 10 + char_at(line, i) - 48
+    value = value * 10 + char_at(line, i) - '0'
   }
   value
 }
@@ -584,7 +580,7 @@ fn strip_ordered_marker(line : String) -> String {
   let marker = ordered_marker_end(line)
   if marker + 2 > line.length() {
     ""
-  } else if marker + 1 < line.length() && char_at(line, marker + 1) == 9 {
+  } else if marker + 1 < line.length() && char_at(line, marker + 1) == '\t' {
     expand_tabs_from_column(
       line[marker + 2:].to_owned(),
       ((marker + 1) / 4 + 1) * 4,
@@ -604,8 +600,8 @@ fn ordered_marker_end(line : String) -> Int {
 fn ordered_marker_end_at(line : String, start : Int) -> Int {
   let mut i = 0
   while start + i < line.length() &&
-        char_at(line, start + i) >= 48 &&
-        char_at(line, start + i) <= 57 {
+        char_at(line, start + i) >= '0' &&
+        char_at(line, start + i) <= '9' {
     i = i + 1
   }
   if i == 0 || i > 9 {

@@ -63,7 +63,7 @@ fn reference_attrs_for_link_text(
   close_text : Int,
   state : ParseState,
 ) -> ResolvedReferenceAttrs? {
-  if close_text + 1 < text.length() && char_at(text, close_text + 1) == 91 {
+  if close_text + 1 < text.length() && char_at(text, close_text + 1) == '[' {
     let close_label = find_link_text_end(text, close_text + 2)
     if close_label > close_text {
       let raw_label = text[close_text + 2:close_label].to_owned()
@@ -94,7 +94,7 @@ fn reference_attrs_for_image_alt(
   alt : String,
   state : ParseState,
 ) -> ResolvedReferenceAttrs? {
-  if close_alt + 1 < text.length() && char_at(text, close_alt + 1) == 91 {
+  if close_alt + 1 < text.length() && char_at(text, close_alt + 1) == '[' {
     let close_label = find_link_text_end(text, close_alt + 2)
     if close_label > close_alt {
       let raw_label = text[close_alt + 2:close_label].to_owned()
@@ -111,7 +111,7 @@ fn reference_attrs_for_image_alt(
       )
     }
   }
-  if close_alt + 1 >= text.length() || char_at(text, close_alt + 1) != 40 {
+  if close_alt + 1 >= text.length() || char_at(text, close_alt + 1) != '(' {
     if is_reference_label_range_blank(text, start + 2, close_alt) {
       return None
     }
@@ -181,7 +181,7 @@ fn reference_attrs(definition : ReferenceDefinition) -> Array[Attr] {
 ///|
 fn may_be_reference_definition_line(line : String) -> Bool {
   let first = first_non_space_index(line)
-  first >= 0 && first <= 3 && char_at(line, first) == 91
+  first >= 0 && first <= 3 && char_at(line, first) == '['
 }
 
 ///|
@@ -264,11 +264,11 @@ fn collect_reference_label(
     let line = lines[line_index]
     while pos < line.length() {
       let c = char_at(line, pos)
-      if c == 92 && pos + 1 < line.length() {
+      if c == '\\' && pos + 1 < line.length() {
         label.write_view(line[pos:pos + 2])
         pos = pos + 2
-      } else if c == 93 {
-        if pos + 1 < line.length() && char_at(line, pos + 1) == 58 {
+      } else if c == ']' {
+        if pos + 1 < line.length() && char_at(line, pos + 1) == ':' {
           return Some({
             label: label.to_string(),
             rest: line[pos + 2:].to_owned(),
@@ -304,7 +304,7 @@ fn parse_reference_destination_from_spec(
   if trimmed == "" {
     return None
   }
-  if char_at(trimmed, 0) == 60 {
+  if char_at(trimmed, 0) == '<' {
     let close = find_angle_link_destination_close(trimmed, 1)
     if close < 0 {
       return None
@@ -322,7 +322,7 @@ fn parse_reference_destination_from_spec(
   let mut depth = 0
   while i < trimmed.length() {
     let c = char_at(trimmed, i)
-    if c == 92 && i + 1 < trimmed.length() {
+    if c == '\\' && i + 1 < trimmed.length() {
       i = i + 2
     } else if is_space(c) && depth == 0 {
       let destination = trimmed[:i].to_owned()
@@ -333,10 +333,10 @@ fn parse_reference_destination_from_spec(
         destination: normalize_link_destination(destination),
         rest: trimmed[i:].to_owned(),
       })
-    } else if c == 40 {
+    } else if c == '(' {
       depth = depth + 1
       i = i + 1
-    } else if c == 41 {
+    } else if c == ')' {
       if depth == 0 {
         return None
       }
@@ -370,8 +370,8 @@ fn parse_reference_title_lines(
     return None
   }
   let open = char_at(trimmed, 0)
-  let close = if open == 40 { 41 } else { open }
-  if open != 34 && open != 39 && open != 40 {
+  let close : Int = if open == '(' { ')' } else { open }
+  if open != '"' && open != '\'' && open != '(' {
     return None
   }
   let content = StringBuilder::new()
@@ -424,7 +424,7 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
   let close = find_link_text_end(trimmed, 1)
   if close <= 1 ||
     close + 1 >= trimmed.length() ||
-    char_at(trimmed, close + 1) != 58 {
+    char_at(trimmed, close + 1) != ':' {
     return None
   }
   if !is_valid_reference_label_range(trimmed, 1, close) {
@@ -458,7 +458,7 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
 fn should_rewrite_shortcut_reference(input : String, close_text : Int) -> Bool {
   if close_text + 1 >= input.length() {
     true
-  } else if char_at(input, close_text + 1) == 40 {
+  } else if char_at(input, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(input, close_text + 2)
     close_dest < 0 ||
     parse_link_attrs(input[close_text + 2:close_dest].to_owned()).length() == 0
@@ -481,9 +481,9 @@ fn is_valid_reference_label_range(
   let mut i = start
   while i < end {
     let c = char_at(text, i)
-    if c == 92 && i + 1 < end && is_ascii_punctuation(char_at(text, i + 1)) {
+    if c == '\\' && i + 1 < end && is_ascii_punctuation(char_at(text, i + 1)) {
       i = i + 2
-    } else if c == 91 || c == 93 {
+    } else if c == '[' || c == ']' {
       return false
     } else {
       i = i + 1
@@ -516,9 +516,9 @@ fn normalize_reference_label(label : String) -> String {
 fn normalize_reference_label_escapes(label : String) -> String {
   let mut first_escape = -1
   for i in 0..<label.length() {
-    if char_at(label, i) == 92 &&
+    if char_at(label, i) == '\\' &&
       i + 1 < label.length() &&
-      (char_at(label, i + 1) == 91 || char_at(label, i + 1) == 93) {
+      (char_at(label, i + 1) == '[' || char_at(label, i + 1) == ']') {
       first_escape = i
       break
     }
@@ -533,9 +533,9 @@ fn normalize_reference_label_escapes(label : String) -> String {
   let mut i = first_escape
   while i < label.length() {
     let c = char_at(label, i)
-    if c == 92 &&
+    if c == '\\' &&
       i + 1 < label.length() &&
-      (char_at(label, i + 1) == 91 || char_at(label, i + 1) == 93) {
+      (char_at(label, i + 1) == '[' || char_at(label, i + 1) == ']') {
       out.write_view(label[i + 1:i + 2])
       i = i + 2
     } else {
@@ -551,7 +551,7 @@ fn ascii_lower(input : String) -> String {
   let mut first_upper = -1
   for i in 0..<input.length() {
     let c = char_at(input, i)
-    if c >= 65 && c <= 90 {
+    if c >= 'A' && c <= 'Z' {
       first_upper = i
       break
     }
@@ -565,8 +565,8 @@ fn ascii_lower(input : String) -> String {
   }
   for i in first_upper..<input.length() {
     let c = char_at(input, i)
-    if c >= 65 && c <= 90 {
-      out.write_string(ascii_char(c + 32))
+    if c >= 'A' && c <= 'Z' {
+      out.write_string(ascii_char(c + ('a' - 'A')))
     } else {
       out.write_view(input[i:i + 1])
     }
@@ -579,7 +579,7 @@ fn commonmark_case_fold(input : String) -> String {
   let mut first_fold = -1
   for i in 0..<input.length() {
     let c = char_at(input, i)
-    if (c >= 65 && c <= 90) || (c >= 128 && unicode_case_fold_char(c) != None) {
+    if (c >= 'A' && c <= 'Z') || (c >= 128 && unicode_case_fold_char(c) != None) {
       first_fold = i
       break
     }
@@ -608,7 +608,7 @@ fn collapse_spaces(input : String) -> String {
   for i in 0..<input.length() {
     let c = char_at(input, i)
     let current_space = is_space(c)
-    if current_space && c != 32 {
+    if current_space && c != ' ' {
       first_space = i
       break
     }

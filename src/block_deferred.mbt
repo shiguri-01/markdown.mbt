@@ -287,19 +287,15 @@ fn deferred_atx_heading_block(
   ctx : BlockContext,
   items : Array[DeferredBlockItem],
 ) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return NoMatch
-  }
+  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
   let mut level = 0
-  while level < line.length() && level < 6 && char_at(line, level) == 35 {
+  while level < line.length() && level < 6 && char_at(line, level) == '#' {
     level = level + 1
   }
-  if level == 0 {
-    return NoMatch
-  }
-  if level < line.length() && !is_space(char_at(line, level)) {
-    return NoMatch
+  guard level > 0 else { NoMatch }
+  guard level >= line.length() || is_space(char_at(line, level)) else {
+    NoMatch
   }
   let content = if level >= line.length() {
     ""
@@ -326,13 +322,9 @@ fn deferred_setext_heading_block(
   ctx : BlockContext,
   items : Array[DeferredBlockItem],
 ) -> BlockRuleResult {
-  if !is_setext_heading_paragraph_start(ctx.lines[ctx.index]) {
-    return NoMatch
-  }
+  guard is_setext_heading_paragraph_start(ctx.lines[ctx.index]) else { NoMatch }
   let underline_index = find_setext_underline(ctx)
-  if underline_index < 0 {
-    return NoMatch
-  }
+  guard underline_index >= 0 else { NoMatch }
   let level = setext_heading_level_line(ctx.lines[underline_index])
   let sink = deferred_block_sink(items)
   sink.emit(
@@ -359,9 +351,7 @@ fn deferred_blockquote_block(
   ctx : BlockContext,
   items : Array[DeferredBlockItem],
 ) -> BlockRuleResult {
-  if !is_blockquote_marker_line(ctx.lines[ctx.index]) {
-    return NoMatch
-  }
+  guard is_blockquote_marker_line(ctx.lines[ctx.index]) else { NoMatch }
   let mut i = ctx.index
   let mut used_lazy = false
   let first = strip_blockquote_marker(ctx.lines[i])
@@ -478,15 +468,11 @@ fn deferred_list_block(
   ctx : BlockContext,
   items : Array[DeferredBlockItem],
 ) -> BlockRuleResult {
-  if count_leading_spaces(ctx.lines[ctx.index]) > 3 {
-    return NoMatch
-  }
+  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
   let ordered = is_ordered_list_marker(line)
   let unordered = is_unordered_list_marker(line)
-  if !ordered && !unordered {
-    return NoMatch
-  }
+  guard ordered || unordered else { NoMatch }
   let ordered_delimiter = if ordered { ordered_list_delimiter(line) } else { 0 }
   let unordered_delimiter = if unordered { char_at(line, 0) } else { 0 }
   let list_attrs = list_attrs(ordered, line)

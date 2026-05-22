@@ -69,7 +69,7 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
 
 ///|
 fn may_contain_reference_definition(input : String) -> Bool {
-  let first_label_opener = find_char(input, 91, 0)
+  let first_label_opener = find_char(input, '[', 0)
   first_label_opener >= 0 &&
   find_substring(input, "]:", first_label_opener + 1) >= 0
 }
@@ -371,7 +371,7 @@ fn split_lines(input : String) -> LineSource {
   if input.length() == 0 {
     return { lines: [], line_starts: [] }
   }
-  if find_char(input, 10, 0) < 0 {
+  if find_char(input, '\n', 0) < 0 {
     return { lines: [expand_leading_tabs(input)], line_starts: [0] }
   }
   let lines : Array[String] = []
@@ -383,7 +383,7 @@ fn split_lines(input : String) -> LineSource {
     offset = offset + line.length() + 1
   }
   if input.length() > 0 &&
-    char_at(input, input.length() - 1) == 10 &&
+    char_at(input, input.length() - 1) == '\n' &&
     lines.length() > 0 &&
     lines[lines.length() - 1] == "" {
     ignore(lines.pop())
@@ -394,42 +394,38 @@ fn split_lines(input : String) -> LineSource {
 
 ///|
 fn expand_leading_tabs(line : String) -> String {
-  let mut first_tab = -1
-  let mut leading_end = 0
-  while leading_end < line.length() {
-    let c = char_at(line, leading_end)
-    if c == 9 {
-      first_tab = leading_end
-      break
-    } else if c == 32 {
-      leading_end = leading_end + 1
+  let first_tab = for i = 0; i < line.length(); i = i + 1 {
+    let c = char_at(line, i)
+    if c == '\t' {
+      break i
+    } else if c == ' ' {
+      ()
     } else {
-      break
+      break -1
     }
+  } nobreak {
+    -1
   }
   if first_tab < 0 {
     return line
   }
   let out = StringBuilder::new(size_hint=line.length() + 4)
-  let mut column = 0
-  let mut i = 0
-  while i < line.length() {
+  for i = 0, column = 0; i < line.length(); {
     let c = char_at(line, i)
-    if c == 32 {
+    if c == ' ' {
       out.write_string(" ")
-      column = column + 1
-      i = i + 1
-    } else if c == 9 {
+      continue i + 1, column + 1
+    } else if c == '\t' {
       let spaces = 4 - column % 4
       for _ in 0..<spaces {
         out.write_string(" ")
       }
-      column = column + spaces
-      i = i + 1
+      continue i + 1, column + spaces
     } else {
       out.write_view(line[i:])
-      return out.to_string()
+      break out.to_string()
     }
+  } nobreak {
+    out.to_string()
   }
-  out.to_string()
 }

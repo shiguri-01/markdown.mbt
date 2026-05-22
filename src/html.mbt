@@ -66,7 +66,7 @@ fn write_html_event(buffer : Html, event : Event) -> Unit {
       buffer.out.write_string("<br />\n")
     }
     RawHtml(raw) => {
-      flush_pending_item_open(buffer, contains_char(raw, 10))
+      flush_pending_item_open(buffer, contains_char(raw, '\n'))
       buffer.out.write_string(raw)
     }
   }
@@ -373,7 +373,7 @@ fn escape_html(input : String) -> String {
   let mut first = -1
   for i in 0..<input.length() {
     let c = char_at(input, i)
-    if c == 38 || c == 60 || c == 62 || c == 34 {
+    if c == '&' || c == '<' || c == '>' || c == '"' {
       first = i
       break
     }
@@ -386,28 +386,28 @@ fn escape_html(input : String) -> String {
   let mut i = first
   while i < input.length() {
     match char_at(input, i) {
-      38 => {
+      '&' => {
         if start < i {
           out.write_view(input[start:i])
         }
         out.write_string("&amp;")
         start = i + 1
       }
-      60 => {
+      '<' => {
         if start < i {
           out.write_view(input[start:i])
         }
         out.write_string("&lt;")
         start = i + 1
       }
-      62 => {
+      '>' => {
         if start < i {
           out.write_view(input[start:i])
         }
         out.write_string("&gt;")
         start = i + 1
       }
-      34 => {
+      '"' => {
         if start < i {
           out.write_view(input[start:i])
         }

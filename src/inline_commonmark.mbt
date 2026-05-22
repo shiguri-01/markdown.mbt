@@ -34,14 +34,14 @@ fn parse_commonmark_inline_range(
 
 ///|
 fn is_commonmark_inline_special(text : String, index : Int, end : Int) -> Bool {
-  if char_at(text, index) != 32 {
+  if char_at(text, index) != ' ' {
     return is_inline_special(text, index)
   }
   let mut i = index
-  while i < end && char_at(text, i) == 32 {
+  while i < end && char_at(text, i) == ' ' {
     i = i + 1
   }
-  i < end && char_at(text, i) == 10
+  i < end && char_at(text, i) == '\n'
 }
 
 ///|
@@ -55,28 +55,28 @@ fn commonmark_inline_span(
   allow_links : Bool,
 ) -> Int {
   let c = char_at(text, start)
-  if c == 96 {
+  if c == '`' {
     return emit_commonmark_code_span(text, start, end, sink)
   }
-  if c == 60 {
+  if c == '<' {
     let raw_or_auto = emit_commonmark_angle_span(text, start, end, sink)
     if raw_or_auto > 0 {
       return raw_or_auto
     }
   }
-  if c == 33 && start + 1 < end && char_at(text, start + 1) == 91 {
+  if c == '!' && start + 1 < end && char_at(text, start + 1) == '[' {
     let image = emit_commonmark_image(text, start, end, registry, sink, state)
     if image > 0 {
       return image
     }
   }
-  if allow_links && c == 91 {
+  if allow_links && c == '[' {
     let link = emit_commonmark_link(text, start, end, registry, sink, state)
     if link > 0 {
       return link
     }
   }
-  if c == 42 || c == 95 {
+  if c == '*' || c == '_' {
     let emphasis = emit_commonmark_emphasis(
       text, start, end, registry, sink, state, allow_links,
     )
@@ -84,22 +84,22 @@ fn commonmark_inline_span(
       return emphasis
     }
   }
-  if c == 92 && start + 1 < end && char_at(text, start + 1) == 10 {
+  if c == '\\' && start + 1 < end && char_at(text, start + 1) == '\n' {
     sink.emit(HardBreak)
     return 2
   }
-  if c == 92 &&
+  if c == '\\' &&
     start + 1 < end &&
     is_ascii_punctuation(char_at(text, start + 1)) {
     sink.emit(Text(text[start + 1:start + 2].to_owned()))
     return 2
   }
-  if c == 32 {
+  if c == ' ' {
     let mut space_end = start
-    while space_end < end && char_at(text, space_end) == 32 {
+    while space_end < end && char_at(text, space_end) == ' ' {
       space_end = space_end + 1
     }
-    if space_end < end && char_at(text, space_end) == 10 {
+    if space_end < end && char_at(text, space_end) == '\n' {
       if space_end - start >= 2 {
         sink.emit(HardBreak)
         return space_end - start + 1
@@ -107,11 +107,11 @@ fn commonmark_inline_span(
       return space_end - start
     }
   }
-  if c == 10 {
+  if c == '\n' {
     sink.emit(SoftBreak)
     return 1
   }
-  if c == 38 {
+  if c == '&' {
     let entity = emit_commonmark_entity(text, start, end, sink)
     if entity > 0 {
       return entity
@@ -127,10 +127,10 @@ fn emit_commonmark_code_span(
   end : Int,
   sink : Sink,
 ) -> Int {
-  if start > 0 && char_at(text, start - 1) == 96 {
+  if start > 0 && char_at(text, start - 1) == '`' {
     return 0
   }
-  let width = delimiter_run_len(text, start, 96)
+  let width = delimiter_run_len(text, start, '`')
   let close = find_code_span_end_before(text, start + width, width, end)
   if close < 0 {
     return 0
@@ -150,8 +150,8 @@ fn find_code_span_end_before(
 ) -> Int {
   let mut i = start
   while i < end {
-    if char_at(text, i) == 96 {
-      let run = delimiter_run_len(text, i, 96)
+    if char_at(text, i) == '`' {
+      let run = delimiter_run_len(text, i, '`')
       if run == width && i + width <= end {
         return i
       }
@@ -189,7 +189,7 @@ fn emit_commonmark_angle_span(
       }
     None => ()
   }
-  let close = find_char(text, 62, start + 1)
+  let close = find_char(text, '>', start + 1)
   if close < 0 || close >= end {
     return 0
   }
@@ -220,7 +220,7 @@ fn emit_commonmark_entity(
   end : Int,
   sink : Sink,
 ) -> Int {
-  let close = find_char(text, 59, start + 1)
+  let close = find_char(text, ';', start + 1)
   if close < 0 || close >= end || close - start > 32 {
     return 0
   }
@@ -251,7 +251,7 @@ fn emit_commonmark_link(
     link_text_has_unclosed_priority_span(text, start + 1, close_text) {
     return 0
   }
-  if close_text + 1 < end && char_at(text, close_text + 1) == 40 {
+  if close_text + 1 < end && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
     if close_dest > close_text && close_dest < end {
       let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
@@ -322,7 +322,7 @@ fn emit_commonmark_image(
     registry,
     state,
   )
-  if close_alt + 1 < end && char_at(text, close_alt + 1) == 40 {
+  if close_alt + 1 < end && char_at(text, close_alt + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_alt + 2)
     if close_dest > close_alt && close_dest < end {
       let attrs = parse_link_attrs(text[close_alt + 2:close_dest].to_owned())
@@ -728,7 +728,7 @@ fn other_emphasis_span_end_for_inner_scan(
   end : Int,
 ) -> Int? {
   let other = char_at(text, start)
-  if (other != 42 && other != 95) || other == marker {
+  if (other != '*' && other != '_') || other == marker {
     return None
   }
   let run = delimiter_run_len(text, start, other)
@@ -1080,13 +1080,13 @@ fn has_delimiter_run_between(
 ///|
 fn priority_inline_span_end(text : String, start : Int, end : Int) -> Int? {
   let c = char_at(text, start)
-  if c == 96 {
-    let width = delimiter_run_len(text, start, 96)
+  if c == '`' {
+    let width = delimiter_run_len(text, start, '`')
     let close = find_code_span_end_before(text, start + width, width, end)
     if close >= 0 {
       return Some(close + width)
     }
-  } else if c == 60 {
+  } else if c == '<' {
     match raw_html_inline_end(text, start) {
       Some(close) => if close <= end { return Some(close) }
       None => ()
@@ -1095,7 +1095,7 @@ fn priority_inline_span_end(text : String, start : Int, end : Int) -> Int? {
       Some(close) => if close <= end { return Some(close) }
       None => ()
     }
-    let close = find_char(text, 62, start + 1)
+    let close = find_char(text, '>', start + 1)
     if close >= 0 && close < end {
       let candidate = text[start + 1:close].to_owned()
       if is_uri_autolink(candidate) || is_email_autolink(candidate) {
