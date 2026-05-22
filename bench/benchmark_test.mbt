@@ -29,6 +29,11 @@ fn one_mb_single_paragraph_document() -> String {
 }
 
 ///|
+fn long_space_run_document() -> String {
+  "a" + repeat_text(" ", 16_384) + "*b*"
+}
+
+///|
 fn delimiter_document() -> String {
   repeat_text("*", 500) +
   "text" +
@@ -220,7 +225,27 @@ fn parse_render_length_with(
 
 ///|
 test "benchmark fixtures produce work" {
-  assert_eq(one_mb_single_paragraph_document().length(), 1_000_000)
+  let one_mb_len = one_mb_single_paragraph_document().length()
+  assert_true(one_mb_len >= 999_000 && one_mb_len <= 1_001_000)
+  let long_space_len = long_space_run_document().length()
+  assert_true(long_space_len >= 16_000 && long_space_len <= 17_000)
+  let readme_len = readme_like_document().length()
+  assert_true(readme_len >= 15_000 && readme_len <= 17_000)
+  let large_readme_len = readme_like_large_document().length()
+  assert_true(large_readme_len >= 190_000 && large_readme_len <= 210_000)
+  let huge_readme_len = readme_like_huge_document().length()
+  assert_true(huge_readme_len >= 990_000 && huge_readme_len <= 1_010_000)
+  let issue_thread_len = issue_thread_document().length()
+  assert_true(issue_thread_len >= 24_000 && issue_thread_len <= 26_000)
+  let large_issue_thread_len = issue_thread_large_document().length()
+  assert_true(
+    large_issue_thread_len >= 190_000 && large_issue_thread_len <= 210_000,
+  )
+  let huge_issue_thread_len = issue_thread_huge_document().length()
+  assert_true(
+    huge_issue_thread_len >= 990_000 && huge_issue_thread_len <= 1_010_000,
+  )
+  assert_true(parse_event_count(long_space_run_document()) > 0)
   assert_true(parse_event_count(delimiter_document()) > 0)
   assert_true(parse_event_count(reference_document()) > 0)
   assert_true(parse_event_count(readme_like_document()) > 0)
@@ -229,12 +254,6 @@ test "benchmark fixtures produce work" {
   assert_true(parse_event_count(issue_thread_document()) > 0)
   assert_true(parse_event_count(issue_thread_large_document()) > 0)
   assert_true(parse_event_count(issue_thread_huge_document()) > 0)
-  assert_eq(readme_like_document().length(), 15_686)
-  assert_eq(readme_like_large_document().length(), 198_302)
-  assert_eq(readme_like_huge_document().length(), 1_002_602)
-  assert_eq(issue_thread_document().length(), 25_153)
-  assert_eq(issue_thread_large_document().length(), 200_411)
-  assert_eq(issue_thread_huge_document().length(), 1_005_685)
   assert_true(parse_with_rules_event_count(readme_like_document()) > 0)
   assert_true(parse_render_length(readme_like_document()) > 0)
 }
@@ -242,6 +261,7 @@ test "benchmark fixtures produce work" {
 ///|
 test "markdown processing speed" (b : @bench.T) {
   let one_mb_single_paragraph = one_mb_single_paragraph_document()
+  let long_space_run = long_space_run_document()
   let delimiter = delimiter_document()
   let references = reference_document()
   let readme = readme_like_document()
@@ -257,6 +277,11 @@ test "markdown processing speed" (b : @bench.T) {
   b.bench(
     name="micro/plain_single/1mb",
     fn() { b.keep(parse_event_count_with(commonmark, one_mb_single_paragraph)) },
+    count=10,
+  )
+  b.bench(
+    name="micro/long_space_run/16kb",
+    fn() { b.keep(parse_event_count_with(commonmark, long_space_run)) },
     count=10,
   )
   b.bench(

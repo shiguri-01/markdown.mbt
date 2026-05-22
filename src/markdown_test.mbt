@@ -38,6 +38,29 @@ test "commonmark inline text keeps ordinary spaces together" {
 }
 
 ///|
+test "commonmark inline text keeps long ordinary space runs together" {
+  let spaces = StringBuilder::new(size_hint=128)
+  for _ in 0..<128 {
+    spaces.write_string(" ")
+  }
+  let events = @markdown.Events()
+  @markdown.Processor().parse(
+    "hello" + spaces.to_string() + "*world*",
+    events.sink(),
+  )
+  let collected = events.collect()
+  assert_eq(collected.length(), 6)
+  match collected[1] {
+    Text(text) => assert_eq(text, "hello" + spaces.to_string())
+    _ => abort("expected leading text")
+  }
+  match collected[3] {
+    Text(text) => assert_eq(text, "world")
+    _ => abort("expected emphasis text")
+  }
+}
+
+///|
 test "commonmark list item ast has no renderer-only block attribute" {
   match @markdown.ast("- one\n\n- two\n") {
     Ok(root) => {
