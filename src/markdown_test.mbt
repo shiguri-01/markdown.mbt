@@ -266,6 +266,17 @@ test "duplicate reference labels keep first definition" {
 }
 
 ///|
+test "normalized duplicate reference labels keep first definition" {
+  assert_eq(
+    render_html(
+      @markdown.commonmark(),
+      "[foo bar]\n\n[Foo\tBar]: /first\n[foo bar]: /second\n",
+    ),
+    "<p><a href=\"/first\">foo bar</a></p>\n",
+  )
+}
+
+///|
 test "consumption wrappers expose positive values" {
   assert_eq(@markdown.ConsumedChars(2).to_int(), 2)
   assert_eq(@markdown.ConsumedLines(3).to_int(), 3)

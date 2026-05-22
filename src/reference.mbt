@@ -6,13 +6,41 @@ priv struct ReferenceDefinition {
 }
 
 ///|
+priv struct ReferenceIndex {
+  by_label : @hashmap.HashMap[String, ReferenceDefinition]
+}
+
+///|
+fn ReferenceIndex::ReferenceIndex() -> ReferenceIndex {
+  { by_label: @hashmap.HashMap([]) }
+}
+
+///|
+fn ReferenceIndex::add_if_absent(
+  self : ReferenceIndex,
+  definition : ReferenceDefinition,
+) -> Unit {
+  if !self.by_label.contains(definition.label) {
+    self.by_label.set(definition.label, definition)
+  }
+}
+
+///|
+fn ReferenceIndex::find(
+  self : ReferenceIndex,
+  normalized_label : String,
+) -> ReferenceDefinition? {
+  self.by_label.get(normalized_label)
+}
+
+///|
 priv struct ParseState {
-  references : Array[ReferenceDefinition]
+  references : ReferenceIndex
 }
 
 ///|
 fn ParseState::ParseState() -> ParseState {
-  { references: [] }
+  { references: ReferenceIndex() }
 }
 
 ///|
@@ -20,9 +48,7 @@ fn ParseState::add_reference(
   self : ParseState,
   definition : ReferenceDefinition,
 ) -> Unit {
-  if find_reference(self.references, definition.label) is None {
-    self.references.push(definition)
-  }
+  self.references.add_if_absent(definition)
 }
 
 ///|
@@ -30,7 +56,7 @@ fn ParseState::find_reference(
   self : ParseState,
   label : String,
 ) -> ReferenceDefinition? {
-  find_reference(self.references, normalize_reference_label(label))
+  self.references.find(normalize_reference_label(label))
 }
 
 ///|
@@ -490,19 +516,6 @@ fn is_valid_reference_label_range(
     }
   }
   true
-}
-
-///|
-fn find_reference(
-  refs : Array[ReferenceDefinition],
-  label : String,
-) -> ReferenceDefinition? {
-  for definition in refs {
-    if definition.label == label {
-      return Some(definition)
-    }
-  }
-  None
 }
 
 ///|
