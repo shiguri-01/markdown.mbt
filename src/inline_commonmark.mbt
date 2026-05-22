@@ -11,22 +11,24 @@ fn parse_commonmark_inline_range(
   let mut i = start
   let mut text_start = start
   while i < end {
-    if char_at(text, i) == ' ' {
+    let c = char_at(text, i)
+    if c == ' ' {
       let space_end = commonmark_space_run_end(text, i, end)
       if space_end >= end || char_at(text, space_end) != '\n' {
         i = space_end
         continue
       }
+    } else if !is_commonmark_non_space_special(c) {
+      i = commonmark_plain_text_end(text, i + 1, end)
+      continue
     }
-    let consumed = if is_commonmark_inline_special(text, i, end) {
-      if text_start < i {
-        sink.emit(Text(text[text_start:i].to_owned()))
-        text_start = i
-      }
-      commonmark_inline_span(text, i, end, registry, sink, state, allow_links)
-    } else {
-      0
+    if text_start < i {
+      sink.emit(Text(text[text_start:i].to_owned()))
+      text_start = i
     }
+    let consumed = commonmark_inline_span(
+      text, i, end, registry, sink, state, allow_links,
+    )
     if consumed > 0 {
       i = i + consumed
       text_start = i
@@ -40,6 +42,26 @@ fn parse_commonmark_inline_range(
 }
 
 ///|
+fn commonmark_plain_text_end(text : String, start : Int, end : Int) -> Int {
+  let mut i = start
+  while i < end {
+    let c = char_at(text, i)
+    if c == ' ' {
+      let space_end = commonmark_space_run_end(text, i, end)
+      if space_end < end && char_at(text, space_end) == '\n' {
+        return i
+      }
+      i = space_end
+    } else if is_commonmark_non_space_special(c) {
+      return i
+    } else {
+      i = i + 1
+    }
+  }
+  end
+}
+
+///|
 fn commonmark_space_run_end(text : String, start : Int, end : Int) -> Int {
   let mut i = start
   while i < end && char_at(text, i) == ' ' {
@@ -49,12 +71,16 @@ fn commonmark_space_run_end(text : String, start : Int, end : Int) -> Int {
 }
 
 ///|
-fn is_commonmark_inline_special(text : String, index : Int, end : Int) -> Bool {
-  if char_at(text, index) != ' ' {
-    return is_inline_special(text, index)
-  }
-  let i = commonmark_space_run_end(text, index, end)
-  i < end && char_at(text, i) == '\n'
+fn is_commonmark_non_space_special(c : Int) -> Bool {
+  c == '\n' ||
+  c == '&' ||
+  c == '!' ||
+  c == '*' ||
+  c == '<' ||
+  c == '[' ||
+  c == '\\' ||
+  c == '_' ||
+  c == '`'
 }
 
 ///|
