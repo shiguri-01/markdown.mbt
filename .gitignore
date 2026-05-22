@@ -1,11 +1,11 @@
-.DS_Store
+.direnv/
+
+# MoonBit
 _build/
 .mooncakes/
 .moonagent/
-.direnv/
-.repos/
-**/.git/
-scripts/commonmark-conformance/commonmark_spec_json.mbt
+
+# Generated files
 conformance/commonmark_spec_json.mbt
 bench/compare/.generated/
 
