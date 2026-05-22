@@ -1,6 +1,7 @@
 ///|
 priv enum DeferredBlockItem {
   DeferredEvent(Event)
+  DeferredFragment(EventFragment)
   DeferredInline(String)
 }
 
@@ -41,13 +42,12 @@ fn parse_commonmark_deferred_range_into(
 ) -> Unit {
   let mut i = start
   let stop = if end > lines.length() { lines.length() } else { end }
-  let sink = deferred_block_sink(items)
   while i < stop {
     let ctx = deferred_block_context(lines, line_starts, i, registry, state)
     let mut consumed = 0
     match cm_blank_block(ctx) {
       Match(lines, fragment) => {
-        emit_fragment(sink, fragment)
+        append_deferred_fragment(items, fragment)
         consumed = lines.to_int()
       }
       NoMatch => ()
@@ -55,7 +55,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match cm_fenced_code_block(ctx) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -64,7 +64,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match cm_indented_code_block(ctx) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -73,7 +73,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match cm_thematic_break_block(ctx) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -82,7 +82,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match deferred_setext_heading_block(ctx, items) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -91,7 +91,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match cm_html_block(ctx) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -100,7 +100,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match deferred_atx_heading_block(ctx, items) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -109,7 +109,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match deferred_blockquote_block(ctx, items) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -118,7 +118,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match deferred_list_block(ctx, items) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -127,7 +127,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match cm_reference_definition_block(ctx) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => ()
@@ -136,7 +136,7 @@ fn parse_commonmark_deferred_range_into(
     if consumed == 0 {
       match deferred_paragraph_block(ctx, items) {
         Match(lines, fragment) => {
-          emit_fragment(sink, fragment)
+          append_deferred_fragment(items, fragment)
           consumed = lines.to_int()
         }
         NoMatch => consumed = 1
@@ -208,6 +208,18 @@ fn append_deferred_event(
 }
 
 ///|
+fn append_deferred_fragment(
+  items : Array[DeferredBlockItem],
+  fragment : EventFragment,
+) -> Unit {
+  if fragment.events.length() == 1 {
+    items.push(DeferredEvent(fragment.events[0]))
+  } else if fragment.events.length() != 0 {
+    items.push(DeferredFragment(fragment))
+  }
+}
+
+///|
 fn append_deferred_inline(
   items : Array[DeferredBlockItem],
   text : String,
@@ -239,11 +251,19 @@ fn replay_deferred_block_items(
   for item in items {
     match item {
       DeferredEvent(event) => sink.emit(event)
+      DeferredFragment(fragment) => emit_deferred_fragment(fragment, sink)
       DeferredInline(text) =>
         parse_inlines_with_rules(
           text, registry, inline_rules, inline_mode, sink, state,
         )
     }
+  }
+}
+
+///|
+fn emit_deferred_fragment(fragment : EventFragment, sink : Sink) -> Unit {
+  for event in fragment.events {
+    sink.emit(event)
   }
 }
 
