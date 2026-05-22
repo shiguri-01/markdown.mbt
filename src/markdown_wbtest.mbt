@@ -13,6 +13,22 @@ test "source_range helper preserves validated offsets" {
 }
 
 ///|
+test "split_lines preserves offsets and detects reference candidates" {
+  let source = split_lines("one\n\t two\n")
+  assert_eq(source.lines.length(), 2)
+  assert_eq(source.lines[0], "one")
+  assert_eq(source.lines[1], "     two")
+  assert_eq(source.line_starts.length(), 2)
+  assert_eq(source.line_starts[0], 0)
+  assert_eq(source.line_starts[1], 4)
+  assert_eq(source.may_contain_reference, false)
+
+  let multiline = split_lines("[foo\nbar]: /url\n")
+  assert_eq(multiline.lines.length(), 2)
+  assert_eq(multiline.may_contain_reference, true)
+}
+
+///|
 test "character references use generated HTML5 and Unicode data" {
   assert_true(decode_entity("CounterClockwiseContourIntegral") is Some("∳"))
   assert_true(decode_entity("NotNestedGreaterGreater") is Some("⪢̸"))
