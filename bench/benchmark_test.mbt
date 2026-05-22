@@ -218,7 +218,7 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let html = @markdown.Html()
+  let html = @markdown.Html(size_hint=input.length())
   processor.parse(input, html.sink())
   html.to_string().length()
 }
