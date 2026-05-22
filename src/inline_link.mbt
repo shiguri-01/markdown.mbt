@@ -11,11 +11,7 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
   guard !link_text_has_unclosed_priority_span(text, i + 1, close_text) else {
     NoMatch
   }
-  if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
-    let close_dest = find_link_destination_end(text, close_text + 2)
-    guard close_dest >= 0 else { NoMatch }
-    let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-    guard attrs.length() > 0 else { NoMatch }
+  if direct_link_attrs(text, close_text) is Some((close_dest, attrs)) {
     link_inline_match(
       text,
       i,
@@ -25,21 +21,32 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
       ctx.registry,
       ctx.state,
     )
+  } else if reference_attrs_for_link_text(text, i, close_text, ctx.state)
+    is Some(resolved) {
+    link_inline_match(
+      text,
+      i,
+      close_text,
+      resolved.end,
+      resolved.attrs,
+      ctx.registry,
+      ctx.state,
+    )
   } else {
-    match reference_attrs_for_link_text(text, i, close_text, ctx.state) {
-      Some(resolved) =>
-        link_inline_match(
-          text,
-          i,
-          close_text,
-          resolved.end,
-          resolved.attrs,
-          ctx.registry,
-          ctx.state,
-        )
-      None => NoMatch
-    }
+    NoMatch
   }
+}
+
+///|
+fn direct_link_attrs(text : String, close_text : Int) -> (Int, Array[Attr])? {
+  guard close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' else {
+    None
+  }
+  let close_dest = find_link_destination_end(text, close_text + 2)
+  guard close_dest >= 0 else { None }
+  let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
+  guard attrs.length() > 0 else { None }
+  Some((close_dest, attrs))
 }
 
 ///|
@@ -79,27 +86,22 @@ fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
     ctx.registry,
     ctx.state,
   )
-  if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
-    let close_dest = find_link_destination_end(text, close_text + 2)
-    guard close_dest >= 0 else { NoMatch }
-    let attrs = parse_link_attrs(text[close_text + 2:close_dest].to_owned())
-    guard attrs.length() > 0 else { NoMatch }
+  if direct_link_attrs(text, close_text) is Some((close_dest, attrs)) {
     attrs.push({ name: attr_name("alt"), value: alt })
     inline_match(
       close_dest - i + 1,
       EventFragment::element(Element::with_attrs(tag_name("cm:image"), attrs)),
     )
+  } else if reference_attrs_for_image_alt(text, i, close_text, alt, ctx.state)
+    is Some(resolved) {
+    inline_match(
+      resolved.end - i,
+      EventFragment::element(
+        Element::with_attrs(tag_name("cm:image"), resolved.attrs),
+      ),
+    )
   } else {
-    match reference_attrs_for_image_alt(text, i, close_text, alt, ctx.state) {
-      Some(resolved) =>
-        inline_match(
-          resolved.end - i,
-          EventFragment::element(
-            Element::with_attrs(tag_name("cm:image"), resolved.attrs),
-          ),
-        )
-      None => NoMatch
-    }
+    NoMatch
   }
 }
 
@@ -301,21 +303,23 @@ fn link_text_has_unclosed_priority_span(
       }
       i = close + width
     } else if c == '<' {
-      match raw_html_inline_end(text, i) {
-        Some(close) => if close > end { return true } else { i = close }
-        None => {
-          let close = find_char(text, '>', i + 1)
-          if close >= end && looks_like_raw_html_start_at(text, i) {
+      if raw_html_inline_end(text, i) is Some(close) {
+        if close > end {
+          return true
+        }
+        i = close
+      } else {
+        let close = find_char(text, '>', i + 1)
+        if close >= end {
+          if looks_like_raw_html_start_at(text, i) {
             return true
           }
-          if close >= end {
-            let candidate = text[i + 1:close].to_owned()
-            if is_uri_autolink(candidate) || is_email_autolink(candidate) {
-              return true
-            }
+          let candidate = text[i + 1:close].to_owned()
+          if is_uri_autolink(candidate) || is_email_autolink(candidate) {
+            return true
           }
-          i = i + 1
         }
+        i = i + 1
       }
     } else {
       i = i + 1
@@ -385,10 +389,11 @@ fn contains_unescaped_angle_bracket(text : String) -> Bool {
   for i in 0..<text.length() {
     let c = char_at(text, i)
     if (c == '<' || c == '>') && !is_escaped_char(text, i) {
-      return true
+      break true
     }
+  } nobreak {
+    false
   }
-  false
 }
 
 ///|
@@ -396,10 +401,11 @@ fn is_valid_angle_link_destination(destination : String) -> Bool {
   for i in 0..<destination.length() {
     let c = char_at(destination, i)
     if c == '<' || c == '>' || c == '\n' || c == '\r' {
-      return false
+      break false
     }
+  } nobreak {
+    true
   }
-  true
 }
 
 ///|
@@ -575,10 +581,11 @@ fn find_link_title_split(spec : String) -> Int {
 fn contains_unescaped_title_close(text : String, close : Int) -> Bool {
   for i in 0..<text.length() {
     if char_at(text, i) == close && !is_escaped_char(text, i) {
-      return true
+      break true
     }
+  } nobreak {
+    false
   }
-  false
 }
 
 ///|

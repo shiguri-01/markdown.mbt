@@ -166,14 +166,10 @@ fn emit_commonmark_code_span(
   end : Int,
   sink : Sink,
 ) -> Int {
-  if start > 0 && char_at(text, start - 1) == '`' {
-    return 0
-  }
+  guard start == 0 || char_at(text, start - 1) != '`' else { 0 }
   let width = delimiter_run_len(text, start, '`')
   let close = find_code_span_end_before(text, start + width, width, end)
-  if close < 0 {
-    return 0
-  }
+  guard close >= 0 else { 0 }
   sink.emit(Enter(Element(tag_name("cm:code_span"))))
   sink.emit(Text(normalize_code_span(text[start + width:close].to_owned())))
   sink.emit(Exit(tag_name("cm:code_span")))
@@ -209,37 +205,22 @@ fn emit_commonmark_angle_span(
   end : Int,
   sink : Sink,
 ) -> Int {
-  match raw_html_inline_end(text, start) {
-    Some(close) =>
-      if close <= end {
-        sink.emit(RawHtml(text[start:close].to_owned()))
-        return close - start
-      }
-    None => ()
+  if raw_html_inline_end(text, start) is Some(close) && close <= end {
+    sink.emit(RawHtml(text[start:close].to_owned()))
+    return close - start
   }
-  match raw_html_tag_end(text, start) {
-    Some(close) =>
-      if close <= end {
-        let raw = text[start:close].to_owned()
-        if looks_like_raw_html(raw) {
-          sink.emit(RawHtml(raw))
-          return close - start
-        }
-      }
-    None => ()
+  if raw_html_tag_end(text, start) is Some(close) && close <= end {
+    let raw = text[start:close].to_owned()
+    if looks_like_raw_html(raw) {
+      sink.emit(RawHtml(raw))
+      return close - start
+    }
   }
   let close = find_char(text, '>', start + 1)
-  if close < 0 || close >= end {
-    return 0
-  }
+  guard close >= 0 && close < end else { 0 }
   let destination = text[start + 1:close].to_owned()
-  let href = if is_uri_autolink(destination) {
-    percent_encode_autolink_uri(destination)
-  } else if is_email_autolink(destination) {
-    "mailto:" + destination
-  } else {
-    return 0
-  }
+  let href = autolink_href(destination)
+  guard href != "" else { 0 }
   sink.emit(
     Enter(
       Element::with_attrs(tag_name("cm:link"), [
@@ -260,9 +241,7 @@ fn emit_commonmark_entity(
   sink : Sink,
 ) -> Int {
   let close = find_char(text, ';', start + 1)
-  if close < 0 || close >= end || close - start > 32 {
-    return 0
-  }
+  guard close >= 0 && close < end && close - start <= 32 else { 0 }
   let name = text[start + 1:close].to_owned()
   match decode_entity(name) {
     Some(decoded) => {
@@ -283,13 +262,10 @@ fn emit_commonmark_link(
   state : ParseState,
 ) -> Int {
   let close_text = find_link_text_end(text, start + 1)
-  if close_text < 0 || close_text >= end {
-    return 0
-  }
-  if link_text_range_may_contain_link(text, start + 1, close_text) ||
-    link_text_has_unclosed_priority_span(text, start + 1, close_text) {
-    return 0
-  }
+  guard close_text >= 0 && close_text < end else { 0 }
+  let blocked = link_text_range_may_contain_link(text, start + 1, close_text) ||
+    link_text_has_unclosed_priority_span(text, start + 1, close_text)
+  guard !blocked else { 0 }
   if close_text + 1 < end && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
     if close_dest > close_text && close_dest < end {
@@ -308,23 +284,21 @@ fn emit_commonmark_link(
       }
     }
   }
-  match reference_attrs_for_link_text(text, start, close_text, state) {
-    Some(resolved) =>
-      if resolved.end <= end {
-        emit_link_element(
-          text,
-          start + 1,
-          close_text,
-          resolved.attrs,
-          registry,
-          sink,
-          state,
-        )
-        resolved.end - start
-      } else {
-        0
-      }
-    None => 0
+  if reference_attrs_for_link_text(text, start, close_text, state)
+    is Some(resolved) &&
+    resolved.end <= end {
+    emit_link_element(
+      text,
+      start + 1,
+      close_text,
+      resolved.attrs,
+      registry,
+      sink,
+      state,
+    )
+    resolved.end - start
+  } else {
+    0
   }
 }
 
@@ -353,9 +327,7 @@ fn emit_commonmark_image(
   state : ParseState,
 ) -> Int {
   let close_alt = find_link_text_end(text, start + 2)
-  if close_alt < 0 || close_alt >= end {
-    return 0
-  }
+  guard close_alt >= 0 && close_alt < end else { 0 }
   let alt = image_alt_text(
     text[start + 2:close_alt].to_owned(),
     registry,
@@ -373,18 +345,14 @@ fn emit_commonmark_image(
       }
     }
   }
-  match reference_attrs_for_image_alt(text, start, close_alt, alt, state) {
-    Some(resolved) =>
-      if resolved.end <= end {
-        sink.emit(
-          Enter(Element::with_attrs(tag_name("cm:image"), resolved.attrs)),
-        )
-        sink.emit(Exit(tag_name("cm:image")))
-        resolved.end - start
-      } else {
-        0
-      }
-    None => 0
+  if reference_attrs_for_image_alt(text, start, close_alt, alt, state)
+    is Some(resolved) &&
+    resolved.end <= end {
+    sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), resolved.attrs)))
+    sink.emit(Exit(tag_name("cm:image")))
+    resolved.end - start
+  } else {
+    0
   }
 }
 
@@ -506,19 +474,14 @@ fn inner_opener_of_width_between(
 ) -> Bool {
   let mut i = start
   while i < close {
-    match priority_inline_span_end(text, i, close) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, close) is Some(next) {
+      i = next
+      continue
     }
-    match other_emphasis_span_end_for_inner_scan(text, marker, i, close) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if other_emphasis_span_end_for_inner_scan(text, marker, i, close)
+      is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -730,19 +693,14 @@ fn exact_inner_opener_can_use_close(
 ) -> Bool {
   let mut i = start
   while i < close {
-    match priority_inline_span_end(text, i, close) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, close) is Some(next) {
+      i = next
+      continue
     }
-    match other_emphasis_span_end_for_inner_scan(text, marker, i, close) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if other_emphasis_span_end_for_inner_scan(text, marker, i, close)
+      is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -846,12 +804,9 @@ fn find_commonmark_exact_run_close(
 ) -> Int {
   let mut i = start
   while i + width <= end {
-    match priority_inline_span_end(text, i, end) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, end) is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -878,12 +833,9 @@ fn find_commonmark_emphasis_close(
 ) -> Int {
   let mut i = start
   while i + width <= end {
-    match priority_inline_span_end(text, i, end) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, end) is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -1042,12 +994,9 @@ fn find_later_compound_emphasis_close(
 ) -> Int {
   let mut i = start
   while i < end {
-    match priority_inline_span_end(text, i, end) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, end) is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -1073,12 +1022,9 @@ fn find_commonmark_relaxed_single_close(
 ) -> Int {
   let mut i = start
   while i < end {
-    match priority_inline_span_end(text, i, end) {
-      Some(next) => {
-        i = next
-        continue
-      }
-      None => ()
+    if priority_inline_span_end(text, i, end) is Some(next) {
+      i = next
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -1119,28 +1065,30 @@ fn has_delimiter_run_between(
 ///|
 fn priority_inline_span_end(text : String, start : Int, end : Int) -> Int? {
   let c = char_at(text, start)
-  if c == '`' {
-    let width = delimiter_run_len(text, start, '`')
-    let close = find_code_span_end_before(text, start + width, width, end)
-    if close >= 0 {
-      return Some(close + width)
-    }
-  } else if c == '<' {
-    match raw_html_inline_end(text, start) {
-      Some(close) => if close <= end { return Some(close) }
-      None => ()
-    }
-    match raw_html_tag_end(text, start) {
-      Some(close) => if close <= end { return Some(close) }
-      None => ()
-    }
-    let close = find_char(text, '>', start + 1)
-    if close >= 0 && close < end {
-      let candidate = text[start + 1:close].to_owned()
-      if is_uri_autolink(candidate) || is_email_autolink(candidate) {
-        return Some(close + 1)
+  match c {
+    '`' => {
+      let width = delimiter_run_len(text, start, '`')
+      let close = find_code_span_end_before(text, start + width, width, end)
+      if close >= 0 {
+        return Some(close + width)
       }
     }
+    '<' => {
+      if raw_html_inline_end(text, start) is Some(close) && close <= end {
+        return Some(close)
+      }
+      if raw_html_tag_end(text, start) is Some(close) && close <= end {
+        return Some(close)
+      }
+      let close = find_char(text, '>', start + 1)
+      if close >= 0 && close < end {
+        let candidate = text[start + 1:close].to_owned()
+        if is_uri_autolink(candidate) || is_email_autolink(candidate) {
+          return Some(close + 1)
+        }
+      }
+    }
+    _ => ()
   }
   None
 }

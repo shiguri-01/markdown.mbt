@@ -223,12 +223,10 @@ fn emit_list_item_content(
 ) -> Unit {
   if item_source.payload.may_contain_reference &&
     item_source.payload.length == 1 {
-    match parse_reference_definition(trim(item_source.payload.first)) {
-      Some(definition) => {
-        state.add_reference(definition)
-        return
-      }
-      None => ()
+    if parse_reference_definition(trim(item_source.payload.first))
+      is Some(definition) {
+      state.add_reference(definition)
+      return
     }
   }
   let single_line = item_source.payload.length == 1
@@ -357,11 +355,13 @@ fn list_item_content_indent(line : String, ordered : Bool) -> Int {
   let leading = count_leading_spaces(line)
   let current = trim(line)
   let marker_width = if ordered { ordered_marker_end(current) + 1 } else { 1 }
-  let mut spaces = 0
-  let mut i = marker_width
-  while i < current.length() && char_at(current, i) == ' ' && spaces < 5 {
-    spaces = spaces + 1
-    i = i + 1
+  let spaces = for spaces in 0..<5 {
+    let i = marker_width + spaces
+    if i >= current.length() || char_at(current, i) != ' ' {
+      break spaces
+    }
+  } nobreak {
+    5
   }
   if spaces > 0 && spaces < 5 {
     leading + marker_width + spaces
@@ -436,9 +436,7 @@ fn same_list_marker_line(
   unordered_delimiter : Int,
 ) -> Bool {
   let leading = count_leading_spaces(line)
-  if leading > 3 {
-    return false
-  }
+  guard leading <= 3 else { false }
   same_list_marker_line_at(
     line, leading, ordered, ordered_delimiter, unordered_delimiter,
   )
@@ -477,14 +475,10 @@ fn strip_list_marker_line_at(
 
 ///|
 fn is_single_paragraph_events(events : Array[Event]) -> Bool {
-  match events[0] {
-    Enter(el) => if el.tag.value != "cm:paragraph" { return false }
-    _ => return false
-  }
-  match events[events.length() - 1] {
-    Exit(tag) => if tag.value != "cm:paragraph" { return false }
-    _ => return false
-  }
+  guard events[0] is Enter(el) else { false }
+  guard el.tag.value == "cm:paragraph" else { false }
+  guard events[events.length() - 1] is Exit(tag) else { false }
+  guard tag.value == "cm:paragraph" else { false }
   let mut depth = 0
   for i in 0..<events.length() {
     match events[i] {
@@ -492,13 +486,14 @@ fn is_single_paragraph_events(events : Array[Event]) -> Bool {
       Exit(_) => {
         depth = depth - 1
         if depth == 0 && i < events.length() - 1 {
-          return false
+          break false
         }
       }
       _ => ()
     }
+  } nobreak {
+    depth == 0
   }
-  depth == 0
 }
 
 ///|
@@ -630,28 +625,29 @@ fn ordered_marker_end(line : String) -> Int {
 
 ///|
 fn ordered_marker_end_at(line : String, start : Int) -> Int {
-  let mut i = 0
-  while start + i < line.length() &&
-        char_at(line, start + i) >= '0' &&
-        char_at(line, start + i) <= '9' {
-    i = i + 1
+  let length = for i in start..<line.length() {
+    let c = char_at(line, i)
+    if c < '0' || c > '9' {
+      break i - start
+    }
+  } nobreak {
+    line.length() - start
   }
-  if i == 0 || i > 9 {
+  if length == 0 || length > 9 {
     -1
   } else {
-    start + i
+    start + length
   }
 }
 
 ///|
 fn has_nonblank_after_marker(line : String, start : Int) -> Bool {
-  if start > line.length() {
-    return false
-  }
+  guard start <= line.length() else { false }
   for i in start..<line.length() {
     if !is_space(char_at(line, i)) {
-      return true
+      break true
     }
+  } nobreak {
+    false
   }
-  false
 }
