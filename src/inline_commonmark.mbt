@@ -170,9 +170,10 @@ fn emit_commonmark_code_span(
   let width = delimiter_run_len(text, start, '`')
   let close = find_code_span_end_before(text, start + width, width, end)
   guard close >= 0 else { 0 }
-  sink.emit(Enter(Element(tag_name("cm:code_span"))))
-  sink.emit(Text(normalize_code_span(text[start + width:close].to_owned())))
-  sink.emit(Exit(tag_name("cm:code_span")))
+  sink
+  ..emit(Enter(Element(tag_name("cm:code_span"))))
+  ..emit(Text(normalize_code_span(text[start + width:close].to_owned())))
+  .emit(Exit(tag_name("cm:code_span")))
   close - start + width
 }
 
@@ -221,15 +222,16 @@ fn emit_commonmark_angle_span(
   let destination = text[start + 1:close].to_owned()
   let href = autolink_href(destination)
   guard href != "" else { 0 }
-  sink.emit(
+  sink
+  ..emit(
     Enter(
       Element::with_attrs(tag_name("cm:link"), [
         { name: attr_name("destination"), value: href },
       ]),
     ),
   )
-  sink.emit(Text(destination))
-  sink.emit(Exit(tag_name("cm:link")))
+  ..emit(Text(destination))
+  .emit(Exit(tag_name("cm:link")))
   close - start + 1
 }
 
@@ -339,8 +341,9 @@ fn emit_commonmark_image(
       let attrs = parse_link_attrs(text[close_alt + 2:close_dest].to_owned())
       if attrs.length() > 0 {
         attrs.push({ name: attr_name("alt"), value: alt })
-        sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), attrs)))
-        sink.emit(Exit(tag_name("cm:image")))
+        sink
+        ..emit(Enter(Element::with_attrs(tag_name("cm:image"), attrs)))
+        .emit(Exit(tag_name("cm:image")))
         return close_dest - start + 1
       }
     }
@@ -348,8 +351,9 @@ fn emit_commonmark_image(
   if reference_attrs_for_image_alt(text, start, close_alt, alt, state)
     is Some(resolved) &&
     resolved.end <= end {
-    sink.emit(Enter(Element::with_attrs(tag_name("cm:image"), resolved.attrs)))
-    sink.emit(Exit(tag_name("cm:image")))
+    sink
+    ..emit(Enter(Element::with_attrs(tag_name("cm:image"), resolved.attrs)))
+    .emit(Exit(tag_name("cm:image")))
     resolved.end - start
   } else {
     0

@@ -444,10 +444,10 @@ fn percent_encode_uri(input : String) -> String {
       out.write_view(input[i:i + 1])
       i = i + 1
     } else if c < 128 {
-      write_percent_byte(out, c)
+      out.write_percent_byte(c)
       i = i + 1
     } else {
-      write_percent_utf8(out, c)
+      out.write_percent_utf8(c)
       i = i + 1
     }
   }
@@ -508,27 +508,31 @@ fn is_ascii_hex_digit(c : Int) -> Bool {
 }
 
 ///|
-fn write_percent_utf8(out : StringBuilder, c : Int) -> Unit {
+fn StringBuilder::write_percent_utf8(self : StringBuilder, c : Int) -> Unit {
   if c <= 0x7FF {
-    write_percent_byte(out, 0xC0 | (c >> 6))
-    write_percent_byte(out, 0x80 | (c & 0x3F))
+    self
+    ..write_percent_byte(0xC0 | (c >> 6))
+    .write_percent_byte(0x80 | (c & 0x3F))
   } else if c <= 0xFFFF {
-    write_percent_byte(out, 0xE0 | (c >> 12))
-    write_percent_byte(out, 0x80 | ((c >> 6) & 0x3F))
-    write_percent_byte(out, 0x80 | (c & 0x3F))
+    self
+    ..write_percent_byte(0xE0 | (c >> 12))
+    ..write_percent_byte(0x80 | ((c >> 6) & 0x3F))
+    .write_percent_byte(0x80 | (c & 0x3F))
   } else {
-    write_percent_byte(out, 0xF0 | (c >> 18))
-    write_percent_byte(out, 0x80 | ((c >> 12) & 0x3F))
-    write_percent_byte(out, 0x80 | ((c >> 6) & 0x3F))
-    write_percent_byte(out, 0x80 | (c & 0x3F))
+    self
+    ..write_percent_byte(0xF0 | (c >> 18))
+    ..write_percent_byte(0x80 | ((c >> 12) & 0x3F))
+    ..write_percent_byte(0x80 | ((c >> 6) & 0x3F))
+    .write_percent_byte(0x80 | (c & 0x3F))
   }
 }
 
 ///|
-fn write_percent_byte(out : StringBuilder, byte : Int) -> Unit {
-  out.write_string("%")
-  out.write_string(hex_digit((byte >> 4) & 0xF))
-  out.write_string(hex_digit(byte & 0xF))
+fn StringBuilder::write_percent_byte(self : StringBuilder, byte : Int) -> Unit {
+  self
+  ..write_string("%")
+  ..write_string(hex_digit((byte >> 4) & 0xF))
+  .write_string(hex_digit(byte & 0xF))
 }
 
 ///|

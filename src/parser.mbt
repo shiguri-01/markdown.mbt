@@ -191,7 +191,7 @@ fn emit_block_rule_result(
 ) -> Int {
   match result {
     Match(lines, fragment) => {
-      emit_fragment(sink, fragment)
+      fragment.emit_to(sink)
       lines.to_int()
     }
     NoMatch => fallback
