@@ -63,13 +63,13 @@ pub(all) enum BlockRuleResult {
 pub struct ConsumedChars {
   // private fields
 }
-pub fn ConsumedChars::new(Int) -> Self?
+pub fn ConsumedChars::ConsumedChars(Int) -> Self
 pub fn ConsumedChars::to_int(Self) -> Int
 
 pub struct ConsumedLines {
   // private fields
 }
-pub fn ConsumedLines::new(Int) -> Self?
+pub fn ConsumedLines::ConsumedLines(Int) -> Self
 pub fn ConsumedLines::to_int(Self) -> Int
 
 pub struct Element {

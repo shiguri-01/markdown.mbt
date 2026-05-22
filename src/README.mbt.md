@@ -79,17 +79,13 @@ test {
         } else {
           match scanner.slice(1, end) {
             Some(text) =>
-              match @markdown.ConsumedChars::new(end + 1) {
-                Some(chars) =>
-                  Match(
-                    chars,
-                    @markdown.EventFragment::element(
-                      @markdown.Element::new(@markdown.Tag::raw("x:math")),
-                      children=[@markdown.EventFragment::text(text)],
-                    ),
-                  )
-                None => NoMatch
-              }
+              Match(
+                ConsumedChars(end + 1),
+                @markdown.EventFragment::element(
+                  @markdown.Element::new(@markdown.Tag::raw("x:math")),
+                  children=[@markdown.EventFragment::text(text)],
+                ),
+              )
             None => NoMatch
           }
         }

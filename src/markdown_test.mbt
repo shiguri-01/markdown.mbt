@@ -3,10 +3,7 @@ fn inline_result(
   consumed : Int,
   fragment : @markdown.EventFragment,
 ) -> @markdown.InlineRuleResult {
-  match @markdown.ConsumedChars::new(consumed) {
-    Some(chars) => Match(chars, fragment)
-    None => NoMatch
-  }
+  Match(ConsumedChars(consumed), fragment)
 }
 
 ///|
@@ -14,10 +11,7 @@ fn block_result(
   consumed : Int,
   fragment : @markdown.EventFragment,
 ) -> @markdown.BlockRuleResult {
-  match @markdown.ConsumedLines::new(consumed) {
-    Some(lines) => Match(lines, fragment)
-    None => NoMatch
-  }
+  Match(ConsumedLines(consumed), fragment)
 }
 
 ///|
@@ -249,19 +243,19 @@ test "duplicate reference labels keep first definition" {
 }
 
 ///|
-test "consumption wrappers reject non-positive values" {
-  assert_true(@markdown.ConsumedChars::new(0) is None)
-  assert_true(@markdown.ConsumedChars::new(-1) is None)
-  assert_true(@markdown.ConsumedLines::new(0) is None)
-  assert_true(@markdown.ConsumedLines::new(-1) is None)
-  match @markdown.ConsumedChars::new(2) {
-    Some(chars) => assert_eq(chars.to_int(), 2)
-    None => abort("expected positive char consumption")
-  }
-  match @markdown.ConsumedLines::new(3) {
-    Some(lines) => assert_eq(lines.to_int(), 3)
-    None => abort("expected positive line consumption")
-  }
+test "consumption wrappers expose positive values" {
+  assert_eq(@markdown.ConsumedChars(2).to_int(), 2)
+  assert_eq(@markdown.ConsumedLines(3).to_int(), 3)
+}
+
+///|
+test "panic consumed chars must be positive" {
+  ignore(@markdown.ConsumedChars(0))
+}
+
+///|
+test "panic consumed lines must be positive" {
+  ignore(@markdown.ConsumedLines(0))
 }
 
 ///|

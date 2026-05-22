@@ -15,12 +15,11 @@ pub struct ConsumedChars {
 
 ///|
 /// Creates a positive consumed-character count.
-pub fn ConsumedChars::new(value : Int) -> ConsumedChars? {
-  if value > 0 {
-    Some({ value, })
-  } else {
-    None
+pub fn ConsumedChars::ConsumedChars(value : Int) -> ConsumedChars {
+  if value <= 0 {
+    abort("ConsumedChars must be positive")
   }
+  { value, }
 }
 
 ///|
@@ -37,12 +36,11 @@ pub struct ConsumedLines {
 
 ///|
 /// Creates a positive consumed-line count.
-pub fn ConsumedLines::new(value : Int) -> ConsumedLines? {
-  if value > 0 {
-    Some({ value, })
-  } else {
-    None
+pub fn ConsumedLines::ConsumedLines(value : Int) -> ConsumedLines {
+  if value <= 0 {
+    abort("ConsumedLines must be positive")
   }
+  { value, }
 }
 
 ///|
@@ -292,30 +290,22 @@ pub fn Rule::replace(self : Rule, rule : Rule) -> Rule {
 
 ///|
 fn consumed_chars(value : Int) -> ConsumedChars {
-  { value, }
+  ConsumedChars(value)
 }
 
 ///|
 fn consumed_lines(value : Int) -> ConsumedLines {
-  { value, }
+  ConsumedLines(value)
 }
 
 ///|
 fn inline_match(consumed : Int, fragment : EventFragment) -> InlineRuleResult {
-  if consumed > 0 {
-    Match(consumed_chars(consumed), fragment)
-  } else {
-    NoMatch
-  }
+  Match(consumed_chars(consumed), fragment)
 }
 
 ///|
 fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
-  if consumed > 0 {
-    Match(consumed_lines(consumed), fragment)
-  } else {
-    NoMatch
-  }
+  Match(consumed_lines(consumed), fragment)
 }
 
 ///|

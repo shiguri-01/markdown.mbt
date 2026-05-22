@@ -337,7 +337,7 @@ fn move_rule(rules : Array[RuleEntry], from : Int, to : Int) -> Unit {
       rules[i] = rules[i + 1]
     }
   } else {
-    for i = from; i > to; i = i - 1 {
+    for i in from>=..(to + 1) {
       rules[i] = rules[i - 1]
     }
   }

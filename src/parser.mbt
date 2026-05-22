@@ -350,7 +350,7 @@ fn block_lines_text_range(
 fn apply_core_rules(sink : Sink, registry : RuleRegistry) -> Sink {
   let mut current = sink
   let rules = registry.core_rules()
-  for i = rules.length() - 1; i >= 0; i = i - 1 {
+  for i in (rules.length() - 1)>=..0 {
     let rule = rules[i]
     match rule.core {
       Some(f) => current = f(current)
