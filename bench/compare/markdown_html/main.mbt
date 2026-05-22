@@ -14,7 +14,7 @@ fn main {
     return
   }
   let input = fixture(args[1])
-  let html = @markdown.Html()
+  let html = @markdown.Html(size_hint=input.length())
   @markdown.Processor().parse(input, html.sink())
   println(html.to_string())
 }
@@ -52,7 +52,7 @@ fn run_bench(name : String, repeats : Int, warmups : Int) -> Unit {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  let html = @markdown.Html()
+  let html = @markdown.Html(size_hint=input.length())
   @markdown.Processor().parse(input, html.sink())
   html.to_string().length()
 }

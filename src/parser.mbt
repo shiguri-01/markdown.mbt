@@ -16,7 +16,7 @@ pub fn Processor::Processor(rule? : Rule = commonmark()) -> Processor {
 ///|
 /// Parses CommonMark and renders it to HTML.
 pub fn html(source : String) -> String {
-  let html = Html()
+  let html = Html(size_hint=source.length())
   Processor().parse(source, html.sink())
   html.to_string()
 }

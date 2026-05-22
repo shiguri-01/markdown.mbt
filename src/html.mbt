@@ -12,8 +12,12 @@ pub struct Html {
 
 ///|
 /// Creates an empty streaming HTML renderer.
-pub fn Html::Html() -> Html {
-  { out: StringBuilder::new(), close_stack: [], pending_item_open: false }
+pub fn Html::Html(size_hint? : Int = 0) -> Html {
+  {
+    out: StringBuilder::new(size_hint~),
+    close_stack: [],
+    pending_item_open: false,
+  }
 }
 
 ///|

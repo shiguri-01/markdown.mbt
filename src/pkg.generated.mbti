@@ -114,7 +114,7 @@ pub fn Events::sink(Self) -> Sink
 pub struct Html {
   // private fields
 }
-pub fn Html::Html() -> Self
+pub fn Html::Html(size_hint? : Int) -> Self
 pub fn Html::sink(Self) -> Sink
 pub fn Html::to_string(Self) -> String
 
