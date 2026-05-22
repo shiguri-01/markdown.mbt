@@ -4,7 +4,6 @@ _build/
 .moonagent/
 .direnv/
 .repos/
-.agents/skills/moonbit/
 **/.git/
 scripts/commonmark-conformance/commonmark_spec_json.mbt
 conformance/commonmark_spec_json.mbt
