@@ -76,7 +76,7 @@ pub fn BlockContext::line_index(self : BlockContext) -> Int {
 }
 
 ///|
-/// Returns the byte offset where the current source line starts.
+/// Returns the parser offset where the current source line starts.
 pub fn BlockContext::current_line_start(self : BlockContext) -> Int {
   if self.index >= 0 && self.index < self.line_starts.length() {
     self.line_starts[self.index]
@@ -92,7 +92,7 @@ pub fn InlineContext::source(self : InlineContext) -> String {
 }
 
 ///|
-/// Returns the current byte offset in the inline source.
+/// Returns the current parser offset in the inline source.
 pub fn InlineContext::offset(self : InlineContext) -> Int {
   self.index
 }

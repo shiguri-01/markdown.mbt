@@ -115,16 +115,19 @@ fn rule_name(value : String) -> RuleName {
 }
 
 ///|
-/// A byte offset range in the original Markdown source.
+/// A parser source range measured in MoonBit string offsets.
 ///
 /// `start` is inclusive and `end` is exclusive.
+/// These offsets are compatible with the parser's `String` indexing and line
+/// normalization; they are not UTF-8 byte offsets.
 pub struct SourceRange {
   priv start : Int
   priv end : Int
 }
 
 ///|
-/// Creates a source range from inclusive `start` and exclusive `end` offsets.
+/// Creates a source range from inclusive `start` and exclusive `end` parser
+/// offsets.
 pub fn SourceRange::new(
   start : Int,
   end : Int,
@@ -148,13 +151,13 @@ pub fn SourceRange::new(
 }
 
 ///|
-/// Returns the inclusive start byte offset.
+/// Returns the inclusive start parser offset.
 pub fn SourceRange::start(self : SourceRange) -> Int {
   self.start
 }
 
 ///|
-/// Returns the exclusive end byte offset.
+/// Returns the exclusive end parser offset.
 pub fn SourceRange::end(self : SourceRange) -> Int {
   self.end
 }
