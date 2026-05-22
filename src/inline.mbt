@@ -74,7 +74,7 @@ fn try_inline_rules(
   for rule in rules {
     if rule.inline is Some(f) {
       if f(ctx) is Match(chars, fragment) {
-        emit_fragment(sink, fragment)
+        fragment.emit_to(sink)
         return chars.to_int()
       }
     }
@@ -688,7 +688,7 @@ fn percent_encode_autolink_uri(input : String) -> String {
   while i < input.length() {
     let c = char_at(input, i)
     if c == '[' || c == ']' {
-      write_percent_byte(out, c)
+      out.write_percent_byte(c)
       i = i + 1
     } else if c == 37 &&
       i + 2 < input.length() &&
@@ -700,10 +700,10 @@ fn percent_encode_autolink_uri(input : String) -> String {
       out.write_view(input[i:i + 1])
       i = i + 1
     } else if c < 128 {
-      write_percent_byte(out, c)
+      out.write_percent_byte(c)
       i = i + 1
     } else {
-      write_percent_utf8(out, c)
+      out.write_percent_utf8(c)
       i = i + 1
     }
   }

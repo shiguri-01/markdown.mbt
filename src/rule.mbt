@@ -307,8 +307,3 @@ fn inline_match(consumed : Int, fragment : EventFragment) -> InlineRuleResult {
 fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
   Match(consumed_lines(consumed), fragment)
 }
-
-///|
-fn emit_fragment(sink : Sink, fragment : EventFragment) -> Unit {
-  fragment.emit_to(sink)
-}

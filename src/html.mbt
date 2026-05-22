@@ -23,7 +23,7 @@ pub fn Html::Html(size_hint? : Int = 0) -> Html {
 ///|
 /// Returns a sink that renders events as they arrive.
 pub fn Html::sink(self : Html) -> Sink {
-  Sink(fn(event) { write_html_event(self, event) })
+  Sink(fn(event) { self.write_event(event) })
 }
 
 ///|
@@ -33,59 +33,59 @@ pub fn Html::to_string(self : Html) -> String {
 }
 
 ///|
-fn write_html_event(buffer : Html, event : Event) -> Unit {
+fn Html::write_event(self : Html, event : Event) -> Unit {
   match event {
     Enter(el) =>
       if el.tag.value == "cm:item" {
-        buffer.pending_item_open = true
-        buffer.close_stack.push("</li>\n")
+        self.pending_item_open = true
+        self.close_stack.push("</li>\n")
       } else {
-        flush_pending_item_open(buffer, is_list_item_block_child(el.tag))
-        buffer.close_stack.push(write_open_html(buffer.out, el))
+        self.flush_pending_item_open(is_list_item_block_child(el.tag))
+        self.close_stack.push(write_open_html(self.out, el))
       }
     Exit(tag) => {
-      if tag.value == "cm:item" && buffer.pending_item_open {
-        flush_pending_item_open(buffer, false)
+      if tag.value == "cm:item" && self.pending_item_open {
+        self.flush_pending_item_open(false)
       }
-      if buffer.close_stack.length() > 0 {
-        let close = buffer.close_stack[buffer.close_stack.length() - 1]
-        ignore(buffer.close_stack.pop())
-        buffer.out.write_string(close)
+      if self.close_stack.length() > 0 {
+        let close = self.close_stack[self.close_stack.length() - 1]
+        ignore(self.close_stack.pop())
+        self.out.write_string(close)
       } else {
-        buffer.out
+        self.out
         ..write_string("</")
         ..write_escaped_html(tag.value)
         .write_string(">")
       }
     }
     Text(text) => {
-      flush_pending_item_open(buffer, false)
-      buffer.out.write_escaped_html(text)
+      self.flush_pending_item_open(false)
+      self.out.write_escaped_html(text)
     }
     SoftBreak => {
-      flush_pending_item_open(buffer, false)
-      buffer.out.write_string("\n")
+      self.flush_pending_item_open(false)
+      self.out.write_string("\n")
     }
     HardBreak => {
-      flush_pending_item_open(buffer, false)
-      buffer.out.write_string("<br />\n")
+      self.flush_pending_item_open(false)
+      self.out.write_string("<br />\n")
     }
     RawHtml(raw) => {
-      flush_pending_item_open(buffer, contains_char(raw, '\n'))
-      buffer.out.write_string(raw)
+      self.flush_pending_item_open(contains_char(raw, '\n'))
+      self.out.write_string(raw)
     }
   }
 }
 
 ///|
-fn flush_pending_item_open(buffer : Html, block_child : Bool) -> Unit {
-  if buffer.pending_item_open {
+fn Html::flush_pending_item_open(self : Html, block_child : Bool) -> Unit {
+  if self.pending_item_open {
     if block_child {
-      buffer.out.write_string("<li>\n")
+      self.out.write_string("<li>\n")
     } else {
-      buffer.out.write_string("<li>")
+      self.out.write_string("<li>")
     }
-    buffer.pending_item_open = false
+    self.pending_item_open = false
   }
 }
 
