@@ -798,6 +798,7 @@ fn expand_tabs_from_column(
   start_column : Int,
   prefix_spaces : Int,
 ) -> String {
+  guard prefix_spaces > 0 || find_char(text, '\t', 0) >= 0 else { text }
   let out = StringBuilder::new(size_hint=text.length() + prefix_spaces + 4)
   for _ in 0..<prefix_spaces {
     out.write_string(" ")
