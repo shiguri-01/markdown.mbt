@@ -5,14 +5,14 @@ fn char_at(text : String, index : Int) -> Int {
 
 ///|
 fn trim(input : String) -> String {
-  let start = for start = 0; start < input.length(); start = start + 1 {
+  let start = for start in 0..<input.length() {
     if !is_space(char_at(input, start)) {
       break start
     }
   } nobreak {
     input.length()
   }
-  let end = for end = input.length(); end > start; end = end - 1 {
+  let end = for end in input.length()>=..(start + 1) {
     if !is_space(char_at(input, end - 1)) {
       break end
     }
@@ -30,20 +30,22 @@ fn trim(input : String) -> String {
 fn is_blank(input : String) -> Bool {
   for i in 0..<input.length() {
     if !is_space(char_at(input, i)) {
-      return false
+      break false
     }
+  } nobreak {
+    true
   }
-  true
 }
 
 ///|
 fn first_non_space_index(input : String) -> Int {
   for i in 0..<input.length() {
     if !is_space(char_at(input, i)) {
-      return i
+      break i
     }
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|
@@ -53,7 +55,7 @@ fn is_space(c : Int) -> Bool {
 
 ///|
 fn count_leading_spaces(input : String) -> Int {
-  for count = 0; count < input.length(); count = count + 1 {
+  for count in 0..<input.length() {
     if char_at(input, count) != ' ' {
       break count
     }
@@ -66,10 +68,11 @@ fn count_leading_spaces(input : String) -> Int {
 fn find_char(text : String, needle : Int, start : Int) -> Int {
   for i in start..<text.length() {
     if char_at(text, i) == needle {
-      return i
+      break i
     }
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|
@@ -77,9 +80,7 @@ fn find_substring(text : String, needle : String, start : Int) -> Int {
   if needle == "" {
     return start
   }
-  if needle.length() > text.length() {
-    return -1
-  }
+  guard needle.length() <= text.length() else { -1 }
   let limit = text.length() - needle.length()
   for i in start..<=limit {
     let mut matched = true
@@ -98,15 +99,14 @@ fn find_substring(text : String, needle : String, start : Int) -> Int {
 
 ///|
 fn has_prefix_at(text : String, prefix : String, start : Int) -> Bool {
-  if start < 0 || start + prefix.length() > text.length() {
-    return false
-  }
+  guard start >= 0 && start + prefix.length() <= text.length() else { false }
   for i in 0..<prefix.length() {
     if char_at(text, start + i) != char_at(prefix, i) {
-      return false
+      break false
     }
+  } nobreak {
+    true
   }
-  true
 }
 
 ///|

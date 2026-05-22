@@ -38,18 +38,19 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.registry)
   let state = ParseState()
   let source = split_lines(input)
+  if source.may_contain_reference &&
+    self.registry.can_use_commonmark_deferred_block_parse() {
+    parse_commonmark_deferred_blocks_into(
+      source.lines,
+      source.line_starts,
+      self.registry,
+      downstream,
+      state,
+    )
+    downstream.finish()
+    return
+  }
   if source.may_contain_reference {
-    if self.registry.can_use_commonmark_deferred_block_parse() {
-      parse_commonmark_deferred_blocks_into(
-        source.lines,
-        source.line_starts,
-        self.registry,
-        downstream,
-        state,
-      )
-      downstream.finish()
-      return
-    }
     collect_reference_definitions_with_block_lines(
       source.lines,
       source.line_starts,
@@ -140,7 +141,6 @@ fn parse_block_lines_range_into(
   let block_continue_rules = registry.block_continue_rules()
   let block_start_rules = registry.block_rules()
   while i < stop {
-    let mut consumed = 0
     let ctx = {
       lines,
       line_starts,
@@ -151,56 +151,50 @@ fn parse_block_lines_range_into(
       state,
       collect_only,
     }
-    for rule in block_continue_rules {
-      match rule.block {
-        Some(f) =>
-          if consumed == 0 {
-            match f(ctx) {
-              Match(lines, fragment) => {
-                emit_fragment(sink, fragment)
-                consumed = lines.to_int()
-              }
-              NoMatch => ()
-            }
-          }
-        None => ()
-      }
-    }
-    for rule in block_start_rules {
-      match rule.block {
-        Some(f) =>
-          if consumed == 0 {
-            match f(ctx) {
-              Match(lines, fragment) => {
-                emit_fragment(sink, fragment)
-                consumed = lines.to_int()
-              }
-              NoMatch => ()
-            }
-          }
-        None => ()
-      }
+    let mut consumed = try_block_rules(ctx, block_continue_rules, sink)
+    if consumed == 0 {
+      consumed = try_block_rules(ctx, block_start_rules, sink)
     }
     if consumed <= 0 {
       consumed = if registry.has_enabled_block_rules() {
-        match emit_fallback_text(ctx) {
-          Match(lines, fragment) => {
-            emit_fragment(sink, fragment)
-            lines.to_int()
-          }
-          NoMatch => 1
-        }
+        emit_block_rule_result(emit_fallback_text(ctx), sink)
       } else {
-        match cm_paragraph_block(ctx) {
-          Match(lines, fragment) => {
-            emit_fragment(sink, fragment)
-            lines.to_int()
-          }
-          NoMatch => 1
-        }
+        emit_block_rule_result(cm_paragraph_block(ctx), sink)
       }
     }
     i = i + consumed
+  }
+}
+
+///|
+fn try_block_rules(
+  ctx : BlockContext,
+  rules : Array[RuleEntry],
+  sink : Sink,
+) -> Int {
+  for rule in rules {
+    if rule.block is Some(f) {
+      let consumed = emit_block_rule_result(f(ctx), sink, fallback=0)
+      if consumed > 0 {
+        return consumed
+      }
+    }
+  }
+  0
+}
+
+///|
+fn emit_block_rule_result(
+  result : BlockRuleResult,
+  sink : Sink,
+  fallback? : Int = 1,
+) -> Int {
+  match result {
+    Match(lines, fragment) => {
+      emit_fragment(sink, fragment)
+      lines.to_int()
+    }
+    NoMatch => fallback
   }
 }
 
@@ -229,13 +223,11 @@ fn BlockPayload::BlockPayload(first : String) -> BlockPayload {
 ///|
 fn BlockPayload::append(self : BlockPayload, line : String) -> Unit {
   self.materialize()
-  match self.lines {
-    Some(lines) => lines.push(line)
-    None => ()
+  if self.lines is Some(lines) {
+    lines.push(line)
   }
-  match self.line_starts {
-    Some(line_starts) => line_starts.push(self.next_start)
-    None => ()
+  if self.line_starts is Some(line_starts) {
+    line_starts.push(self.next_start)
   }
   self.next_start = self.next_start + line.length() + 1
   self.length = self.length + 1
@@ -246,12 +238,9 @@ fn BlockPayload::append(self : BlockPayload, line : String) -> Unit {
 
 ///|
 fn BlockPayload::materialize(self : BlockPayload) -> Unit {
-  match self.lines {
-    Some(_) => ()
-    None => {
-      self.lines = Some([self.first])
-      self.line_starts = Some([0])
-    }
+  if self.lines is None {
+    self.lines = Some([self.first])
+    self.line_starts = Some([0])
   }
 }
 
@@ -358,9 +347,8 @@ fn apply_core_rules(sink : Sink, registry : RuleRegistry) -> Sink {
   let rules = registry.core_rules()
   for i in (rules.length() - 1)>=..0 {
     let rule = rules[i]
-    match rule.core {
-      Some(f) => current = f(current)
-      None => ()
+    if rule.core is Some(f) {
+      current = f(current)
     }
   }
   current
@@ -391,7 +379,7 @@ fn split_lines(input : String) -> LineSource {
   let mut seen_label_opener = false
   let mut may_contain_reference = false
   let input_length = input.length()
-  for i = 0; i < input_length; i = i + 1 {
+  for i in 0..<input_length {
     let c = char_at(input, i)
     if !may_contain_reference {
       if c == '[' {
@@ -423,14 +411,12 @@ fn split_lines(input : String) -> LineSource {
 
 ///|
 fn expand_leading_tabs(line : String) -> String {
-  let first_tab = for i = 0; i < line.length(); i = i + 1 {
+  let first_tab = for i in 0..<line.length() {
     let c = char_at(line, i)
-    if c == '\t' {
-      break i
-    } else if c == ' ' {
-      ()
-    } else {
-      break -1
+    match c {
+      '\t' => break i
+      ' ' => ()
+      _ => break -1
     }
   } nobreak {
     -1
@@ -441,18 +427,22 @@ fn expand_leading_tabs(line : String) -> String {
   let out = StringBuilder::new(size_hint=line.length() + 4)
   for i = 0, column = 0; i < line.length(); {
     let c = char_at(line, i)
-    if c == ' ' {
-      out.write_string(" ")
-      continue i + 1, column + 1
-    } else if c == '\t' {
-      let spaces = 4 - column % 4
-      for _ in 0..<spaces {
+    match c {
+      ' ' => {
         out.write_string(" ")
+        continue i + 1, column + 1
       }
-      continue i + 1, column + spaces
-    } else {
-      out.write_view(line[i:])
-      break out.to_string()
+      '\t' => {
+        let spaces = 4 - column % 4
+        for _ in 0..<spaces {
+          out.write_string(" ")
+        }
+        continue i + 1, column + spaces
+      }
+      _ => {
+        out.write_view(line[i:])
+        break out.to_string()
+      }
     }
   } nobreak {
     out.to_string()

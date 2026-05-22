@@ -48,7 +48,6 @@ fn parse_inlines_with_rules(
   }
   let mut i = 0
   while i < text.length() {
-    let mut consumed = 0
     let ctx = {
       text,
       index: i,
@@ -56,21 +55,7 @@ fn parse_inlines_with_rules(
       registry,
       state,
     }
-    for rule in rules {
-      match rule.inline {
-        Some(f) =>
-          if consumed == 0 {
-            match f(ctx) {
-              Match(chars, fragment) => {
-                emit_fragment(sink, fragment)
-                consumed = chars.to_int()
-              }
-              NoMatch => ()
-            }
-          }
-        None => ()
-      }
-    }
+    let consumed = try_inline_rules(ctx, rules, sink)
     if consumed == 0 {
       sink.emit(Text(text[i:i + 1].to_owned()))
       i = i + 1
@@ -78,6 +63,23 @@ fn parse_inlines_with_rules(
       i = i + consumed
     }
   }
+}
+
+///|
+fn try_inline_rules(
+  ctx : InlineContext,
+  rules : Array[RuleEntry],
+  sink : Sink,
+) -> Int {
+  for rule in rules {
+    if rule.inline is Some(f) {
+      if f(ctx) is Match(chars, fragment) {
+        emit_fragment(sink, fragment)
+        return chars.to_int()
+      }
+    }
+  }
+  0
 }
 
 ///|
@@ -103,13 +105,12 @@ fn cm_text_inline(ctx : InlineContext) -> InlineRuleResult {
 fn cm_escape_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
-  if char_at(text, i) == '\\' &&
+  guard char_at(text, i) == '\\' &&
     i + 1 < text.length() &&
-    is_ascii_punctuation(char_at(text, i + 1)) {
-    inline_match(2, EventFragment::text(text[i + 1:i + 2].to_owned()))
-  } else {
+    is_ascii_punctuation(char_at(text, i + 1)) else {
     NoMatch
   }
+  inline_match(2, EventFragment::text(text[i + 1:i + 2].to_owned()))
 }
 
 ///|
@@ -139,11 +140,8 @@ fn cm_hard_break_inline(ctx : InlineContext) -> InlineRuleResult {
 
 ///|
 fn cm_soft_break_inline(ctx : InlineContext) -> InlineRuleResult {
-  if char_at(ctx.text, ctx.index) == '\n' {
-    inline_match(1, EventFragment::soft_break())
-  } else {
-    NoMatch
-  }
+  guard char_at(ctx.text, ctx.index) == '\n' else { NoMatch }
+  inline_match(1, EventFragment::soft_break())
 }
 
 ///|
@@ -188,13 +186,8 @@ fn cm_autolink_inline(ctx : InlineContext) -> InlineRuleResult {
   let end = find_char(text, '>', i + 1)
   guard end >= 0 else { NoMatch }
   let destination = text[i + 1:end].to_owned()
-  let href = if is_uri_autolink(destination) {
-    percent_encode_autolink_uri(destination)
-  } else if is_email_autolink(destination) {
-    "mailto:" + destination
-  } else {
-    return NoMatch
-  }
+  let href = autolink_href(destination)
+  guard href != "" else { NoMatch }
   inline_match(
     end - i + 1,
     EventFragment::element(
@@ -207,23 +200,29 @@ fn cm_autolink_inline(ctx : InlineContext) -> InlineRuleResult {
 }
 
 ///|
+fn autolink_href(destination : String) -> String {
+  if is_uri_autolink(destination) {
+    percent_encode_autolink_uri(destination)
+  } else if is_email_autolink(destination) {
+    "mailto:" + destination
+  } else {
+    ""
+  }
+}
+
+///|
 fn cm_raw_html_inline(ctx : InlineContext) -> InlineRuleResult {
   let text = ctx.text
   let i = ctx.index
   guard char_at(text, i) == '<' else { NoMatch }
-  match raw_html_inline_end(text, i) {
-    Some(end) =>
-      return inline_match(end - i, EventFragment::html(text[i:end].to_owned()))
-    None => ()
+  if raw_html_inline_end(text, i) is Some(end) {
+    return inline_match(end - i, EventFragment::html(text[i:end].to_owned()))
   }
-  match raw_html_tag_end(text, i) {
-    Some(end) => {
-      let raw = text[i:end].to_owned()
-      if looks_like_raw_html(raw) {
-        return inline_match(end - i, EventFragment::html(raw))
-      }
+  if raw_html_tag_end(text, i) is Some(end) {
+    let raw = text[i:end].to_owned()
+    if looks_like_raw_html(raw) {
+      return inline_match(end - i, EventFragment::html(raw))
     }
-    None => ()
   }
   NoMatch
 }
@@ -234,10 +233,7 @@ fn raw_html_inline_end(text : String, start : Int) -> Int? {
     if has_prefix_at(text, "<!-->", start) ||
       has_prefix_at(text, "<!--->", start) {
       let end = find_substring(text, "-->", start + 4)
-      if end >= 0 {
-        return Some(end + 2)
-      }
-      return None
+      return if end >= 0 { Some(end + 2) } else { None }
     }
     let end = find_substring(text, "-->", start + 4)
     if end >= 0 {
@@ -412,18 +408,12 @@ fn emphasis_would_split_link_text(
   start : Int,
   end : Int,
 ) -> Bool {
-  if emphasis_close_splits_link_label(text, start, end) {
-    return true
+  guard !emphasis_close_splits_link_label(text, start, end) else { true }
+  guard start + 1 < text.length() && char_at(text, start + 1) == '[' else {
+    false
   }
-  if start + 1 >= text.length() || char_at(text, start + 1) != '[' {
-    return false
-  }
-  if link_text_range_may_contain_link(text, start + 2, end) {
-    return false
-  }
-  if end + 1 >= text.length() || char_at(text, end + 1) != ']' {
-    return false
-  }
+  guard !link_text_range_may_contain_link(text, start + 2, end) else { false }
+  guard end + 1 < text.length() && char_at(text, end + 1) == ']' else { false }
   let close_text = end + 1
   if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
@@ -443,12 +433,8 @@ fn emphasis_close_splits_link_label(
   start : Int,
   end : Int,
 ) -> Bool {
-  if char_at(text, start) != '_' {
-    return false
-  }
-  if end + 1 >= text.length() || char_at(text, end + 1) != ']' {
-    return false
-  }
+  guard char_at(text, start) == '_' else { false }
+  guard end + 1 < text.length() && char_at(text, end + 1) == ']' else { false }
   let mut open = -1
   let mut i = start + 1
   while i < end {
@@ -457,9 +443,7 @@ fn emphasis_close_splits_link_label(
     }
     i = i + 1
   }
-  if open < 0 {
-    return false
-  }
+  guard open >= 0 else { false }
   let close_text = end + 1
   if close_text + 1 < text.length() && char_at(text, close_text + 1) == '(' {
     let close_dest = find_link_destination_end(text, close_text + 2)
@@ -491,12 +475,9 @@ fn find_closing_run(
 ) -> Int {
   let mut i = start
   while i + width <= text.length() {
-    match inline_span_end_for_delimiter_scan(text, i) {
-      Some(end) => {
-        i = end
-        continue
-      }
-      None => ()
+    if inline_span_end_for_delimiter_scan(text, i) is Some(end) {
+      i = end
+      continue
     }
     if delimiter_run_len(text, i, marker) >= width &&
       !is_escaped_char(text, i) &&
@@ -526,12 +507,9 @@ fn find_closing_single_run(
 ) -> Int {
   let mut i = start
   while i < text.length() {
-    match inline_span_end_for_delimiter_scan(text, i) {
-      Some(end) => {
-        i = end
-        continue
-      }
-      None => ()
+    if inline_span_end_for_delimiter_scan(text, i) is Some(end) {
+      i = end
+      continue
     }
     let run = if char_at(text, i) == marker {
       delimiter_run_len(text, i, marker)
@@ -601,13 +579,9 @@ fn delimiter_can_close(
 
 ///|
 fn is_left_flanking_delimiter(text : String, start : Int, width : Int) -> Bool {
-  if start + width >= text.length() {
-    return false
-  }
+  guard start + width < text.length() else { false }
   let after = char_at(text, start + width)
-  if is_space_for_delimiter_flanking(after) {
-    return false
-  }
+  guard !is_space_for_delimiter_flanking(after) else { false }
   if is_punctuation_for_flanking(after) {
     start == 0 ||
     is_space_for_delimiter_flanking(char_at(text, start - 1)) ||
@@ -619,13 +593,9 @@ fn is_left_flanking_delimiter(text : String, start : Int, width : Int) -> Bool {
 
 ///|
 fn is_right_flanking_delimiter(text : String, start : Int, width : Int) -> Bool {
-  if start == 0 {
-    return false
-  }
+  guard start > 0 else { false }
   let before = char_at(text, start - 1)
-  if is_space_for_delimiter_flanking(before) {
-    return false
-  }
+  guard !is_space_for_delimiter_flanking(before) else { false }
   if start + width >= text.length() {
     return true
   }
@@ -663,40 +633,43 @@ fn is_word_for_underscore(c : Int) -> Bool {
 ///|
 fn inline_span_end_for_delimiter_scan(text : String, start : Int) -> Int? {
   let c = char_at(text, start)
-  if c == '`' {
-    let width = delimiter_run_len(text, start, '`')
-    let end = find_code_span_end(text, start + width, width)
-    if end >= 0 {
-      return Some(end + width)
-    }
-  } else if c == '<' {
-    match raw_html_inline_end(text, start) {
-      Some(end) => return Some(end)
-      None => ()
-    }
-    match raw_html_tag_end(text, start) {
-      Some(end) => return Some(end)
-      None => ()
-    }
-    let end = find_char(text, '>', start + 1)
-    if end >= 0 {
-      let destination = text[start + 1:end].to_owned()
-      if is_uri_autolink(destination) || is_email_autolink(destination) {
-        return Some(end + 1)
+  match c {
+    '`' => {
+      let width = delimiter_run_len(text, start, '`')
+      let end = find_code_span_end(text, start + width, width)
+      if end >= 0 {
+        return Some(end + width)
       }
     }
-  } else if c == '[' {
-    let close_text = find_link_text_end(text, start + 1)
-    if close_text > start &&
-      close_text + 1 < text.length() &&
-      char_at(text, close_text + 1) == '(' {
-      let close_dest = find_link_destination_end(text, close_text + 2)
-      if close_dest > close_text &&
-        parse_link_attrs(text[close_text + 2:close_dest].to_owned()).length() >
-        0 {
-        return Some(close_dest + 1)
+    '<' => {
+      if raw_html_inline_end(text, start) is Some(end) {
+        return Some(end)
+      }
+      if raw_html_tag_end(text, start) is Some(end) {
+        return Some(end)
+      }
+      let end = find_char(text, '>', start + 1)
+      if end >= 0 {
+        let destination = text[start + 1:end].to_owned()
+        if is_uri_autolink(destination) || is_email_autolink(destination) {
+          return Some(end + 1)
+        }
       }
     }
+    '[' => {
+      let close_text = find_link_text_end(text, start + 1)
+      if close_text > start &&
+        close_text + 1 < text.length() &&
+        char_at(text, close_text + 1) == '(' {
+        let close_dest = find_link_destination_end(text, close_text + 2)
+        if close_dest > close_text &&
+          parse_link_attrs(text[close_text + 2:close_dest].to_owned()).length() >
+          0 {
+          return Some(close_dest + 1)
+        }
+      }
+    }
+    _ => ()
   }
   None
 }
@@ -795,12 +768,8 @@ fn normalize_code_span(text : String) -> String {
 ///|
 fn is_uri_autolink(text : String) -> Bool {
   let colon = find_char(text, ':', 0)
-  if colon <= 1 || colon > 32 {
-    return false
-  }
-  if !is_ascii_alpha(char_at(text, 0)) {
-    return false
-  }
+  guard colon > 1 && colon <= 32 else { false }
+  guard is_ascii_alpha(char_at(text, 0)) else { false }
   for i in 1..<colon {
     let c = char_at(text, i)
     if !(is_ascii_alpha(c) ||
@@ -808,28 +777,26 @@ fn is_uri_autolink(text : String) -> Bool {
       c == '+' ||
       c == '-' ||
       c == '.') {
-      return false
+      break false
+    }
+  } nobreak {
+    for i in (colon + 1)..<text.length() {
+      let c = char_at(text, i)
+      if is_space(c) || c == '<' {
+        break false
+      }
+    } nobreak {
+      true
     }
   }
-  for i in (colon + 1)..<text.length() {
-    let c = char_at(text, i)
-    if is_space(c) || c == '<' {
-      return false
-    }
-  }
-  true
 }
 
 ///|
 fn is_email_autolink(text : String) -> Bool {
   let at = find_char(text, '@', 0)
-  if at <= 0 || at >= text.length() - 1 {
-    return false
-  }
+  guard at > 0 && at < text.length() - 1 else { false }
   let dot = find_char(text, '.', at + 2)
-  if dot < 0 || dot >= text.length() - 1 {
-    return false
-  }
+  guard dot >= 0 && dot < text.length() - 1 else { false }
   for i in 0..<at {
     let c = char_at(text, i)
     if !(is_ascii_alpha(c) ||
@@ -854,10 +821,11 @@ fn is_email_autolink(text : String) -> Bool {
       c == '}' ||
       c == '~' ||
       c == '.') {
-      return false
+      break false
     }
+  } nobreak {
+    is_email_domain(text[at + 1:].to_owned())
   }
-  is_email_domain(text[at + 1:].to_owned())
 }
 
 ///|
@@ -981,10 +949,10 @@ fn raw_html_tag_end(text : String, start : Int) -> Int? {
         while i < text.length() && is_space(char_at(text, i)) {
           i = i + 1
         }
-        let value_end = html_attr_value_end(text, i)
-        match value_end {
-          Some(next) => i = next
-          None => return None
+        if html_attr_value_end(text, i) is Some(next) {
+          i = next
+        } else {
+          return None
         }
       }
     } else {

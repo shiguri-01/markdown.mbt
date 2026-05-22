@@ -44,105 +44,78 @@ fn parse_commonmark_deferred_range_into(
   let stop = if end > lines.length() { lines.length() } else { end }
   while i < stop {
     let ctx = deferred_block_context(lines, line_starts, i, registry, state)
-    let mut consumed = 0
-    match cm_blank_block(ctx) {
-      Match(lines, fragment) => {
-        append_deferred_fragment(items, fragment)
-        consumed = lines.to_int()
-      }
-      NoMatch => ()
+    let mut consumed = append_deferred_block_result(items, cm_blank_block(ctx))
+    if consumed == 0 {
+      consumed = append_deferred_block_result(items, cm_fenced_code_block(ctx))
     }
     if consumed == 0 {
-      match cm_fenced_code_block(ctx) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        cm_indented_code_block(ctx),
+      )
     }
     if consumed == 0 {
-      match cm_indented_code_block(ctx) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        cm_thematic_break_block(ctx),
+      )
     }
     if consumed == 0 {
-      match cm_thematic_break_block(ctx) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        deferred_setext_heading_block(ctx, items),
+      )
     }
     if consumed == 0 {
-      match deferred_setext_heading_block(ctx, items) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(items, cm_html_block(ctx))
     }
     if consumed == 0 {
-      match cm_html_block(ctx) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        deferred_atx_heading_block(ctx, items),
+      )
     }
     if consumed == 0 {
-      match deferred_atx_heading_block(ctx, items) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        deferred_blockquote_block(ctx, items),
+      )
     }
     if consumed == 0 {
-      match deferred_blockquote_block(ctx, items) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        deferred_list_block(ctx, items),
+      )
     }
     if consumed == 0 {
-      match deferred_list_block(ctx, items) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
+      consumed = append_deferred_block_result(
+        items,
+        cm_reference_definition_block(ctx),
+      )
     }
     if consumed == 0 {
-      match cm_reference_definition_block(ctx) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => ()
-      }
-    }
-    if consumed == 0 {
-      match deferred_paragraph_block(ctx, items) {
-        Match(lines, fragment) => {
-          append_deferred_fragment(items, fragment)
-          consumed = lines.to_int()
-        }
-        NoMatch => consumed = 1
-      }
+      consumed = append_deferred_block_result(
+        items,
+        deferred_paragraph_block(ctx, items),
+        fallback=1,
+      )
     }
     i = i + consumed
+  }
+}
+
+///|
+fn append_deferred_block_result(
+  items : Array[DeferredBlockItem],
+  result : BlockRuleResult,
+  fallback? : Int = 0,
+) -> Int {
+  match result {
+    Match(lines, fragment) => {
+      append_deferred_fragment(items, fragment)
+      lines.to_int()
+    }
+    NoMatch => fallback
   }
 }
 
@@ -272,13 +245,15 @@ fn deferred_paragraph_block(
   ctx : BlockContext,
   items : Array[DeferredBlockItem],
 ) -> BlockRuleResult {
-  let mut i = ctx.index
-  while i < ctx.lines.length() &&
-        !is_blank(ctx.lines[i]) &&
-        (i == ctx.index || !is_paragraph_interrupt(ctx.lines[i])) {
-    i = i + 1
+  let end = for i in ctx.index..<ctx.lines.length() {
+    if is_blank(ctx.lines[i]) ||
+      (i != ctx.index && is_paragraph_interrupt(ctx.lines[i])) {
+      break i
+    }
+  } nobreak {
+    ctx.lines.length()
   }
-  if i == ctx.index {
+  if end == ctx.index {
     block_match(1, EventFragment::empty())
   } else {
     let sink = deferred_block_sink(items)
@@ -287,18 +262,18 @@ fn deferred_paragraph_block(
         Element::with_attrs(
           tag_name("cm:paragraph"),
           [],
-          range=Some(block_source_range(ctx, ctx.index, i)),
+          range=Some(block_source_range(ctx, ctx.index, end)),
         ),
       ),
     )
-    let inline_text = if i == ctx.index + 1 {
+    let inline_text = if end == ctx.index + 1 {
       strip_trailing_spaces(paragraph_line(ctx.lines[ctx.index]))
     } else {
-      paragraph_text(ctx, i)
+      paragraph_text(ctx, end)
     }
     emit_block_inline(items, ctx, sink, inline_text)
     sink.emit(Exit(tag_name("cm:paragraph")))
-    block_match(i - ctx.index, EventFragment::empty())
+    block_match(end - ctx.index, EventFragment::empty())
   }
 }
 
@@ -309,10 +284,7 @@ fn deferred_atx_heading_block(
 ) -> BlockRuleResult {
   guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
-  let mut level = 0
-  while level < line.length() && level < 6 && char_at(line, level) == '#' {
-    level = level + 1
-  }
+  let level = marker_run_length_limit(line, 0, '#', 6)
   guard level > 0 else { NoMatch }
   guard level >= line.length() || is_space(char_at(line, level)) else {
     NoMatch
@@ -413,25 +385,23 @@ fn deferred_blockquote_block(
   } else {
     ""
   }
-  match parse_reference_definition(trim(inner_text)) {
-    Some(definition) => ctx.state.add_reference(definition)
-    None =>
-      if lazy_starts_with_block {
-        parse_payload_with_block_context(inner, ctx, items)
-      } else if used_lazy {
-        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-        emit_block_inline(items, ctx, sink, inner_text)
-        sink.emit(Exit(tag_name("cm:paragraph")))
-      } else if inner.length == 1 &&
-        inner.first != "" &&
-        count_leading_spaces(inner.first) < 4 &&
-        !is_paragraph_interrupt(inner.first) {
-        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-        emit_block_inline(items, ctx, sink, paragraph_line(inner.first))
-        sink.emit(Exit(tag_name("cm:paragraph")))
-      } else {
-        parse_payload_with_block_context(inner, ctx, items)
-      }
+  if parse_reference_definition(trim(inner_text)) is Some(definition) {
+    ctx.state.add_reference(definition)
+  } else if lazy_starts_with_block {
+    parse_payload_with_block_context(inner, ctx, items)
+  } else if used_lazy {
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
+    emit_block_inline(items, ctx, sink, inner_text)
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else if inner.length == 1 &&
+    inner.first != "" &&
+    count_leading_spaces(inner.first) < 4 &&
+    !is_paragraph_interrupt(inner.first) {
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
+    emit_block_inline(items, ctx, sink, paragraph_line(inner.first))
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else {
+    parse_payload_with_block_context(inner, ctx, items)
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   block_match(i - ctx.index, EventFragment::empty())
@@ -454,9 +424,10 @@ fn deferred_single_line_blockquote(
     ),
   )
   if may_contain_reference_definition(inner) {
-    match parse_reference_definition(trim(inner)) {
-      Some(definition) => ctx.state.add_reference(definition)
-      None => deferred_single_line_blockquote_content(ctx, items, inner, sink)
+    if parse_reference_definition(trim(inner)) is Some(definition) {
+      ctx.state.add_reference(definition)
+    } else {
+      deferred_single_line_blockquote_content(ctx, items, inner, sink)
     }
   } else {
     deferred_single_line_blockquote_content(ctx, items, inner, sink)
@@ -674,12 +645,10 @@ fn emit_deferred_list_item_content(
 ) -> Unit {
   if item_source.payload.may_contain_reference &&
     item_source.payload.length == 1 {
-    match parse_reference_definition(trim(item_source.payload.first)) {
-      Some(definition) => {
-        state.add_reference(definition)
-        return
-      }
-      None => ()
+    if parse_reference_definition(trim(item_source.payload.first))
+      is Some(definition) {
+      state.add_reference(definition)
+      return
     }
   }
   let single_line = item_source.payload.length == 1
@@ -717,20 +686,11 @@ fn emit_deferred_list_item_content(
 
 ///|
 fn deferred_is_single_paragraph_items(items : Array[DeferredBlockItem]) -> Bool {
-  if items.length() < 2 {
-    return false
-  }
-  match items[0] {
-    DeferredEvent(Enter(el)) =>
-      if el.tag.value != "cm:paragraph" {
-        return false
-      }
-    _ => return false
-  }
-  match items[items.length() - 1] {
-    DeferredEvent(Exit(tag)) => if tag.value != "cm:paragraph" { return false }
-    _ => return false
-  }
+  guard items.length() >= 2 else { false }
+  guard items[0] is DeferredEvent(Enter(el)) else { false }
+  guard el.tag.value == "cm:paragraph" else { false }
+  guard items[items.length() - 1] is DeferredEvent(Exit(tag)) else { false }
+  guard tag.value == "cm:paragraph" else { false }
   let mut depth = 0
   for i in 0..<items.length() {
     match items[i] {
@@ -738,13 +698,14 @@ fn deferred_is_single_paragraph_items(items : Array[DeferredBlockItem]) -> Bool 
       DeferredEvent(Exit(_)) => {
         depth = depth - 1
         if depth == 0 && i < items.length() - 1 {
-          return false
+          break false
         }
       }
       _ => ()
     }
+  } nobreak {
+    depth == 0
   }
-  depth == 0
 }
 
 ///|

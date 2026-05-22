@@ -1,15 +1,17 @@
 ///|
 fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
-  let mut i = ctx.index
-  while i < ctx.lines.length() &&
-        !is_blank(ctx.lines[i]) &&
-        (i == ctx.index || !is_paragraph_interrupt(ctx.lines[i])) {
-    i = i + 1
+  let end = for i in ctx.index..<ctx.lines.length() {
+    if is_blank(ctx.lines[i]) ||
+      (i != ctx.index && is_paragraph_interrupt(ctx.lines[i])) {
+      break i
+    }
+  } nobreak {
+    ctx.lines.length()
   }
-  if i == ctx.index {
+  if end == ctx.index {
     block_match(1, EventFragment::empty())
   } else if ctx.collect_only {
-    block_match(i - ctx.index, EventFragment::empty())
+    block_match(end - ctx.index, EventFragment::empty())
   } else {
     let buffer = Events()
     let sink = buffer.owned_sink()
@@ -18,14 +20,14 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
         Element::with_attrs(
           tag_name("cm:paragraph"),
           [],
-          range=Some(block_source_range(ctx, ctx.index, i)),
+          range=Some(block_source_range(ctx, ctx.index, end)),
         ),
       ),
     )
-    let inline_text = if i == ctx.index + 1 {
+    let inline_text = if end == ctx.index + 1 {
       strip_trailing_spaces(paragraph_line(ctx.lines[ctx.index]))
     } else {
-      paragraph_text(ctx, i)
+      paragraph_text(ctx, end)
     }
     parse_inlines_with_rules(
       inline_text,
@@ -36,7 +38,7 @@ fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
       ctx.state,
     )
     sink.emit(Exit(tag_name("cm:paragraph")))
-    block_match(i - ctx.index, buffer.into_fragment())
+    block_match(end - ctx.index, buffer.into_fragment())
   }
 }
 
@@ -74,9 +76,12 @@ fn paragraph_line(line : String) -> String {
 
 ///|
 fn strip_trailing_spaces(line : String) -> String {
-  let mut end = line.length()
-  while end > 0 && char_at(line, end - 1) == ' ' {
-    end = end - 1
+  let end = for end in line.length()>=..1 {
+    if char_at(line, end - 1) != ' ' {
+      break end
+    }
+  } nobreak {
+    0
   }
   if end == line.length() {
     line
@@ -98,10 +103,7 @@ fn cm_blank_block(ctx : BlockContext) -> BlockRuleResult {
 fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
   guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
   let line = trim(ctx.lines[ctx.index])
-  let mut level = 0
-  while level < line.length() && level < 6 && char_at(line, level) == '#' {
-    level = level + 1
-  }
+  let level = marker_run_length_limit(line, 0, '#', 6)
   guard level > 0 else { NoMatch }
   guard level >= line.length() || is_space(char_at(line, level)) else {
     NoMatch
@@ -195,20 +197,22 @@ fn is_setext_heading_paragraph_start(line : String) -> Bool {
 
 ///|
 fn find_setext_underline(ctx : BlockContext) -> Int {
-  let mut i = ctx.index + 1
-  while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
+  for i in (ctx.index + 1)..<ctx.lines.length() {
+    if is_blank(ctx.lines[i]) {
+      break -1
+    }
     if setext_heading_level_line(ctx.lines[i]) > 0 {
       if setext_heading_content(ctx, i) != "" {
-        return i
+        break i
       }
-      return -1
+      break -1
     }
     if i > ctx.index && is_paragraph_interrupt(ctx.lines[i]) {
-      return -1
+      break -1
     }
-    i = i + 1
+  } nobreak {
+    -1
   }
-  -1
 }
 
 ///|
@@ -227,65 +231,58 @@ fn setext_heading_content(ctx : BlockContext, underline_index : Int) -> String {
 fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
   let leading = count_leading_spaces(ctx.lines[ctx.index])
   guard leading <= 3 && leading < ctx.lines[ctx.index].length() else { NoMatch }
-  if is_thematic_break_at(ctx.lines[ctx.index], leading) {
-    if ctx.collect_only {
-      return block_match(1, EventFragment::empty())
-    }
-    block_match(
-      1,
-      EventFragment::element(
-        Element::with_attrs(
-          tag_name("cm:thematic_break"),
-          [],
-          range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
-        ),
-      ),
-    )
-  } else {
-    NoMatch
+  guard is_thematic_break_at(ctx.lines[ctx.index], leading) else { NoMatch }
+  if ctx.collect_only {
+    return block_match(1, EventFragment::empty())
   }
+  block_match(
+    1,
+    EventFragment::element(
+      Element::with_attrs(
+        tag_name("cm:thematic_break"),
+        [],
+        range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
+      ),
+    ),
+  )
 }
 
 ///|
 fn setext_heading_level_line(line : String) -> Int {
   let start = count_leading_spaces(line)
-  if start > 3 {
-    return 0
-  }
-  let mut end = line.length()
-  while end > start && is_space(char_at(line, end - 1)) {
-    end = end - 1
+  guard start <= 3 else { 0 }
+  let end = for end in line.length()>=..(start + 1) {
+    if !is_space(char_at(line, end - 1)) {
+      break end
+    }
+  } nobreak {
+    start
   }
   setext_heading_level_at(line, start, end)
 }
 
 ///|
 fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
-  if line.length() == 0 {
-    return 0
-  }
-  if start >= end {
-    return 0
-  }
+  guard line.length() > 0 else { 0 }
+  guard start < end else { 0 }
   let c = char_at(line, start)
-  if c != '=' && c != '-' {
-    return 0
-  }
+  guard c == '=' || c == '-' else { 0 }
   let mut count = 0
   for i in start..<end {
     let n = char_at(line, i)
     if n == c {
       count = count + 1
     } else {
-      return 0
+      break 0
     }
-  }
-  if count == 0 {
-    0
-  } else if c == '=' {
-    1
-  } else {
-    2
+  } nobreak {
+    if count == 0 {
+      0
+    } else if c == '=' {
+      1
+    } else {
+      2
+    }
   }
 }
 
@@ -299,61 +296,75 @@ fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
     NoMatch
   }
   let line = if leading == 0 { raw_line } else { raw_line[leading:].to_owned() }
-  match html_block_terminator(line) {
-    Some(terminator) => {
-      let mut i = ctx.index
-      if ctx.collect_only {
-        while i < ctx.lines.length() {
-          if find_substring(ctx.lines[i], terminator, 0) >= 0 {
-            return block_match(i - ctx.index + 1, EventFragment::empty())
-          }
-          i = i + 1
-        }
-        return block_match(i - ctx.index, EventFragment::empty())
-      }
-      let raw = StringBuilder::new()
-      while i < ctx.lines.length() {
-        raw.write_string(ctx.lines[i])
-        raw.write_string("\n")
-        if find_substring(ctx.lines[i], terminator, 0) >= 0 {
-          return block_match(
-            i - ctx.index + 1,
-            EventFragment::html(raw.to_string()),
-          )
-        }
-        i = i + 1
-      }
-      return block_match(i - ctx.index, EventFragment::html(raw.to_string()))
-    }
-    None => ()
+  if html_block_terminator(line) is Some(terminator) {
+    return html_block_until_terminator(ctx, terminator)
   }
   guard looks_like_html_block_start(line) ||
     looks_like_complete_open_or_close_tag(line) else {
     NoMatch
   }
-  let mut i = ctx.index
+  html_block_until_blank(ctx)
+}
+
+///|
+fn html_block_until_terminator(
+  ctx : BlockContext,
+  terminator : String,
+) -> BlockRuleResult {
   if ctx.collect_only {
-    while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
-      i = i + 1
+    for i in ctx.index..<ctx.lines.length() {
+      if find_substring(ctx.lines[i], terminator, 0) >= 0 {
+        return block_match(i - ctx.index + 1, EventFragment::empty())
+      }
     }
-    return block_match(i - ctx.index, EventFragment::empty())
+    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
   }
   let raw = StringBuilder::new()
-  while i < ctx.lines.length() && !is_blank(ctx.lines[i]) {
+  for i in ctx.index..<ctx.lines.length() {
     raw.write_string(ctx.lines[i])
     raw.write_string("\n")
-    i = i + 1
+    if find_substring(ctx.lines[i], terminator, 0) >= 0 {
+      return block_match(
+        i - ctx.index + 1,
+        EventFragment::html(raw.to_string()),
+      )
+    }
   }
-  block_match(i - ctx.index, EventFragment::html(raw.to_string()))
+  block_match(
+    ctx.lines.length() - ctx.index,
+    EventFragment::html(raw.to_string()),
+  )
+}
+
+///|
+fn html_block_until_blank(ctx : BlockContext) -> BlockRuleResult {
+  if ctx.collect_only {
+    for i in ctx.index..<ctx.lines.length() {
+      if is_blank(ctx.lines[i]) {
+        return block_match(i - ctx.index, EventFragment::empty())
+      }
+    }
+    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
+  }
+  let raw = StringBuilder::new()
+  for i in ctx.index..<ctx.lines.length() {
+    if is_blank(ctx.lines[i]) {
+      return block_match(i - ctx.index, EventFragment::html(raw.to_string()))
+    }
+    raw.write_string(ctx.lines[i])
+    raw.write_string("\n")
+  }
+  block_match(
+    ctx.lines.length() - ctx.index,
+    EventFragment::html(raw.to_string()),
+  )
 }
 
 ///|
 fn html_block_terminator(line : String) -> String? {
   guard line.length() > 0 && char_at(line, 0) == '<' else { None }
-  let tag_end = html_script_pre_style_terminator(line)
-  match tag_end {
-    Some(terminator) => return Some(terminator)
-    None => ()
+  if html_script_pre_style_terminator(line) is Some(terminator) {
+    return Some(terminator)
   }
   if line.has_prefix("<!--") {
     Some("-->")
@@ -371,17 +382,21 @@ fn html_block_terminator(line : String) -> String? {
 ///|
 fn html_script_pre_style_terminator(line : String) -> String? {
   guard line.has_prefix("<") else { None }
-  let mut i = 1
-  guard i < line.length() && is_ascii_alpha(char_at(line, i)) else { None }
-  let start = i
-  while i < line.length() && is_ascii_alpha(char_at(line, i)) {
-    i = i + 1
+  guard line.length() > 1 && is_ascii_alpha(char_at(line, 1)) else { None }
+  let end = for end in 1..<line.length() {
+    if !is_ascii_alpha(char_at(line, end)) {
+      break end
+    }
+  } nobreak {
+    line.length()
   }
-  let tag = ascii_lower(line[start:i].to_owned())
-  if tag == "script" || tag == "style" || tag == "pre" || tag == "textarea" {
-    Some("</" + tag + ">")
-  } else {
-    None
+  let tag = ascii_lower(line[1:end].to_owned())
+  match tag {
+    "script" => Some("</script>")
+    "style" => Some("</style>")
+    "pre" => Some("</pre>")
+    "textarea" => Some("</textarea>")
+    _ => None
   }
 }
 
@@ -397,19 +412,17 @@ fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
     contains_char(trim(trimmed[fence.length():].to_owned()), '`')) else {
     NoMatch
   }
-  let mut i = ctx.index + 1
   if ctx.collect_only {
-    while i < ctx.lines.length() {
+    for i in (ctx.index + 1)..<ctx.lines.length() {
       if is_closing_fence_line(ctx.lines[i], fence) {
         return block_match(i - ctx.index + 1, EventFragment::empty())
       }
-      i = i + 1
     }
-    return block_match(i - ctx.index, EventFragment::empty())
+    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
   }
   let info = fence_info(trimmed, fence)
   let code = StringBuilder::new()
-  while i < ctx.lines.length() {
+  for i in (ctx.index + 1)..<ctx.lines.length() {
     if is_closing_fence_line(ctx.lines[i], fence) {
       return block_match(
         i - ctx.index + 1,
@@ -429,15 +442,14 @@ fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
       code.write_string("\n")
     }
     code.write_string(strip_fenced_code_indent(ctx.lines[i], opening_indent))
-    i = i + 1
   }
   block_match(
-    i - ctx.index,
+    ctx.lines.length() - ctx.index,
     EventFragment::element(
       Element::with_attrs(
         tag_name("cm:code_block"),
         code_block_attrs(info),
-        range=Some(block_source_range(ctx, ctx.index, i)),
+        range=Some(block_source_range(ctx, ctx.index, ctx.lines.length())),
       ),
       children=[EventFragment::text(finalize_code_block_text(code.to_string()))],
     ),
@@ -454,11 +466,9 @@ fn strip_fenced_code_indent(line : String, indent : Int) -> String {
 ///|
 fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
   let line = ctx.lines[ctx.index]
-  if count_leading_spaces(line) < 4 {
-    return NoMatch
-  }
-  let mut i = ctx.index
+  guard count_leading_spaces(line) >= 4 else { NoMatch }
   if ctx.collect_only {
+    let mut i = ctx.index
     while i < ctx.lines.length() {
       if is_blank(ctx.lines[i]) {
         if next_nonblank_is_indented_code(ctx.lines, i + 1) {
@@ -475,6 +485,7 @@ fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
     return block_match(i - ctx.index, EventFragment::empty())
   }
   let code = StringBuilder::new()
+  let mut i = ctx.index
   while i < ctx.lines.length() {
     if is_blank(ctx.lines[i]) {
       if next_nonblank_is_indented_code(ctx.lines, i + 1) {
@@ -514,23 +525,21 @@ fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
 
 ///|
 fn finalize_code_block_text(text : String) -> String {
-  if text == "" {
-    ""
-  } else {
-    text + "\n"
+  match text {
+    "" => ""
+    _ => text + "\n"
   }
 }
 
 ///|
 fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
-  let mut i = start
-  while i < lines.length() {
+  for i in start..<lines.length() {
     if !is_blank(lines[i]) {
-      return count_leading_spaces(lines[i]) >= 4
+      break count_leading_spaces(lines[i]) >= 4
     }
-    i = i + 1
+  } nobreak {
+    false
   }
-  false
 }
 
 ///|
@@ -585,39 +594,37 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   } else {
     ""
   }
-  match parse_reference_definition(trim(inner_text)) {
-    Some(definition) => ctx.state.add_reference(definition)
-    None =>
-      if lazy_starts_with_block {
-        inner.parse_into(ctx.registry, sink, ctx.state)
-      } else if used_lazy {
-        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-        parse_inlines_with_rules(
-          inner_text,
-          ctx.registry,
-          ctx.inline_rules,
-          ctx.inline_mode,
-          sink,
-          ctx.state,
-        )
-        sink.emit(Exit(tag_name("cm:paragraph")))
-      } else if inner.length == 1 &&
-        inner.first != "" &&
-        count_leading_spaces(inner.first) < 4 &&
-        !is_paragraph_interrupt(inner.first) {
-        sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-        parse_inlines_with_rules(
-          paragraph_line(inner.first),
-          ctx.registry,
-          ctx.inline_rules,
-          ctx.inline_mode,
-          sink,
-          ctx.state,
-        )
-        sink.emit(Exit(tag_name("cm:paragraph")))
-      } else {
-        inner.parse_into(ctx.registry, sink, ctx.state)
-      }
+  if parse_reference_definition(trim(inner_text)) is Some(definition) {
+    ctx.state.add_reference(definition)
+  } else if lazy_starts_with_block {
+    inner.parse_into(ctx.registry, sink, ctx.state)
+  } else if used_lazy {
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
+    parse_inlines_with_rules(
+      inner_text,
+      ctx.registry,
+      ctx.inline_rules,
+      ctx.inline_mode,
+      sink,
+      ctx.state,
+    )
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else if inner.length == 1 &&
+    inner.first != "" &&
+    count_leading_spaces(inner.first) < 4 &&
+    !is_paragraph_interrupt(inner.first) {
+    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
+    parse_inlines_with_rules(
+      paragraph_line(inner.first),
+      ctx.registry,
+      ctx.inline_rules,
+      ctx.inline_mode,
+      sink,
+      ctx.state,
+    )
+    sink.emit(Exit(tag_name("cm:paragraph")))
+  } else {
+    inner.parse_into(ctx.registry, sink, ctx.state)
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   block_match(i - ctx.index, buffer.into_fragment())
@@ -661,9 +668,10 @@ fn emit_single_line_blockquote(
     ),
   )
   if may_contain_reference_definition(inner) {
-    match parse_reference_definition(trim(inner)) {
-      Some(definition) => ctx.state.add_reference(definition)
-      None => emit_single_line_blockquote_content(ctx, inner, sink)
+    if parse_reference_definition(trim(inner)) is Some(definition) {
+      ctx.state.add_reference(definition)
+    } else {
+      emit_single_line_blockquote_content(ctx, inner, sink)
     }
   } else {
     emit_single_line_blockquote_content(ctx, inner, sink)
@@ -776,17 +784,23 @@ fn strip_blockquote_marker(line : String) -> String {
   let mut pos = first + 1
   let mut column = first + 1
   let mut prefix_spaces = 0
-  if pos < line.length() && char_at(line, pos) == ' ' {
-    pos = pos + 1
-    column = column + 1
-  } else if pos < line.length() && char_at(line, pos) == '\t' {
-    let spaces = 4 - column % 4
-    pos = pos + 1
-    column = column + spaces
-    prefix_spaces = if pos < line.length() && char_at(line, pos) == '\t' {
-      column - first - 2
-    } else {
-      0
+  if pos < line.length() {
+    match char_at(line, pos) {
+      ' ' => {
+        pos = pos + 1
+        column = column + 1
+      }
+      '\t' => {
+        let spaces = 4 - column % 4
+        pos = pos + 1
+        column = column + spaces
+        prefix_spaces = if pos < line.length() && char_at(line, pos) == '\t' {
+          column - first - 2
+        } else {
+          0
+        }
+      }
+      _ => ()
     }
   }
   expand_tabs_from_column(line[pos:].to_owned(), column, prefix_spaces)
@@ -805,15 +819,18 @@ fn expand_tabs_from_column(
   }
   let mut column = start_column
   for i in 0..<text.length() {
-    if char_at(text, i) == '\t' {
-      let spaces = 4 - column % 4
-      for _ in 0..<spaces {
-        out.write_string(" ")
+    match char_at(text, i) {
+      '\t' => {
+        let spaces = 4 - column % 4
+        for _ in 0..<spaces {
+          out.write_string(" ")
+        }
+        column = column + spaces
       }
-      column = column + spaces
-    } else {
-      out.write_view(text[i:i + 1])
-      column = column + 1
+      _ => {
+        out.write_view(text[i:i + 1])
+        column = column + 1
+      }
     }
   }
   out.to_string()
@@ -832,12 +849,7 @@ fn is_paragraph_interrupt(line : String) -> Bool {
 
 ///|
 fn is_atx_heading_start_at(line : String, start : Int) -> Bool {
-  let mut level = 0
-  while start + level < line.length() &&
-        level < 6 &&
-        char_at(line, start + level) == '#' {
-    level = level + 1
-  }
+  let level = marker_run_length_limit(line, start, '#', 6)
   level > 0 &&
   (start + level >= line.length() || is_space(char_at(line, start + level)))
 }
@@ -863,47 +875,45 @@ fn is_fence_marker_line(line : String) -> Bool {
 ///|
 fn is_html_block_paragraph_interrupt(line : String) -> Bool {
   let leading = count_leading_spaces(line)
-  if leading > 3 || leading >= line.length() || char_at(line, leading) != '<' {
-    return false
+  guard leading <= 3 && leading < line.length() && char_at(line, leading) == '<' else {
+    false
   }
   let trimmed = if leading == 0 { line } else { line[leading:].to_owned() }
-  html_block_terminator(trimmed) != None || looks_like_html_block_start(trimmed)
+  html_block_terminator(trimmed) is Some(_) ||
+  looks_like_html_block_start(trimmed)
 }
 
 ///|
 fn looks_like_html_block_start(line : String) -> Bool {
-  if line.length() < 3 || char_at(line, 0) != '<' {
-    return false
+  guard line.length() >= 3 && char_at(line, 0) == '<' else { false }
+  let start = if char_at(line, 1) == '/' { 2 } else { 1 }
+  guard start < line.length() && is_ascii_alpha(char_at(line, start)) else {
+    false
   }
-  let mut i = 1
-  if char_at(line, i) == '/' {
-    i = i + 1
+  let end = for end in start..<line.length() {
+    if !(is_ascii_alpha(char_at(line, end)) ||
+      is_ascii_digit(char_at(line, end))) {
+      break end
+    }
+  } nobreak {
+    line.length()
   }
-  if i >= line.length() || !is_ascii_alpha(char_at(line, i)) {
-    return false
-  }
-  let start = i
-  while i < line.length() &&
-        (is_ascii_alpha(char_at(line, i)) || is_ascii_digit(char_at(line, i))) {
-    i = i + 1
-  }
-  is_html_block_tag(ascii_lower(line[start:i].to_owned())) &&
+  is_html_block_tag(ascii_lower(line[start:end].to_owned())) &&
   (
-    i >= line.length() ||
-    is_space(char_at(line, i)) ||
-    char_at(line, i) == '>' ||
-    char_at(line, i) == '/'
+    end >= line.length() ||
+    is_space(char_at(line, end)) ||
+    char_at(line, end) == '>' ||
+    char_at(line, end) == '/'
   )
 }
 
 ///|
 fn looks_like_complete_open_or_close_tag(line : String) -> Bool {
-  match raw_html_tag_end(line, 0) {
-    Some(end) => {
-      let rest = trim(line[end:].to_owned())
-      rest == ""
-    }
-    None => false
+  if raw_html_tag_end(line, 0) is Some(end) {
+    let rest = trim(line[end:].to_owned())
+    rest == ""
+  } else {
+    false
   }
 }
 
@@ -983,17 +993,10 @@ fn is_html_block_tag(tag : String) -> Bool {
 
 ///|
 fn fence_marker(line : String) -> String {
-  if line.length() < 3 {
-    return ""
-  }
+  guard line.length() >= 3 else { "" }
   let marker = char_at(line, 0)
-  if marker != '`' && marker != '~' {
-    return ""
-  }
-  let mut length = 0
-  while length < line.length() && char_at(line, length) == marker {
-    length = length + 1
-  }
+  guard marker == '`' || marker == '~' else { "" }
+  let length = marker_run_length(line, 0, marker)
   if length >= 3 {
     line[:length].to_owned()
   } else {
@@ -1003,41 +1006,63 @@ fn fence_marker(line : String) -> String {
 
 ///|
 fn has_fence_marker_at(line : String, start : Int) -> Bool {
-  if start + 3 > line.length() {
-    return false
-  }
+  guard start + 3 <= line.length() else { false }
   let marker = char_at(line, start)
-  if marker != '`' && marker != '~' {
-    return false
-  }
-  let mut length = 0
-  while start + length < line.length() &&
-        char_at(line, start + length) == marker {
-    length = length + 1
-  }
+  guard marker == '`' || marker == '~' else { false }
+  let length = marker_run_length(line, start, marker)
   length >= 3
 }
 
 ///|
 fn is_closing_fence_at(line : String, opening : String, start : Int) -> Bool {
-  if opening == "" || line.length() < opening.length() {
-    return false
-  }
+  guard opening != "" && line.length() >= opening.length() else { false }
   let marker = char_at(opening, 0)
-  let mut length = 0
-  while start + length < line.length() &&
-        char_at(line, start + length) == marker {
-    length = length + 1
-  }
-  if length < opening.length() {
-    return false
-  }
+  let length = marker_run_length(line, start, marker)
+  guard length >= opening.length() else { false }
   for i in (start + length)..<line.length() {
     if !is_space(char_at(line, i)) {
-      return false
+      break false
+    }
+  } nobreak {
+    true
+  }
+}
+
+///|
+fn marker_run_length(line : String, start : Int, marker : Int) -> Int {
+  for i in start..<line.length() {
+    if char_at(line, i) != marker {
+      break i - start
+    }
+  } nobreak {
+    line.length() - start
+  }
+}
+
+///|
+fn marker_run_length_limit(
+  line : String,
+  start : Int,
+  marker : Int,
+  limit : Int,
+) -> Int {
+  let stop = if start + limit < line.length() {
+    start + limit
+  } else {
+    line.length()
+  }
+  for i in start..<stop {
+    if char_at(line, i) != marker {
+      break i - start
+    }
+  } nobreak {
+    let remaining = line.length() - start
+    if remaining < limit {
+      remaining
+    } else {
+      limit
     }
   }
-  true
 }
 
 ///|
@@ -1049,19 +1074,21 @@ fn is_closing_fence_line(line : String, opening : String) -> Bool {
 ///|
 fn fence_info(line : String, fence : String) -> String {
   let rest = trim(line[fence.length():].to_owned())
-  let mut end = 0
-  while end < rest.length() && !is_space(char_at(rest, end)) {
-    end = end + 1
+  let end = for end in 0..<rest.length() {
+    if is_space(char_at(rest, end)) {
+      break end
+    }
+  } nobreak {
+    rest.length()
   }
   normalize_attribute_text(rest[:end].to_owned())
 }
 
 ///|
 fn code_block_attrs(info : String) -> Array[Attr] {
-  if info == "" {
-    []
-  } else {
-    [{ name: attr_name("info"), value: info }]
+  match info {
+    "" => []
+    _ => [{ name: attr_name("info"), value: info }]
   }
 }
 
@@ -1073,30 +1100,35 @@ fn contains_char(text : String, needle : Int) -> Bool {
 ///|
 fn is_thematic_break_at(line : String, start : Int) -> Bool {
   let c = char_at(line, start)
-  if c != '-' && c != '*' && c != '_' {
-    return false
-  }
+  guard c == '-' || c == '*' || c == '_' else { false }
   let mut count = 0
   for i in start..<line.length() {
     let n = char_at(line, i)
     if n == c {
       count = count + 1
     } else if !is_space(n) {
-      return false
+      break false
     }
+  } nobreak {
+    count >= 3
   }
-  count >= 3
 }
 
 ///|
 fn strip_closing_hashes(line : String) -> String {
-  let mut end = line.length()
-  while end > 0 && is_space(char_at(line, end - 1)) {
-    end = end - 1
+  let end = for end in line.length()>=..1 {
+    if !is_space(char_at(line, end - 1)) {
+      break end
+    }
+  } nobreak {
+    0
   }
-  let mut hash_start = end
-  while hash_start > 0 && char_at(line, hash_start - 1) == '#' {
-    hash_start = hash_start - 1
+  let hash_start = for hash_start in end>=..1 {
+    if char_at(line, hash_start - 1) != '#' {
+      break hash_start
+    }
+  } nobreak {
+    0
   }
   if hash_start == end ||
     hash_start == 0 ||
