@@ -22,10 +22,8 @@ test {
 ```mbt check
 ///|
 test {
-  match @markdown.ast("hello") {
-    Ok(root) => assert_eq(root.children().length(), 1)
-    Err(_) => abort("expected AST")
-  }
+  let root = @markdown.ast("hello")
+  assert_eq(root.children().length(), 1)
 }
 ```
 
@@ -130,21 +128,18 @@ test {
   sink.emit(Exit(@markdown.Tag::raw("x:note")))
   sink.finish()
 
-  match ast.result() {
-    Ok(root) =>
-      match root.children().get(0) {
-        Some(note) =>
-          match note.children().get(0) {
-            Some(child) =>
-              match child.text() {
-                Some(text) => assert_eq(text, "ab")
-                None => abort("expected text node")
-              }
-            None => abort("expected child node")
+  let root = ast.result()
+  match root.children().get(0) {
+    Some(note) =>
+      match note.children().get(0) {
+        Some(child) =>
+          match child.text() {
+            Some(text) => assert_eq(text, "ab")
+            None => abort("expected text node")
           }
-        None => abort("expected note node")
+        None => abort("expected child node")
       }
-    Err(_) => abort("expected AST")
+    None => abort("expected note node")
   }
 }
 ```

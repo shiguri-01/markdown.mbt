@@ -834,7 +834,7 @@ fn render_commonmark(markdown : String) -> String {
 ///|
 fn ast_from_commonmark(
   markdown : String,
-) -> Result[@markdown.AstNode, @markdown.AstError] {
+) -> @markdown.AstNode raise @markdown.AstError {
   let ast = @markdown.Ast()
   @markdown.Processor().parse(markdown, ast.sink())
   ast.result()
@@ -912,9 +912,6 @@ test "CommonMark subset pass rate is available by category" {
 ///|
 test "CommonMark subset parser events build AST" {
   for example in commonmark_subset_examples() {
-    match ast_from_commonmark(example.markdown) {
-      Ok(_) => ()
-      Err(_) => abort("parser-generated events should build AST")
-    }
+    ignore(ast_from_commonmark(example.markdown))
   }
 }
