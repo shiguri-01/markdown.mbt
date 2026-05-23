@@ -19,8 +19,8 @@ pub struct AstNode {
 }
 
 ///|
-/// An error returned when an event stream cannot form a balanced tree.
-pub(all) enum AstError {
+/// An error raised when an event stream cannot form a balanced tree.
+pub(all) suberror AstError {
   /// An `Exit` appeared with no matching open element.
   UnexpectedExit(Tag)
   /// An `Exit` closed a different tag than the currently open element.
@@ -33,13 +33,14 @@ pub(all) enum AstError {
 /// A streaming AST builder sink.
 pub struct Ast {
   priv stack : Array[AstNode]
-  priv mut result : Result[AstNode, AstError]?
+  priv mut finished : Bool
+  priv mut error : AstError?
 }
 
 ///|
 /// Creates an empty streaming AST builder.
 pub fn Ast::Ast() -> Ast {
-  { stack: [root_ast_node()], result: None }
+  { stack: [root_ast_node()], finished: false, error: None }
 }
 
 ///|
@@ -49,11 +50,14 @@ pub fn Ast::sink(self : Ast) -> Sink {
 }
 
 ///|
-/// Returns the AST result after the stream has finished.
-pub fn Ast::result(self : Ast) -> Result[AstNode, AstError] {
-  match self.result {
-    Some(result) => copy_ast_result(result)
-    None => self.finish_and_result()
+/// Returns the AST after the stream has finished.
+pub fn Ast::result(self : Ast) -> AstNode raise AstError {
+  if !self.finished {
+    self.finish()
+  }
+  match self.error {
+    Some(err) => raise err
+    None => copy_ast_node(self.stack[0])
   }
 }
 
@@ -100,16 +104,6 @@ fn copy_ast_node(node : AstNode) -> AstNode {
 }
 
 ///|
-fn copy_ast_result(
-  result : Result[AstNode, AstError],
-) -> Result[AstNode, AstError] {
-  match result {
-    Ok(node) => Ok(copy_ast_node(node))
-    Err(err) => Err(err)
-  }
-}
-
-///|
 /// Returns the source range attached to the node, if any.
 pub fn AstNode::range(self : AstNode) -> SourceRange? {
   self.range
@@ -122,10 +116,8 @@ fn root_ast_node() -> AstNode {
 
 ///|
 fn Ast::accept(self : Ast, event : Event) -> Unit {
-  match self.result {
-    Some(_) => return
-    None => ()
-  }
+  guard !self.finished else {  }
+  guard self.error is None else {  }
   match event {
     Enter(el) =>
       self.stack.push({
@@ -136,24 +128,18 @@ fn Ast::accept(self : Ast, event : Event) -> Unit {
         range: el.range,
       })
     Exit(tag) => {
-      if self.stack.length() <= 1 {
-        self.result = Some(Err(UnexpectedExit(tag)))
-        return
+      guard self.stack.length() > 1 else {
+        self.error = Some(UnexpectedExit(tag))
       }
       let node = self.stack[self.stack.length() - 1]
       match node.element {
-        Some(el) =>
-          if el.tag != tag {
-            self.result = Some(Err(MismatchedExit(el.tag, tag)))
-            return
-          }
-        None => {
-          self.result = Some(Err(UnexpectedExit(tag)))
-          return
+        Some(el) if el.tag == tag => {
+          ignore(self.stack.pop())
+          self.stack[self.stack.length() - 1].children.push(node)
         }
+        Some(el) => self.error = Some(MismatchedExit(el.tag, tag))
+        None => self.error = Some(UnexpectedExit(tag))
       }
-      ignore(self.stack.pop())
-      self.stack[self.stack.length() - 1].children.push(node)
     }
     Text(text) =>
       self.stack[self.stack.length() - 1].children.push({
@@ -200,23 +186,13 @@ fn Ast::accept(self : Ast, event : Event) -> Unit {
 
 ///|
 fn Ast::finish(self : Ast) -> Unit {
-  ignore(self.finish_and_result())
-}
-
-///|
-fn Ast::finish_and_result(self : Ast) -> Result[AstNode, AstError] {
-  match self.result {
-    Some(result) => return copy_ast_result(result)
-    None => ()
+  guard !self.finished else {  }
+  self.finished = true
+  guard self.error is None else {  }
+  guard self.stack.length() != 1 else {  }
+  let err = match self.stack[self.stack.length() - 1].element {
+    Some(el) => UnclosedTag(el.tag)
+    None => UnclosedTag(tag_name("<root>"))
   }
-  let result = if self.stack.length() != 1 {
-    match self.stack[self.stack.length() - 1].element {
-      Some(el) => Err(UnclosedTag(el.tag))
-      None => Err(UnclosedTag(tag_name("<root>")))
-    }
-  } else {
-    Ok(copy_ast_node(self.stack[0]))
-  }
-  self.result = Some(result)
-  copy_ast_result(result)
+  self.error = Some(err)
 }

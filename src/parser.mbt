@@ -23,7 +23,7 @@ pub fn html(source : String) -> String {
 
 ///|
 /// Parses CommonMark and returns the event-derived AST.
-pub fn ast(source : String) -> Result[AstNode, AstError] {
+pub fn ast(source : String) -> AstNode raise AstError {
   let ast = Ast()
   Processor().parse(source, ast.sink())
   ast.result()

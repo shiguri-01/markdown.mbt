@@ -2,27 +2,26 @@
 package "shiguri/markdown"
 
 // Values
-pub fn ast(String) -> Result[AstNode, AstError]
+pub fn ast(String) -> AstNode raise AstError
 
 pub fn commonmark() -> Rule
 
 pub fn html(String) -> String
 
 // Errors
+pub(all) suberror AstError {
+  UnexpectedExit(Tag)
+  MismatchedExit(Tag, Tag)
+  UnclosedTag(Tag)
+}
 
 // Types and methods
 pub struct Ast {
   // private fields
 }
 pub fn Ast::Ast() -> Self
-pub fn Ast::result(Self) -> Result[AstNode, AstError]
+pub fn Ast::result(Self) -> AstNode raise AstError
 pub fn Ast::sink(Self) -> Sink
-
-pub(all) enum AstError {
-  UnexpectedExit(Tag)
-  MismatchedExit(Tag, Tag)
-  UnclosedTag(Tag)
-}
 
 pub struct AstNode {
   // private fields

@@ -62,23 +62,19 @@ test "commonmark inline text keeps long ordinary space runs together" {
 
 ///|
 test "commonmark list item ast has no renderer-only block attribute" {
-  match @markdown.ast("- one\n\n- two\n") {
-    Ok(root) => {
-      let lists = root.children()
-      assert_eq(lists.length(), 1)
-      let items = lists[0].children()
-      assert_eq(items.length(), 2)
-      for item in items {
-        match item.element() {
-          Some(el) => {
-            assert_eq(el.tag().to_string(), "cm:item")
-            assert_true(el.attr(@markdown.AttrName::raw("block")) is None)
-          }
-          None => abort("expected list item element")
-        }
+  let root = @markdown.ast("- one\n\n- two\n")
+  let lists = root.children()
+  assert_eq(lists.length(), 1)
+  let items = lists[0].children()
+  assert_eq(items.length(), 2)
+  for item in items {
+    match item.element() {
+      Some(el) => {
+        assert_eq(el.tag().to_string(), "cm:item")
+        assert_true(el.attr(@markdown.AttrName::raw("block")) is None)
       }
+      None => abort("expected list item element")
     }
-    Err(_) => abort("expected ast")
   }
 }
 
