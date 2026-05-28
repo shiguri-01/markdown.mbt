@@ -1,0 +1,4 @@
+interface:
+  display_name: "Profile Workflow"
+  short_description: "Profile MoonBit parser performance"
+  default_prompt: "Use $profile-workflow to profile this MoonBit library, find hot parser/rendering code, and guide a focused performance improvement."

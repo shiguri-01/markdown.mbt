@@ -4,12 +4,18 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     moonbit-overlay.url = "github:moonbit-community/moonbit-overlay";
+    moonPprof = {
+      url = "github:mizchi/moon-pprof";
+      flake = false;
+    };
   };
 
   outputs =
     {
+      self,
       nixpkgs,
       moonbit-overlay,
+      moonPprof,
       ...
     }:
     let
@@ -29,6 +35,27 @@
         };
     in
     {
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
+          moon-pprof = pkgs.rustPlatform.buildRustPackage {
+            pname = "moon-pprof";
+            version = "0.1.1";
+            src = moonPprof;
+            cargoHash = "sha256-f4qdy/wy5fSTH4Ww6twDCaTUihUDsOK7fm8hHLbHkLU=";
+            nativeBuildInputs = [ pkgs.protobuf ];
+            cargoBuildFlags = [
+              "--bin"
+              "moon-pprof"
+            ];
+            doCheck = false;
+          };
+        }
+      );
+
       devShells = forAllSystems (
         system:
         let
@@ -63,20 +90,32 @@
                 }
             '';
           };
+          basePackages = [
+            moonbit-node
+            pkgs.bun
+            pkgs.cmark
+            pkgs.git
+            pkgs.just
+            pkgs.lefthook
+            markdown-compare
+            pkgs.moonbit-bin.moonbit.latest
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+            pkgs.perf
+          ];
         in
         {
           default = pkgs.mkShell {
-            packages = [
-              moonbit-node
-              pkgs.bun
-              pkgs.cmark
-              pkgs.git
-              pkgs.just
-              pkgs.lefthook
-              markdown-compare
-              pkgs.moonbit-bin.moonbit.latest
-            ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-              pkgs.perf
+            packages = basePackages;
+            shellHook = ''
+              if git rev-parse --git-dir >/dev/null 2>&1; then
+                lefthook install
+              fi
+            '';
+          };
+
+          pprof = pkgs.mkShell {
+            packages = basePackages ++ [
+              self.packages.${system}.moon-pprof
             ];
             shellHook = ''
               if git rev-parse --git-dir >/dev/null 2>&1; then

@@ -6,12 +6,11 @@ Run from this directory:
 moon bench --release
 ```
 
-For native CPU profiling, use the dedicated profile runner from the repository
-root:
+For profiling, use the shared `bench/profile` workload from the repository root:
 
 ```bash
-nix develop --command just perf-record html issue_thread_200kb
-nix develop --command just perf-report
+just prof-wasm-gc
+just prof-native
 ```
 
 The benchmark suite keeps fixture construction and reusable processor

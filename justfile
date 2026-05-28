@@ -45,15 +45,28 @@ bench:
 compare:
   markdown-compare
 
-# Record a native perf profile for the internal profile runner.
-perf-record mode="html" fixture="issue_thread_200kb" repeats="80" warmups="10" output="/tmp/markdown-mbt.perf.data":
-  moon -C bench build profile --target native --release --no-strip
-  perf record -F 999 --call-graph dwarf -o {{output}} -- bench/_build/native/release/build/profile/profile.exe {{mode}} {{fixture}} {{repeats}} {{warmups}}
+# Build the shared profiling workload.
+prof-build target="wasm-gc":
+  nix develop .#pprof -c moon -C bench build profile --target {{target}} --release --no-strip
 
-# Show the most useful perf report for a profile recorded by perf-record.
-perf-report input="/tmp/markdown-mbt.perf.data" limit="1":
-  perf report --stdio -i {{input}} --children --percent-limit {{limit}} --sort symbol | head -180
+# Profile wasm-gc and print a summary.
+prof-wasm-gc out="/tmp/markdown-mbt-wasm-gc.pb.gz" json="/tmp/markdown-mbt-wasm-gc.firefox.json":
+  just prof-build wasm-gc
+  nix develop .#pprof -c moon-pprof profile bench/_build/wasm-gc/release/build/profile/profile.wasm --out {{out}} --json-out {{json}}
+  nix develop .#pprof -c moon-pprof summary {{out}}
 
-# Show flat self-time symbols for a profile recorded by perf-record.
-perf-flat input="/tmp/markdown-mbt.perf.data" limit="1":
-  perf report --stdio -i {{input}} --no-children --percent-limit {{limit}} --sort symbol | head -180
+# Profile native, convert to pprof, and print a summary.
+prof-native out="/tmp/markdown-mbt-native.pb.gz" data="/tmp/markdown-mbt-native.perf.data" script="/tmp/markdown-mbt-native.perf.txt":
+  just prof-build native
+  nix develop .#pprof -c perf record -F 999 -e cpu-clock --call-graph dwarf -o {{data}} -- bench/_build/native/release/build/profile/profile.exe
+  nix develop .#pprof -c bash -lc 'perf script -i "$1" > "$2"' bash {{data}} {{script}}
+  nix develop .#pprof -c moon-pprof perf2pprof {{script}} --out {{out}}
+  nix develop .#pprof -c moon-pprof summary {{out}}
+
+# Print a moon-pprof summary for an existing pprof file.
+prof-summary input:
+  nix develop .#pprof -c moon-pprof summary {{input}}
+
+# Compare two pprof files with moon-pprof's function-level diff.
+prof-diff before after:
+  nix develop .#pprof -c moon-pprof summary --diff {{before}} {{after}}

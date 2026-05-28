@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "moonPprof": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1779869313,
+        "narHash": "sha256-hyuuLdyFLbpFjx2w9GNHy+Z/7p2qshzDT+pZCj9suFY=",
+        "owner": "mizchi",
+        "repo": "moon-pprof",
+        "rev": "d7d688b631998ae5fa562b07e0698e8ea5c279a1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mizchi",
+        "repo": "moon-pprof",
+        "type": "github"
+      }
+    },
     "moonbit-overlay": {
       "inputs": {
         "nixpkgs": "nixpkgs",
@@ -53,6 +69,7 @@
     },
     "root": {
       "inputs": {
+        "moonPprof": "moonPprof",
         "moonbit-overlay": "moonbit-overlay",
         "nixpkgs": "nixpkgs_2"
       }
