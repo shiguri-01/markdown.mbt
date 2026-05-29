@@ -7,8 +7,42 @@ priv struct RuleRegistry {
 }
 
 ///|
+priv struct PreparedRulePlan {
+  registry : RuleRegistry
+  block_rules : Array[RuleEntry]
+  block_continue_rules : Array[RuleEntry]
+  inline_parse_rules : Array[RuleEntry]
+  inline_mode : InlineParseMode
+  core_rules : Array[RuleEntry]
+  has_enabled_block_rules : Bool
+  can_use_commonmark_deferred_block_parse : Bool
+}
+
+///|
 fn RuleRegistry::RuleRegistry() -> RuleRegistry {
   { rules: [], disabled: [], overrides: [], next_order: 0 }
+}
+
+///|
+fn PreparedRulePlan::PreparedRulePlan(
+  registry : RuleRegistry,
+) -> PreparedRulePlan {
+  let block_rules = registry.block_rules()
+  let block_continue_rules = registry.block_continue_rules()
+  let inline_parse_rules = registry.inline_parse_rules()
+  let core_rules = registry.core_rules()
+  {
+    registry,
+    block_rules,
+    block_continue_rules,
+    inline_parse_rules,
+    inline_mode: inline_parse_mode(inline_parse_rules),
+    core_rules,
+    has_enabled_block_rules: registry.has_enabled_block_rules(),
+    can_use_commonmark_deferred_block_parse: registry.can_use_commonmark_deferred_block_parse_with(
+      block_rules, block_continue_rules, inline_parse_rules, core_rules,
+    ),
+  }
 }
 
 ///|
@@ -169,19 +203,21 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
-fn RuleRegistry::can_use_commonmark_deferred_block_parse(
+fn RuleRegistry::can_use_commonmark_deferred_block_parse_with(
   self : RuleRegistry,
+  block_rules : Array[RuleEntry],
+  block_continue_rules : Array[RuleEntry],
+  inline_rules : Array[RuleEntry],
+  core_rules : Array[RuleEntry],
 ) -> Bool {
   if self.overrides.length() != 0 ||
-    self.block_continue_rules().length() != 0 ||
-    self.core_rules().length() != 0 {
+    block_continue_rules.length() != 0 ||
+    core_rules.length() != 0 {
     return false
   }
-  let block_rules = self.block_rules()
   if block_rules.length() != 11 {
     return false
   }
-  let inline_rules = self.inline_parse_rules()
   has_commonmark_block_rules(block_rules) &&
   has_commonmark_inline_pipeline_rules(inline_rules)
 }

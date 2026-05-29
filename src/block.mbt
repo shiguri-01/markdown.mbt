@@ -572,7 +572,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     return block_match(i - ctx.index, EventFragment::empty())
   }
   if ctx.collect_only {
-    inner.collect_references(ctx.registry, ctx.state)
+    inner.collect_references(ctx.plan, ctx.state)
     return block_match(i - ctx.index, EventFragment::empty())
   }
   let buffer = Events()
@@ -597,7 +597,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   if parse_reference_definition(trim(inner_text)) is Some(definition) {
     ctx.state.add_reference(definition)
   } else if lazy_starts_with_block {
-    inner.parse_into(ctx.registry, sink, ctx.state)
+    inner.parse_into(ctx.plan, sink, ctx.state)
   } else if used_lazy {
     sink.emit(Enter(Element(tag_name("cm:paragraph"))))
     parse_inlines_with_rules(
@@ -624,7 +624,7 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     )
     sink.emit(Exit(tag_name("cm:paragraph")))
   } else {
-    inner.parse_into(ctx.registry, sink, ctx.state)
+    inner.parse_into(ctx.plan, sink, ctx.state)
   }
   sink.emit(Exit(tag_name("cm:block_quote")))
   block_match(i - ctx.index, buffer.into_fragment())
@@ -652,7 +652,7 @@ fn emit_single_line_blockquote(
   if ctx.collect_only {
     if may_contain_reference_definition(inner) {
       let payload = BlockPayload(inner)
-      payload.collect_references(ctx.registry, ctx.state)
+      payload.collect_references(ctx.plan, ctx.state)
     }
     return block_match(1, EventFragment::empty())
   }
@@ -700,7 +700,7 @@ fn emit_single_line_blockquote_content(
     )
     sink.emit(Exit(tag_name("cm:paragraph")))
   } else {
-    BlockPayload(inner).parse_into(ctx.registry, sink, ctx.state)
+    BlockPayload(inner).parse_into(ctx.plan, sink, ctx.state)
   }
 }
 

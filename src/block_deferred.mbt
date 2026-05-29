@@ -9,7 +9,7 @@ priv enum DeferredBlockItem {
 fn parse_commonmark_deferred_blocks_into(
   lines : Array[String],
   line_starts : Array[Int],
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   sink : Sink,
   state : ParseState,
 ) -> Unit {
@@ -19,14 +19,19 @@ fn parse_commonmark_deferred_blocks_into(
     line_starts,
     0,
     lines.length(),
-    registry,
+    plan,
     items,
     state,
   )
-  let inline_rules = registry.inline_parse_rules()
-  let inline_mode = inline_parse_mode(inline_rules)
+  let inline_rules = plan.inline_parse_rules
+  let inline_mode = plan.inline_mode
   replay_deferred_block_items(
-    items, registry, inline_rules, inline_mode, sink, state,
+    items,
+    plan.registry,
+    inline_rules,
+    inline_mode,
+    sink,
+    state,
   )
 }
 
@@ -36,14 +41,14 @@ fn parse_commonmark_deferred_range_into(
   line_starts : Array[Int],
   start : Int,
   end : Int,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   items : Array[DeferredBlockItem],
   state : ParseState,
 ) -> Unit {
   let mut i = start
   let stop = if end > lines.length() { lines.length() } else { end }
   while i < stop {
-    let ctx = deferred_block_context(lines, line_starts, i, registry, state)
+    let ctx = deferred_block_context(lines, line_starts, i, plan, state)
     let mut consumed = append_deferred_block_result(items, cm_blank_block(ctx))
     if consumed == 0 {
       consumed = append_deferred_block_result(items, cm_fenced_code_block(ctx))
@@ -124,14 +129,15 @@ fn deferred_block_context(
   lines : Array[String],
   line_starts : Array[Int],
   index : Int,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   state : ParseState,
 ) -> BlockContext {
   {
     lines,
     line_starts,
     index,
-    registry,
+    registry: plan.registry,
+    plan,
     inline_rules: [],
     inline_mode: CustomInlinePipeline,
     state,
@@ -166,7 +172,7 @@ fn parse_payload_with_block_context(
     source.line_starts,
     0,
     source.lines.length(),
-    ctx.registry,
+    ctx.plan,
     items,
     ctx.state,
   )
@@ -624,7 +630,7 @@ fn deferred_list_block(
     )
     emit_deferred_list_item_content(
       item_source,
-      ctx.registry,
+      ctx.plan,
       items,
       ctx.state,
       loose~,
@@ -638,7 +644,7 @@ fn deferred_list_block(
 ///|
 fn emit_deferred_list_item_content(
   item_source : ListItemSource,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   items : Array[DeferredBlockItem],
   state : ParseState,
   loose? : Bool = false,
@@ -669,7 +675,7 @@ fn emit_deferred_list_item_content(
     source.line_starts,
     0,
     source.lines.length(),
-    registry,
+    plan,
     child_items,
     state,
   )

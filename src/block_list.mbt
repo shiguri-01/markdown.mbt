@@ -138,7 +138,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     }
     if ctx.collect_only {
       if item_source.payload.may_contain_reference {
-        collect_list_item_references(item_source, ctx.registry, ctx.state)
+        collect_list_item_references(item_source, ctx.plan, ctx.state)
       }
     } else {
       item_sources.push(item_source)
@@ -177,6 +177,7 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     emit_list_item_content(
       item_source,
       ctx.registry,
+      ctx.plan,
       ctx.inline_rules,
       ctx.inline_mode,
       sink,
@@ -199,10 +200,10 @@ priv struct ListItemSource {
 ///|
 fn collect_list_item_references(
   item_source : ListItemSource,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   state : ParseState,
 ) -> Unit {
-  item_source.payload.collect_references(registry, state)
+  item_source.payload.collect_references(plan, state)
 }
 
 ///|
@@ -215,6 +216,7 @@ fn is_list_marker_item_content(text : String) -> Bool {
 fn emit_list_item_content(
   item_source : ListItemSource,
   registry : RuleRegistry,
+  plan : PreparedRulePlan,
   inline_rules : Array[RuleEntry],
   inline_mode : InlineParseMode,
   sink : Sink,
@@ -243,7 +245,7 @@ fn emit_list_item_content(
     return
   }
   let buffer = Events()
-  item_source.payload.parse_into(registry, buffer.owned_sink(), state)
+  item_source.payload.parse_into(plan, buffer.owned_sink(), state)
   let events = buffer.owned_events()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {

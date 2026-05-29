@@ -4,13 +4,14 @@
 /// A processor owns the rule registry used to turn Markdown input into events.
 /// Build it from a rule before calling `parse`.
 pub struct Processor {
-  priv registry : RuleRegistry
+  priv plan : PreparedRulePlan
 }
 
 ///|
 /// Creates a processor from `rule`, defaulting to CommonMark.
 pub fn Processor::Processor(rule? : Rule = commonmark()) -> Processor {
-  { registry: RuleRegistry().use_rule(rule) }
+  let registry = RuleRegistry().use_rule(rule)
+  { plan: PreparedRulePlan(registry) }
 }
 
 ///|
@@ -35,15 +36,15 @@ pub fn ast(source : String) -> AstNode raise AstError {
 /// Core event rules wrap the downstream sink, so transforms can participate in
 /// the parse pipeline.
 pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
-  let downstream = apply_core_rules(sink, self.registry)
+  let downstream = apply_core_rules(sink, self.plan)
   let state = ParseState()
   let source = split_lines(input)
   if source.may_contain_reference &&
-    self.registry.can_use_commonmark_deferred_block_parse() {
+    self.plan.can_use_commonmark_deferred_block_parse {
     parse_commonmark_deferred_blocks_into(
       source.lines,
       source.line_starts,
-      self.registry,
+      self.plan,
       downstream,
       state,
     )
@@ -54,14 +55,14 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
     collect_reference_definitions_with_block_lines(
       source.lines,
       source.line_starts,
-      self.registry,
+      self.plan,
       state,
     )
   }
   parse_block_lines_into(
     source.lines,
     source.line_starts,
-    self.registry,
+    self.plan,
     downstream,
     state,
   )
@@ -79,7 +80,7 @@ fn may_contain_reference_definition(input : String) -> Bool {
 fn collect_reference_definitions_with_block_lines(
   lines : Array[String],
   line_starts : Array[Int],
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   state : ParseState,
 ) -> Unit {
   parse_block_lines_range_into(
@@ -87,7 +88,7 @@ fn collect_reference_definitions_with_block_lines(
     line_starts,
     0,
     lines.length(),
-    registry,
+    plan,
     Sink(fn(_) { () }),
     state,
     collect_only=true,
@@ -98,7 +99,7 @@ fn collect_reference_definitions_with_block_lines(
 fn parse_block_lines_into(
   lines : Array[String],
   line_starts : Array[Int],
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   sink : Sink,
   state : ParseState,
   collect_only? : Bool = false,
@@ -108,7 +109,7 @@ fn parse_block_lines_into(
     line_starts,
     0,
     lines.length(),
-    registry,
+    plan,
     sink,
     state,
     collect_only~,
@@ -121,31 +122,28 @@ fn parse_block_lines_range_into(
   line_starts : Array[Int],
   start : Int,
   end : Int,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   sink : Sink,
   state : ParseState,
   collect_only? : Bool = false,
 ) -> Unit {
   let mut i = start
   let stop = if end > lines.length() { lines.length() } else { end }
-  let inline_rules = if collect_only {
-    []
-  } else {
-    registry.inline_parse_rules()
-  }
+  let inline_rules = if collect_only { [] } else { plan.inline_parse_rules }
   let inline_mode = if collect_only {
     CustomInlinePipeline
   } else {
-    inline_parse_mode(inline_rules)
+    plan.inline_mode
   }
-  let block_continue_rules = registry.block_continue_rules()
-  let block_start_rules = registry.block_rules()
+  let block_continue_rules = plan.block_continue_rules
+  let block_start_rules = plan.block_rules
   while i < stop {
     let ctx = {
       lines,
       line_starts,
       index: i,
-      registry,
+      registry: plan.registry,
+      plan,
       inline_rules,
       inline_mode,
       state,
@@ -156,7 +154,7 @@ fn parse_block_lines_range_into(
       consumed = try_block_rules(ctx, block_start_rules, sink)
     }
     if consumed <= 0 {
-      consumed = if registry.has_enabled_block_rules() {
+      consumed = if plan.has_enabled_block_rules {
         emit_block_rule_result(emit_fallback_text(ctx), sink)
       } else {
         emit_block_rule_result(cm_paragraph_block(ctx), sink)
@@ -277,7 +275,7 @@ fn BlockPayload::is_not_empty(self : BlockPayload) -> Bool {
 ///|
 fn BlockPayload::parse_into(
   self : BlockPayload,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   sink : Sink,
   state : ParseState,
   collect_only? : Bool = false,
@@ -288,7 +286,7 @@ fn BlockPayload::parse_into(
     source.line_starts,
     0,
     source.lines.length(),
-    registry,
+    plan,
     sink,
     state,
     collect_only~,
@@ -298,10 +296,10 @@ fn BlockPayload::parse_into(
 ///|
 fn BlockPayload::collect_references(
   self : BlockPayload,
-  registry : RuleRegistry,
+  plan : PreparedRulePlan,
   state : ParseState,
 ) -> Unit {
-  self.parse_into(registry, Sink(fn(_) { () }), state, collect_only=true)
+  self.parse_into(plan, Sink(fn(_) { () }), state, collect_only=true)
 }
 
 ///|
@@ -342,9 +340,9 @@ fn block_lines_text_range(
 }
 
 ///|
-fn apply_core_rules(sink : Sink, registry : RuleRegistry) -> Sink {
+fn apply_core_rules(sink : Sink, plan : PreparedRulePlan) -> Sink {
   let mut current = sink
-  let rules = registry.core_rules()
+  let rules = plan.core_rules
   for i in (rules.length() - 1)>=..0 {
     let rule = rules[i]
     if rule.core is Some(f) {
