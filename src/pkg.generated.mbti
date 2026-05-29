@@ -18,13 +18,31 @@ pub fn Ast::Ast() -> Self
 pub fn Ast::result(Self) -> AstNode raise AstError
 pub fn Ast::sink(Self) -> Sink
 
-pub struct AstNode {
-  // private fields
+pub(all) enum AstNode {
+  AstRoot(Array[AstNode])
+  AstParagraph(Array[AstNode])
+  AstHeading(Int, Array[AstNode])
+  AstThematicBreak
+  AstBlockquote(Array[AstNode])
+  AstList(Bool, Int?, Bool, Array[AstNode])
+  AstListItem(Bool, Bool?, Array[AstNode])
+  AstCode(String, String?, String?)
+  AstHtml(String)
+  AstText(String)
+  AstEmphasis(Array[AstNode])
+  AstStrong(Array[AstNode])
+  AstInlineCode(String)
+  AstBreak
+  AstLink(String, String?, Array[AstNode])
+  AstImage(String, String?, String)
+  AstDelete(Array[AstNode])
+  AstTable(Array[String?], Array[AstNode])
+  AstTableRow(Array[AstNode])
+  AstTableCell(String?, Array[AstNode])
+  AstTableSection(Array[AstNode])
+  AstExtension(String, Array[Attr], Array[AstNode])
 }
-pub fn AstNode::children(Self) -> Array[Self]
-pub fn AstNode::element(Self) -> Element?
-pub fn AstNode::range(Self) -> SourceRange?
-pub fn AstNode::text(Self) -> String?
+pub impl ToJson for AstNode
 
 pub struct Attr {
   // private fields
@@ -147,39 +165,6 @@ pub fn InlineScanner::find_char(Self, Int) -> Int?
 pub fn InlineScanner::has_prefix(Self, String) -> Bool
 pub fn InlineScanner::new(String, Int) -> Self?
 pub fn InlineScanner::slice(Self, Int, Int) -> String?
-
-pub struct Mdast {
-  // private fields
-}
-pub fn Mdast::Mdast() -> Self
-pub fn Mdast::result(Self) -> MdastNode raise AstError
-pub fn Mdast::sink(Self) -> Sink
-
-pub(all) enum MdastNode {
-  MdastRoot(Array[MdastNode])
-  MdastParagraph(Array[MdastNode])
-  MdastHeading(Int, Array[MdastNode])
-  MdastThematicBreak
-  MdastBlockquote(Array[MdastNode])
-  MdastList(Bool, Int?, Bool, Array[MdastNode])
-  MdastListItem(Bool, Bool?, Array[MdastNode])
-  MdastCode(String, String?, String?)
-  MdastHtml(String)
-  MdastText(String)
-  MdastEmphasis(Array[MdastNode])
-  MdastStrong(Array[MdastNode])
-  MdastInlineCode(String)
-  MdastBreak
-  MdastLink(String, String?, Array[MdastNode])
-  MdastImage(String, String?, String)
-  MdastDelete(Array[MdastNode])
-  MdastTable(Array[String?], Array[MdastNode])
-  MdastTableRow(Array[MdastNode])
-  MdastTableCell(String?, Array[MdastNode])
-  MdastTableSection(Array[MdastNode])
-  MdastExtension(String, Array[Attr], Array[MdastNode])
-}
-pub impl ToJson for MdastNode
 
 pub struct ParserServices {
   // private fields

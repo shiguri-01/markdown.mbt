@@ -27,7 +27,12 @@ test {
   let ast = @markdown.Ast()
   @markdown.Processor(@commonmark.rule()).parse("hello", ast.sink())
   let root = ast.result()
-  assert_eq(root.children().length(), 1)
+  assert_eq(
+    root.to_json().stringify(),
+    (
+      #|{"type":"root","children":[{"type":"paragraph","children":[{"type":"text","value":"hello"}]}]}
+    ),
+  )
 }
 ```
 
@@ -133,18 +138,12 @@ test {
   sink.finish()
 
   let root = ast.result()
-  match root.children().get(0) {
-    Some(note) =>
-      match note.children().get(0) {
-        Some(child) =>
-          match child.text() {
-            Some(text) => assert_eq(text, "ab")
-            None => abort("expected text node")
-          }
-        None => abort("expected child node")
-      }
-    None => abort("expected note node")
-  }
+  assert_eq(
+    root.to_json().stringify(),
+    (
+      #|{"type":"root","children":[{"type":"mdastExtension","name":"x:note","attributes":{},"children":[{"type":"text","value":"ab"}]}]}
+    ),
+  )
 }
 ```
 

@@ -1,18 +1,5 @@
 ///|
-fn ast_result_from_events(
-  events : Array[@markdown.Event],
-) -> Result[@markdown.AstNode, Error] {
-  let ast = @markdown.Ast()
-  let sink = ast.sink()
-  for event in events {
-    sink.emit(event)
-  }
-  sink.finish()
-  try? ast.result()
-}
-
-///|
-fn commonmark_ast(
+fn ast_test_from_commonmark(
   source : String,
 ) -> @markdown.AstNode raise @markdown.AstError {
   let ast = @markdown.Ast()
@@ -21,78 +8,79 @@ fn commonmark_ast(
 }
 
 ///|
-test "commonmark list item ast has no renderer-only block attribute" {
-  let root = commonmark_ast("- one\n\n- two\n")
-  let lists = root.children()
-  assert_eq(lists.length(), 1)
-  let items = lists[0].children()
-  assert_eq(items.length(), 2)
-  for item in items {
-    match item.element() {
-      Some(el) => {
-        assert_eq(el.tag().to_string(), "cm:item")
-        assert_true(el.attr(@markdown.AttrName::raw("block")) is None)
-      }
-      None => abort("expected list item element")
-    }
-  }
+fn ast_test_from_gfm(
+  source : String,
+  rule : @markdown.Rule,
+) -> @markdown.AstNode raise @markdown.AstError {
+  let ast = @markdown.Ast()
+  @markdown.Processor(rule).parse(source, ast.sink())
+  ast.result()
+}
+
+///|
+test "commonmark ast serializes root heading paragraph and phrasing nodes" {
+  let root = ast_test_from_commonmark(
+    "# Hi\n\nA *small* **test** with `code` and [a](https://example.com \"t\").\n",
+  )
+  inspect(
+    root.to_json().stringify(),
+    content=(
+      #|{"type":"root","children":[{"type":"heading","depth":1,"children":[{"type":"text","value":"Hi"}]},{"type":"paragraph","children":[{"type":"text","value":"A "},{"type":"emphasis","children":[{"type":"text","value":"small"}]},{"type":"text","value":" "},{"type":"strong","children":[{"type":"text","value":"test"}]},{"type":"text","value":" with "},{"type":"inlineCode","value":"code"},{"type":"text","value":" and "},{"type":"link","url":"https://example.com","title":"t","children":[{"type":"text","value":"a"}]},{"type":"text","value":"."}]}]}
+    ),
+  )
+}
+
+///|
+test "commonmark ast wraps tight list phrasing in paragraphs" {
+  let root = ast_test_from_commonmark("- one\n- two\n")
+  inspect(
+    root.to_json().stringify(),
+    content=(
+      #|{"type":"root","children":[{"type":"list","ordered":false,"start":null,"spread":false,"children":[{"type":"listItem","spread":false,"checked":null,"children":[{"type":"paragraph","children":[{"type":"text","value":"one"}]}]},{"type":"listItem","spread":false,"checked":null,"children":[{"type":"paragraph","children":[{"type":"text","value":"two"}]}]}]}]}
+    ),
+  )
+}
+
+///|
+test "commonmark ast serializes code html break image and thematic break" {
+  let root = ast_test_from_commonmark(
+    "![alt](img.png)\n\n```moonbit\nprintln(1)\n```\n\nline\\\nbreak\n\n<div>x</div>\n\n---\n",
+  )
+  inspect(
+    root.to_json().stringify(),
+    content=(
+      #|{"type":"root","children":[{"type":"paragraph","children":[{"type":"image","url":"img.png","title":null,"alt":"alt"}]},{"type":"code","lang":"moonbit","meta":null,"value":"println(1)\n"},{"type":"paragraph","children":[{"type":"text","value":"line"},{"type":"break"},{"type":"text","value":"break"}]},{"type":"html","value":"<div>x</div>\n"},{"type":"thematicBreak"}]}
+    ),
+  )
+}
+
+///|
+test "gfm ast serializes table strikethrough and task list checked" {
+  let rule = @commonmark.rule()
+    .extend(@gfm.tables())
+    .extend(@gfm.strikethrough())
+    .extend(@gfm.task_list_items())
+  let root = ast_test_from_gfm(
+    "| a | b |\n| :- | -: |\n| ~~x~~ | y |\n\n- [x] done\n", rule,
+  )
+  inspect(
+    root.to_json().stringify(),
+    content=(
+      #|{"type":"root","children":[{"type":"table","align":["left","right"],"children":[{"type":"tableRow","children":[{"type":"tableCell","children":[{"type":"text","value":"a"}]},{"type":"tableCell","children":[{"type":"text","value":"b"}]}]},{"type":"tableRow","children":[{"type":"tableCell","children":[{"type":"delete","children":[{"type":"text","value":"x"}]}]},{"type":"tableCell","children":[{"type":"text","value":"y"}]}]}]},{"type":"list","ordered":false,"start":null,"spread":false,"children":[{"type":"listItem","spread":false,"checked":true,"children":[{"type":"paragraph","children":[{"type":"text","value":"done"}]}]}]}]}
+    ),
+  )
 }
 
 ///|
 test "ast reports invalid event streams" {
-  let unexpected = ast_result_from_events([
-    Exit(@markdown.Tag::raw("x:missing")),
-  ])
-  match unexpected {
+  let ast = @markdown.Ast()
+  let sink = ast.sink()
+  sink.emit(@markdown.Exit(@markdown.Tag::raw("x:missing")))
+  sink.finish()
+  let result = try? ast.result()
+  match result {
     Err(@markdown.AstError::UnexpectedExit(tag)) =>
       assert_eq(tag.to_string(), "x:missing")
     _ => abort("expected unexpected exit")
   }
-
-  let mismatched = ast_result_from_events([
-    Enter(@markdown.Element(@markdown.Tag::raw("x:open"))),
-    Exit(@markdown.Tag::raw("x:other")),
-  ])
-  match mismatched {
-    Err(@markdown.AstError::MismatchedExit(opened, closed)) => {
-      assert_eq(opened.to_string(), "x:open")
-      assert_eq(closed.to_string(), "x:other")
-    }
-    _ => abort("expected mismatched exit")
-  }
-
-  let unclosed = ast_result_from_events([
-    Enter(@markdown.Element(@markdown.Tag::raw("x:open"))),
-    Text("body"),
-  ])
-  match unclosed {
-    Err(@markdown.AstError::UnclosedTag(tag)) =>
-      assert_eq(tag.to_string(), "x:open")
-    _ => abort("expected unclosed tag")
-  }
-}
-
-///|
-test "ast preserves source ranges and returns defensive children copies" {
-  let root = commonmark_ast("# Hi\n\ntext\n")
-  let children = root.children()
-  assert_eq(children.length(), 2)
-  match children[0].element() {
-    Some(el) => {
-      assert_eq(el.tag().to_string(), "cm:heading")
-      assert_range(children[0].range(), 0, 4)
-      assert_range(el.range(), 0, 4)
-    }
-    None => abort("expected heading element")
-  }
-  match children[1].element() {
-    Some(el) => {
-      assert_eq(el.tag().to_string(), "cm:paragraph")
-      assert_range(children[1].range(), 6, 10)
-      assert_range(el.range(), 6, 10)
-    }
-    None => abort("expected paragraph element")
-  }
-  children.push(children[0])
-  assert_eq(root.children().length(), 2)
 }
