@@ -1,4 +1,5 @@
 ///|
 pub fn keep_imports_used(_b : @bench.T) -> Unit {
   ignore(@markdown.Processor(@commonmark.rule()))
+  ignore(@markdown.Processor(@gfm.rule()))
 }

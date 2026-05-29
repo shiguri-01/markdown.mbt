@@ -136,6 +136,44 @@ fn issue_thread_huge_document() -> String {
 }
 
 ///|
+fn gfm_feature_document() -> String {
+  gfm_feature_document_sections(52)
+}
+
+///|
+fn gfm_feature_large_document() -> String {
+  gfm_feature_document_sections(520)
+}
+
+///|
+fn gfm_feature_document_sections(count : Int) -> String {
+  let out = StringBuilder::new()
+  out.write_string("# GFM extension workload\n\n")
+  for i in 0..<count {
+    out.write_string("## Iteration ")
+    out.write_string(i.to_string())
+    out.write_string("\n\n")
+    out.write_string("| task | owner | status |\n")
+    out.write_string("| :--- | ---: | :---: |\n")
+    out.write_string("| www.example.com/")
+    out.write_string(i.to_string())
+    out.write_string(" | @bot | ~~stale~~ |\n")
+    out.write_string("| foo")
+    out.write_string(i.to_string())
+    out.write_string("@example.com | team | active |\n\n")
+    out.write_string("- [x] parse table rows with escaped pipes\n")
+    out.write_string("- [ ] render task list checkboxes\n")
+    out.write_string(
+      "- [x] link https://github.com/moonbitlang/moonbit-docs\n\n",
+    )
+    out.write_string(
+      "A paragraph with ~~deleted text~~, www.commonmark.org/help, and a filtered <script>x</script> tag.\n\n",
+    )
+  }
+  out.to_string()
+}
+
+///|
 fn issue_thread_document_comments(count : Int) -> String {
   let out = StringBuilder::new()
   out.write_string("# Parser regression discussion\n\n")
@@ -246,6 +284,10 @@ test "benchmark fixtures produce work" {
   assert_true(
     huge_issue_thread_len >= 990_000 && huge_issue_thread_len <= 1_010_000,
   )
+  let gfm_len = gfm_feature_document().length()
+  assert_true(gfm_len >= 18_000 && gfm_len <= 22_000)
+  let large_gfm_len = gfm_feature_large_document().length()
+  assert_true(large_gfm_len >= 190_000 && large_gfm_len <= 230_000)
   assert_true(parse_event_count(long_space_run_document()) > 0)
   assert_true(parse_event_count(delimiter_document()) > 0)
   assert_true(parse_event_count(reference_document()) > 0)
@@ -257,6 +299,9 @@ test "benchmark fixtures produce work" {
   assert_true(parse_event_count(issue_thread_huge_document()) > 0)
   assert_true(parse_with_rules_event_count(readme_like_document()) > 0)
   assert_true(parse_render_length(readme_like_document()) > 0)
+  let gfm = @markdown.Processor(@gfm.rule())
+  assert_true(parse_event_count_with(gfm, gfm_feature_document()) > 0)
+  assert_true(parse_render_length_with(gfm, gfm_feature_document()) > 0)
 }
 
 ///|
@@ -271,7 +316,10 @@ test "markdown processing speed" (b : @bench.T) {
   let issue_thread = issue_thread_document()
   let large_issue_thread = issue_thread_large_document()
   let huge_issue_thread = issue_thread_huge_document()
+  let gfm_features = gfm_feature_document()
+  let large_gfm_features = gfm_feature_large_document()
   let commonmark = @markdown.Processor(@commonmark.rule())
+  let gfm = @markdown.Processor(@gfm.rule())
   let commonmark_with_rules = @markdown.Processor(
     @commonmark.rule().extend(many_inline_rules_rule(50)),
   )
@@ -283,6 +331,12 @@ test "markdown processing speed" (b : @bench.T) {
   b.bench(
     name="setup/processor_commonmark",
     fn() { b.keep(@markdown.Processor(@commonmark.rule())) },
+    count=10,
+  )
+  b.bench(name="setup/gfm_rule", fn() { b.keep(@gfm.rule()) }, count=10)
+  b.bench(
+    name="setup/processor_gfm",
+    fn() { b.keep(@markdown.Processor(@gfm.rule())) },
     count=10,
   )
   b.bench(
@@ -336,6 +390,16 @@ test "markdown processing speed" (b : @bench.T) {
     count=10,
   )
   b.bench(
+    name="parse/gfm_features/20kb",
+    fn() { b.keep(parse_event_count_with(gfm, gfm_features)) },
+    count=10,
+  )
+  b.bench(
+    name="parse/gfm_features/200kb",
+    fn() { b.keep(parse_event_count_with(gfm, large_gfm_features)) },
+    count=10,
+  )
+  b.bench(
     name="rules/many_inline_rules",
     fn() { b.keep(parse_event_count_with(commonmark_with_rules, readme)) },
     count=10,
@@ -368,6 +432,16 @@ test "markdown processing speed" (b : @bench.T) {
   b.bench(
     name="html/issue_thread/1mb",
     fn() { b.keep(parse_render_length_with(commonmark, huge_issue_thread)) },
+    count=10,
+  )
+  b.bench(
+    name="html/gfm_features/20kb",
+    fn() { b.keep(parse_render_length_with(gfm, gfm_features)) },
+    count=10,
+  )
+  b.bench(
+    name="html/gfm_features/200kb",
+    fn() { b.keep(parse_render_length_with(gfm, large_gfm_features)) },
     count=10,
   )
 }
