@@ -4,12 +4,12 @@
 /// The rule starts from CommonMark and adds GFM tables, task list items,
 /// strikethrough, extended autolinks, and tag filtering.
 pub fn rule() -> @markdown.Rule {
-  @commonmark.rule().extend(extension())
+  @commonmark.rule().extend(extensions())
 }
 
 ///|
 /// Returns only the GFM extension rules.
-pub fn extension() -> @markdown.Rule {
+pub fn extensions() -> @markdown.Rule {
   @markdown.Rule("gfm")
   .extend(tables())
   .extend(strikethrough())
