@@ -33,9 +33,13 @@ verify:
   moon info
   just fmt
 
-# Run the CommonMark conformance report. Pass extra args after `--`.
-conformance *args:
-  moon -C conformance run . {{args}}
+# Run conformance: commonmark or the GFM extension suite.
+conformance target="commonmark" *args:
+  @case "{{target}}" in \
+    commonmark|cmark|cm) moon -C conformance run . {{args}} ;; \
+    gfm|gfm-ext|extensions|ext) moon -C conformance run . --dialect gfm --extensions-only {{args}} ;; \
+    *) moon -C conformance run . {{target}} {{args}} ;; \
+  esac
 
 # Run internal Markdown processing benchmarks.
 bench:
