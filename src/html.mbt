@@ -8,6 +8,7 @@ pub struct Html {
   priv out : StringBuilder
   priv close_stack : Array[String]
   priv mut pending_item_open : Bool
+  priv mut pending_item_attrs : Array[Attr]
 }
 
 ///|
@@ -17,6 +18,7 @@ pub fn Html::Html(size_hint? : Int = 0) -> Html {
     out: StringBuilder::new(size_hint~),
     close_stack: [],
     pending_item_open: false,
+    pending_item_attrs: [],
   }
 }
 
@@ -38,6 +40,7 @@ fn Html::write_event(self : Html, event : Event) -> Unit {
     Enter(el) =>
       if el.tag.value == "cm:item" {
         self.pending_item_open = true
+        self.pending_item_attrs = el.attrs
         self.close_stack.push("</li>\n")
       } else {
         self.flush_pending_item_open(is_list_item_block_child(el.tag))
@@ -58,10 +61,17 @@ fn Html::write_event(self : Html, event : Event) -> Unit {
         .write_string(">")
       }
     }
-    Text(text) => {
-      self.flush_pending_item_open(false)
-      self.out.write_escaped_html(text)
-    }
+    Text(text) =>
+      match self.pending_task_marker_text(text) {
+        Some(result) => {
+          self.flush_pending_item_open(false)
+          self.out.write_escaped_html(result.text)
+        }
+        None => {
+          self.flush_pending_item_open(false)
+          self.out.write_escaped_html(text)
+        }
+      }
     SoftBreak => {
       self.flush_pending_item_open(false)
       self.out.write_string("\n")
@@ -85,8 +95,71 @@ fn Html::flush_pending_item_open(self : Html, block_child : Bool) -> Unit {
     } else {
       self.out.write_string("<li>")
     }
+    self.write_pending_task_checkbox()
+    self.pending_item_attrs = []
     self.pending_item_open = false
   }
+}
+
+///|
+fn Html::write_pending_task_checkbox(self : Html) -> Unit {
+  let checked = attr_value(self.pending_item_attrs, "gfm:checked", "")
+  if checked != "" {
+    self.write_task_checkbox(checked == "true")
+  }
+}
+
+///|
+fn Html::write_task_checkbox(self : Html, checked : Bool) -> Unit {
+  self.out.write_string("<input type=\"checkbox\" disabled=\"\"")
+  if checked {
+    self.out.write_string(" checked=\"\"")
+  }
+  self.out.write_string(" /> ")
+}
+
+///|
+priv struct HtmlTaskMarkerResult {
+  text : String
+}
+
+///|
+fn Html::pending_task_marker_text(
+  self : Html,
+  text : String,
+) -> HtmlTaskMarkerResult? {
+  guard self.pending_item_open else { None }
+  guard attr_value(self.pending_item_attrs, "gfm:checked", "") == "" else {
+    None
+  }
+  guard text.length() >= 3 else { None }
+  guard char_at(text, 0) == '[' && char_at(text, 2) == ']' else { None }
+  let mark = char_at(text, 1)
+  guard mark == ' ' || mark == 'x' || mark == 'X' else { None }
+  guard text.length() == 3 || is_space(char_at(text, 3)) else { None }
+  self.pending_item_attrs = attrs_with_html(
+    self.pending_item_attrs,
+    Attr(
+      AttrName::raw("gfm:checked"),
+      if mark == 'x' || mark == 'X' {
+        "true"
+      } else {
+        "false"
+      },
+    ),
+  )
+  let start = if text.length() > 3 { 4 } else { 3 }
+  Some({ text: text[start:].to_owned() })
+}
+
+///|
+fn attrs_with_html(attrs : Array[Attr], added : Attr) -> Array[Attr] {
+  let out : Array[Attr] = []
+  for attr in attrs {
+    out.push(attr)
+  }
+  out.push(added)
+  out
 }
 
 ///|
@@ -162,6 +235,12 @@ fn write_open_html(out : StringBuilder, el : Element) -> String {
       } else if el.tag.value == "cm:thematic_break" {
         out.write_thematic_break_html(el)
         ""
+      } else if is_gfm_table_tag(el.tag) {
+        out.write_gfm_table_open_html(el)
+        gfm_table_close_html(el)
+      } else if el.tag.value == "gfm:strikethrough" && el.attrs.length() == 0 {
+        out.write_string("<del>")
+        "</del>"
       } else if is_block_tag(el.tag) {
         out
         ..write_string("<")
@@ -204,6 +283,10 @@ fn close_html(el : Element) -> String {
       } else if el.tag.value == "cm:image" ||
         el.tag.value == "cm:thematic_break" {
         ""
+      } else if is_gfm_table_tag(el.tag) {
+        gfm_table_close_html(el)
+      } else if el.tag.value == "gfm:strikethrough" {
+        "</del>"
       } else if is_block_tag(el.tag) {
         "</" + name + ">\n"
       } else {
@@ -241,7 +324,61 @@ fn html_tag_name(tag : Tag) -> String? {
     "cm:image" => Some("img")
     "cm:thematic_break" => Some("hr")
     "cm:heading" => Some("h1")
+    "gfm:strikethrough" => Some("del")
+    "gfm:table" => Some("table")
+    "gfm:thead" => Some("thead")
+    "gfm:tbody" => Some("tbody")
+    "gfm:tr" => Some("tr")
+    "gfm:th" => Some("th")
+    "gfm:td" => Some("td")
     _ => None
+  }
+}
+
+///|
+fn is_gfm_table_tag(tag : Tag) -> Bool {
+  tag.value == "gfm:table" ||
+  tag.value == "gfm:thead" ||
+  tag.value == "gfm:tbody" ||
+  tag.value == "gfm:tr" ||
+  tag.value == "gfm:th" ||
+  tag.value == "gfm:td"
+}
+
+///|
+fn StringBuilder::write_gfm_table_open_html(
+  self : StringBuilder,
+  el : Element,
+) -> Unit {
+  match el.tag.value {
+    "gfm:table" => self.write_string("<table>\n")
+    "gfm:thead" => self.write_string("<thead>\n")
+    "gfm:tbody" => self.write_string("<tbody>\n")
+    "gfm:tr" => self.write_string("<tr>\n")
+    "gfm:th" => {
+      self.write_string("<th")
+      self.write_attrs(el.attrs)
+      self.write_string(">")
+    }
+    "gfm:td" => {
+      self.write_string("<td")
+      self.write_attrs(el.attrs)
+      self.write_string(">")
+    }
+    _ => ()
+  }
+}
+
+///|
+fn gfm_table_close_html(el : Element) -> String {
+  match el.tag.value {
+    "gfm:table" => "</table>\n"
+    "gfm:thead" => "</thead>\n"
+    "gfm:tbody" => "</tbody>\n"
+    "gfm:tr" => "</tr>\n"
+    "gfm:th" => "</th>\n"
+    "gfm:td" => "</td>\n"
+    _ => ""
   }
 }
 
