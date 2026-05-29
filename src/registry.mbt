@@ -13,9 +13,11 @@ priv struct PreparedRulePlan {
   block_continue_rules : Array[RuleEntry]
   inline_parse_rules : Array[RuleEntry]
   inline_fallback_rules : Array[RuleEntry]
+  inline_ascii_rule_buckets : Array[Array[RuleEntry]]
   inline_rule_buckets : Array[InlineRuleBucket]
   inline_mode : InlineParseMode
   inline_trigger_chars : String
+  inline_has_triggers_outside_commonmark : Bool
   core_rules : Array[RuleEntry]
 }
 
@@ -39,17 +41,25 @@ fn PreparedRulePlan::PreparedRulePlan(
   let inline_parse_rules = registry.inline_parse_rules()
   let core_rules = registry.core_rules()
   let inline_trigger_chars = inline_trigger_chars(inline_parse_rules)
+  let inline_fallback_rules = inline_fallback_rules(inline_parse_rules)
   {
     registry,
     block_rules,
     block_continue_rules,
     inline_parse_rules,
-    inline_fallback_rules: inline_fallback_rules(inline_parse_rules),
-    inline_rule_buckets: inline_rule_buckets(
+    inline_fallback_rules,
+    inline_ascii_rule_buckets: inline_ascii_rule_buckets(
+      inline_parse_rules, inline_trigger_chars, inline_fallback_rules,
+    ),
+    inline_rule_buckets: inline_non_ascii_rule_buckets(
       inline_parse_rules, inline_trigger_chars,
     ),
     inline_mode: inline_parse_mode(inline_parse_rules),
     inline_trigger_chars,
+    inline_has_triggers_outside_commonmark: inline_has_triggers_other_than(
+      inline_trigger_chars,
+      commonmark_inline_trigger_chars(),
+    ),
     core_rules,
   }
 }
@@ -240,22 +250,51 @@ fn inline_fallback_rules(rules : Array[RuleEntry]) -> Array[RuleEntry] {
 }
 
 ///|
-fn inline_rule_buckets(
+fn inline_ascii_rule_buckets(
+  rules : Array[RuleEntry],
+  triggers : String,
+  fallback : Array[RuleEntry],
+) -> Array[Array[RuleEntry]] {
+  let buckets : Array[Array[RuleEntry]] = []
+  for _ in 0..<128 {
+    buckets.push(fallback)
+  }
+  for i in 0..<triggers.length() {
+    let trigger = char_at(triggers, i)
+    if trigger >= 0 && trigger < buckets.length() {
+      buckets[trigger] = inline_rules_for_trigger(rules, trigger)
+    }
+  }
+  buckets
+}
+
+///|
+fn inline_non_ascii_rule_buckets(
   rules : Array[RuleEntry],
   triggers : String,
 ) -> Array[InlineRuleBucket] {
   let buckets : Array[InlineRuleBucket] = []
   for i in 0..<triggers.length() {
     let trigger = char_at(triggers, i)
-    let selected : Array[RuleEntry] = []
-    for rule in rules {
-      if rule.triggers == "" || contains_char(rule.triggers, trigger) {
-        selected.push(rule)
-      }
+    if trigger >= 128 {
+      buckets.push({ trigger, rules: inline_rules_for_trigger(rules, trigger) })
     }
-    buckets.push({ trigger, rules: selected })
   }
   buckets
+}
+
+///|
+fn inline_rules_for_trigger(
+  rules : Array[RuleEntry],
+  trigger : Int,
+) -> Array[RuleEntry] {
+  let selected : Array[RuleEntry] = []
+  for rule in rules {
+    if rule.triggers == "" || contains_char(rule.triggers, trigger) {
+      selected.push(rule)
+    }
+  }
+  selected
 }
 
 ///|
@@ -263,6 +302,9 @@ fn PreparedRulePlan::inline_rules_for(
   self : PreparedRulePlan,
   trigger : Int,
 ) -> Array[RuleEntry] {
+  if trigger >= 0 && trigger < self.inline_ascii_rule_buckets.length() {
+    return self.inline_ascii_rule_buckets[trigger]
+  }
   for bucket in self.inline_rule_buckets {
     if bucket.trigger == trigger {
       return bucket.rules
@@ -274,6 +316,21 @@ fn PreparedRulePlan::inline_rules_for(
 ///|
 fn inline_parse_mode(_rules : Array[RuleEntry]) -> InlineParseMode {
   CustomInlinePipeline
+}
+
+///|
+fn inline_has_triggers_other_than(triggers : String, ignored : String) -> Bool {
+  for i in 0..<triggers.length() {
+    if !contains_char(ignored, char_at(triggers, i)) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn commonmark_inline_trigger_chars() -> String {
+  " ![<&`*_\\\n"
 }
 
 ///|

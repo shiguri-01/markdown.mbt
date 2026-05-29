@@ -45,8 +45,7 @@ pub struct BlockContext {
 /// Context passed to inline and delimiter rules.
 pub struct InlineContext {
   priv text : String
-  priv index : Int
-  priv scanner : InlineScanner
+  priv mut index : Int
   priv registry : RuleRegistry
   priv plan : PreparedRulePlan
   priv inline_rules : Array[RuleEntry]
@@ -183,7 +182,7 @@ pub fn InlineContext::offset(self : InlineContext) -> Int {
 ///|
 /// Returns a scanner positioned at the current inline offset.
 pub fn InlineContext::scanner(self : InlineContext) -> InlineScanner {
-  self.scanner
+  inline_scanner(self.text, self.index)
 }
 
 ///|
@@ -210,12 +209,11 @@ pub fn InlineContext::has_inline_triggers_other_than(
   self : InlineContext,
   ignored : String,
 ) -> Bool {
-  for i in 0..<self.inline_trigger_chars.length() {
-    if !contains_char(ignored, char_at(self.inline_trigger_chars, i)) {
-      return true
-    }
+  if ignored == commonmark_inline_trigger_chars() {
+    self.plan.inline_has_triggers_outside_commonmark
+  } else {
+    inline_has_triggers_other_than(self.inline_trigger_chars, ignored)
   }
-  false
 }
 
 ///|

@@ -15,19 +15,20 @@ fn parse_inlines_with_rules(
     }
     return
   }
+  let text_length = text.length()
+  let ctx = {
+    text,
+    index: 0,
+    registry,
+    plan,
+    inline_rules: rules,
+    inline_mode,
+    inline_trigger_chars,
+    state,
+  }
   let mut i = 0
-  while i < text.length() {
-    let ctx = {
-      text,
-      index: i,
-      scanner: inline_scanner(text, i),
-      registry,
-      plan,
-      inline_rules: rules,
-      inline_mode,
-      inline_trigger_chars,
-      state,
-    }
+  while i < text_length {
+    ctx.index = i
     let candidates = plan.inline_rules_for(char_at(text, i))
     let consumed = try_inline_rules(ctx, candidates, sink)
     if consumed == 0 {
