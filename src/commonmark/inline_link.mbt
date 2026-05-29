@@ -173,34 +173,41 @@ fn find_link_text_end_before(text : String, start : Int, end : Int) -> Int {
 fn normalize_attribute_text(text : String) -> String {
   let out = StringBuilder::new(size_hint=text.length())
   let mut i = 0
+  let mut start = 0
   while i < text.length() {
     if char_at(text, i) == '\\' &&
       i + 1 < text.length() &&
       is_ascii_punctuation(char_at(text, i + 1)) {
+      if start < i {
+        out.write_view(text[start:i])
+      }
       out.write_view(text[i + 1:i + 2])
       i = i + 2
+      start = i
     } else if char_at(text, i) == '&' {
       let end = find_char(text, ';', i + 1)
       if end > i {
         let name = text[i + 1:end].to_owned()
         match decode_entity(name) {
           Some(decoded) => {
+            if start < i {
+              out.write_view(text[start:i])
+            }
             out.write_string(decoded)
             i = end + 1
+            start = i
           }
-          None => {
-            out.write_view(text[i:i + 1])
-            i = i + 1
-          }
+          None => i = i + 1
         }
       } else {
-        out.write_view(text[i:i + 1])
         i = i + 1
       }
     } else {
-      out.write_view(text[i:i + 1])
       i = i + 1
     }
+  }
+  if start < text.length() {
+    out.write_view(text[start:])
   }
   out.to_string()
 }
@@ -430,24 +437,34 @@ fn percent_encode_uri(input : String) -> String {
     out.write_view(input[:first])
   }
   let mut i = first
+  let mut start = first
   while i < input.length() {
     let c = char_at(input, i)
     if c == 37 &&
       i + 2 < input.length() &&
       is_ascii_hex_digit(char_at(input, i + 1)) &&
       is_ascii_hex_digit(char_at(input, i + 2)) {
-      out.write_view(input[i:i + 3])
       i = i + 3
     } else if is_uri_safe_char(c) {
-      out.write_view(input[i:i + 1])
       i = i + 1
     } else if c < 128 {
+      if start < i {
+        out.write_view(input[start:i])
+      }
       out.write_percent_byte(c)
       i = i + 1
+      start = i
     } else {
+      if start < i {
+        out.write_view(input[start:i])
+      }
       out.write_percent_utf8(c)
       i = i + 1
+      start = i
     }
+  }
+  if start < input.length() {
+    out.write_view(input[start:])
   }
   out.to_string()
 }
