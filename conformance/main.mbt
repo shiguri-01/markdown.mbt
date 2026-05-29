@@ -6,6 +6,7 @@ struct CommonMarkExample {
   start_line : Int
   end_line : Int
   section : String
+  options : String?
 } derive(FromJson)
 
 ///|
@@ -178,17 +179,49 @@ fn run_examples(
   for example in examples {
     if should_run_example(example, options) {
       let html = @markdown.Html()
-      let rule = if options.dialect == "gfm" {
-        @gfm.rule()
-      } else {
-        @commonmark.rule()
-      }
+      let rule = conformance_rule(options.dialect, example)
       @markdown.Processor(rule).parse(example.markdown, html.sink())
       let actual = html.to_string()
       results.push({ example, actual })
     }
   }
   results
+}
+
+///|
+fn conformance_rule(dialect : String, example : CommonMarkExample) -> @markdown.Rule {
+  if dialect == "gfm" {
+    gfm_example_rule(example)
+  } else {
+    @commonmark.rule()
+  }
+}
+
+///|
+fn gfm_example_rule(example : CommonMarkExample) -> @markdown.Rule {
+  let mut rule = @commonmark.rule()
+  let options = match example.options {
+    Some(value) => value
+    None => ""
+  }
+  if options.contains("table") || example.section == "Tables (extension)" {
+    rule = rule.extend(@gfm.tables())
+  }
+  if options.contains("strikethrough") ||
+    example.section == "Strikethrough (extension)" {
+    rule = rule.extend(@gfm.strikethrough())
+  }
+  if options.contains("autolink") || example.section == "Autolinks (extension)" {
+    rule = rule.extend(@gfm.autolinks())
+  }
+  if options.contains("tagfilter") ||
+    example.section == "Disallowed Raw HTML (extension)" {
+    rule = rule.extend(@gfm.tagfilter())
+  }
+  if example.section == "Task list items (extension)" {
+    rule = rule.extend(@gfm.task_list_items())
+  }
+  rule
 }
 
 ///|
@@ -229,6 +262,11 @@ fn print_text_report(
     total.to_string() +
     " passed",
   )
+  if options.dialect == "gfm" && !options.extensions_only {
+    println(
+      "note: full GFM 0.29 is diagnostic; this parser targets CommonMark 0.31.2, so older non-extension examples may differ.",
+    )
+  }
   println("")
   for report in reports {
     println(
@@ -253,6 +291,8 @@ fn conformance_label(options : ConformanceOptions) -> String {
     if options.extensions_only {
       "GFM 0.29 extensions"
     } else {
+      // Full GFM 0.29 is diagnostic for this parser. The library targets
+      // CommonMark 0.31.2, while GFM 0.29 embeds older non-extension examples.
       "GFM 0.29"
     }
   } else {

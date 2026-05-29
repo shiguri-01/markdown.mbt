@@ -6,9 +6,19 @@ import {
 }
 
 // Values
+pub fn autolinks() -> @markdown.Rule
+
 pub fn extension() -> @markdown.Rule
 
 pub fn rule() -> @markdown.Rule
+
+pub fn strikethrough() -> @markdown.Rule
+
+pub fn tables() -> @markdown.Rule
+
+pub fn tagfilter() -> @markdown.Rule
+
+pub fn task_list_items() -> @markdown.Rule
 
 // Errors
 

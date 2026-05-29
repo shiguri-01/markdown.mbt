@@ -165,7 +165,7 @@ fn parse_delimiter_row(line : String) -> Array[String] {
 ///|
 fn parse_delimiter_cell(cell : String) -> String? {
   let text = trim(cell)
-  guard text.length() >= 3 else { None }
+  guard text.length() >= 1 else { None }
   let mut i = 0
   let left = if char_at(text, i) == ':' {
     i = i + 1

@@ -4,92 +4,103 @@
 let gfm_spec_json : String =
   #|[
   #|  {
-  #|    "markdown": "→foo→baz→→bim\n",
-  #|    "html": "<pre><code>foo→baz→→bim\n</code></pre>\n",
+  #|    "markdown": "\tfoo\tbaz\t\tbim\n",
+  #|    "html": "<pre><code>foo\tbaz\t\tbim\n</code></pre>\n",
   #|    "example": 1,
   #|    "start_line": 368,
   #|    "end_line": 373,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "  →foo→baz→→bim\n",
-  #|    "html": "<pre><code>foo→baz→→bim\n</code></pre>\n",
+  #|    "markdown": "  \tfoo\tbaz\t\tbim\n",
+  #|    "html": "<pre><code>foo\tbaz\t\tbim\n</code></pre>\n",
   #|    "example": 2,
   #|    "start_line": 375,
   #|    "end_line": 380,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "    a→a\n    ὐ→a\n",
-  #|    "html": "<pre><code>a→a\nὐ→a\n</code></pre>\n",
+  #|    "markdown": "    a\ta\n    ὐ\ta\n",
+  #|    "html": "<pre><code>a\ta\nὐ\ta\n</code></pre>\n",
   #|    "example": 3,
   #|    "start_line": 382,
   #|    "end_line": 389,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "  - foo\n\n→bar\n",
+  #|    "markdown": "  - foo\n\n\tbar\n",
   #|    "html": "<ul>\n<li>\n<p>foo</p>\n<p>bar</p>\n</li>\n</ul>\n",
   #|    "example": 4,
   #|    "start_line": 395,
   #|    "end_line": 406,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "- foo\n\n→→bar\n",
+  #|    "markdown": "- foo\n\n\t\tbar\n",
   #|    "html": "<ul>\n<li>\n<p>foo</p>\n<pre><code>  bar\n</code></pre>\n</li>\n</ul>\n",
   #|    "example": 5,
   #|    "start_line": 408,
   #|    "end_line": 420,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": ">→→foo\n",
+  #|    "markdown": ">\t\tfoo\n",
   #|    "html": "<blockquote>\n<pre><code>  foo\n</code></pre>\n</blockquote>\n",
   #|    "example": 6,
   #|    "start_line": 431,
   #|    "end_line": 438,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "-→→foo\n",
+  #|    "markdown": "-\t\tfoo\n",
   #|    "html": "<ul>\n<li>\n<pre><code>  foo\n</code></pre>\n</li>\n</ul>\n",
   #|    "example": 7,
   #|    "start_line": 440,
   #|    "end_line": 449,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "    foo\n→bar\n",
+  #|    "markdown": "    foo\n\tbar\n",
   #|    "html": "<pre><code>foo\nbar\n</code></pre>\n",
   #|    "example": 8,
   #|    "start_line": 452,
   #|    "end_line": 459,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": " - foo\n   - bar\n→ - baz\n",
+  #|    "markdown": " - foo\n   - bar\n\t - baz\n",
   #|    "html": "<ul>\n<li>foo\n<ul>\n<li>bar\n<ul>\n<li>baz</li>\n</ul>\n</li>\n</ul>\n</li>\n</ul>\n",
   #|    "example": 9,
   #|    "start_line": 461,
   #|    "end_line": 477,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "#→Foo\n",
+  #|    "markdown": "#\tFoo\n",
   #|    "html": "<h1>Foo</h1>\n",
   #|    "example": 10,
   #|    "start_line": 479,
   #|    "end_line": 483,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "*→*→*→\n",
+  #|    "markdown": "*\t*\t*\t\n",
   #|    "html": "<hr />\n",
   #|    "example": 11,
   #|    "start_line": 485,
   #|    "end_line": 489,
-  #|    "section": "Tabs"
+  #|    "section": "Tabs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- `one\n- two`\n",
@@ -97,7 +108,8 @@ let gfm_spec_json : String =
   #|    "example": 12,
   #|    "start_line": 512,
   #|    "end_line": 520,
-  #|    "section": "Precedence"
+  #|    "section": "Precedence",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "***\n---\n___\n",
@@ -105,7 +117,8 @@ let gfm_spec_json : String =
   #|    "example": 13,
   #|    "start_line": 551,
   #|    "end_line": 559,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "+++\n",
@@ -113,7 +126,8 @@ let gfm_spec_json : String =
   #|    "example": 14,
   #|    "start_line": 564,
   #|    "end_line": 568,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "===\n",
@@ -121,7 +135,8 @@ let gfm_spec_json : String =
   #|    "example": 15,
   #|    "start_line": 571,
   #|    "end_line": 575,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "--\n**\n__\n",
@@ -129,7 +144,8 @@ let gfm_spec_json : String =
   #|    "example": 16,
   #|    "start_line": 580,
   #|    "end_line": 588,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " ***\n  ***\n   ***\n",
@@ -137,7 +153,8 @@ let gfm_spec_json : String =
   #|    "example": 17,
   #|    "start_line": 593,
   #|    "end_line": 601,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    ***\n",
@@ -145,7 +162,8 @@ let gfm_spec_json : String =
   #|    "example": 18,
   #|    "start_line": 606,
   #|    "end_line": 611,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n    ***\n",
@@ -153,7 +171,8 @@ let gfm_spec_json : String =
   #|    "example": 19,
   #|    "start_line": 614,
   #|    "end_line": 620,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_____________________________________\n",
@@ -161,7 +180,8 @@ let gfm_spec_json : String =
   #|    "example": 20,
   #|    "start_line": 625,
   #|    "end_line": 629,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " - - -\n",
@@ -169,7 +189,8 @@ let gfm_spec_json : String =
   #|    "example": 21,
   #|    "start_line": 634,
   #|    "end_line": 638,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " **  * ** * ** * **\n",
@@ -177,7 +198,8 @@ let gfm_spec_json : String =
   #|    "example": 22,
   #|    "start_line": 641,
   #|    "end_line": 645,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-     -      -      -\n",
@@ -185,7 +207,8 @@ let gfm_spec_json : String =
   #|    "example": 23,
   #|    "start_line": 648,
   #|    "end_line": 652,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- - - -    \n",
@@ -193,7 +216,8 @@ let gfm_spec_json : String =
   #|    "example": 24,
   #|    "start_line": 657,
   #|    "end_line": 661,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_ _ _ _ a\n\na------\n\n---a---\n",
@@ -201,7 +225,8 @@ let gfm_spec_json : String =
   #|    "example": 25,
   #|    "start_line": 666,
   #|    "end_line": 676,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " *-*\n",
@@ -209,7 +234,8 @@ let gfm_spec_json : String =
   #|    "example": 26,
   #|    "start_line": 682,
   #|    "end_line": 686,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n***\n- bar\n",
@@ -217,7 +243,8 @@ let gfm_spec_json : String =
   #|    "example": 27,
   #|    "start_line": 691,
   #|    "end_line": 703,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n***\nbar\n",
@@ -225,7 +252,8 @@ let gfm_spec_json : String =
   #|    "example": 28,
   #|    "start_line": 708,
   #|    "end_line": 716,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n---\nbar\n",
@@ -233,7 +261,8 @@ let gfm_spec_json : String =
   #|    "example": 29,
   #|    "start_line": 725,
   #|    "end_line": 732,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "* Foo\n* * *\n* Bar\n",
@@ -241,7 +270,8 @@ let gfm_spec_json : String =
   #|    "example": 30,
   #|    "start_line": 738,
   #|    "end_line": 750,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- Foo\n- * * *\n",
@@ -249,7 +279,8 @@ let gfm_spec_json : String =
   #|    "example": 31,
   #|    "start_line": 755,
   #|    "end_line": 765,
-  #|    "section": "Thematic breaks"
+  #|    "section": "Thematic breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# foo\n## foo\n### foo\n#### foo\n##### foo\n###### foo\n",
@@ -257,7 +288,8 @@ let gfm_spec_json : String =
   #|    "example": 32,
   #|    "start_line": 784,
   #|    "end_line": 798,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "####### foo\n",
@@ -265,7 +297,8 @@ let gfm_spec_json : String =
   #|    "example": 33,
   #|    "start_line": 803,
   #|    "end_line": 807,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "#5 bolt\n\n#hashtag\n",
@@ -273,7 +306,8 @@ let gfm_spec_json : String =
   #|    "example": 34,
   #|    "start_line": 818,
   #|    "end_line": 825,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\## foo\n",
@@ -281,7 +315,8 @@ let gfm_spec_json : String =
   #|    "example": 35,
   #|    "start_line": 830,
   #|    "end_line": 834,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# foo *bar* \\*baz\\*\n",
@@ -289,7 +324,8 @@ let gfm_spec_json : String =
   #|    "example": 36,
   #|    "start_line": 839,
   #|    "end_line": 843,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "#                  foo                     \n",
@@ -297,7 +333,8 @@ let gfm_spec_json : String =
   #|    "example": 37,
   #|    "start_line": 848,
   #|    "end_line": 852,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " ### foo\n  ## foo\n   # foo\n",
@@ -305,7 +342,8 @@ let gfm_spec_json : String =
   #|    "example": 38,
   #|    "start_line": 857,
   #|    "end_line": 865,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    # foo\n",
@@ -313,7 +351,8 @@ let gfm_spec_json : String =
   #|    "example": 39,
   #|    "start_line": 870,
   #|    "end_line": 875,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\n    # bar\n",
@@ -321,7 +360,8 @@ let gfm_spec_json : String =
   #|    "example": 40,
   #|    "start_line": 878,
   #|    "end_line": 884,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "## foo ##\n  ###   bar    ###\n",
@@ -329,7 +369,8 @@ let gfm_spec_json : String =
   #|    "example": 41,
   #|    "start_line": 889,
   #|    "end_line": 895,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# foo ##################################\n##### foo ##\n",
@@ -337,7 +378,8 @@ let gfm_spec_json : String =
   #|    "example": 42,
   #|    "start_line": 900,
   #|    "end_line": 906,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "### foo ###     \n",
@@ -345,7 +387,8 @@ let gfm_spec_json : String =
   #|    "example": 43,
   #|    "start_line": 911,
   #|    "end_line": 915,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "### foo ### b\n",
@@ -353,7 +396,8 @@ let gfm_spec_json : String =
   #|    "example": 44,
   #|    "start_line": 922,
   #|    "end_line": 926,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# foo#\n",
@@ -361,7 +405,8 @@ let gfm_spec_json : String =
   #|    "example": 45,
   #|    "start_line": 931,
   #|    "end_line": 935,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "### foo \\###\n## foo #\\##\n# foo \\#\n",
@@ -369,7 +414,8 @@ let gfm_spec_json : String =
   #|    "example": 46,
   #|    "start_line": 941,
   #|    "end_line": 949,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "****\n## foo\n****\n",
@@ -377,7 +423,8 @@ let gfm_spec_json : String =
   #|    "example": 47,
   #|    "start_line": 955,
   #|    "end_line": 963,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo bar\n# baz\nBar foo\n",
@@ -385,7 +432,8 @@ let gfm_spec_json : String =
   #|    "example": 48,
   #|    "start_line": 966,
   #|    "end_line": 974,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "## \n#\n### ###\n",
@@ -393,7 +441,8 @@ let gfm_spec_json : String =
   #|    "example": 49,
   #|    "start_line": 979,
   #|    "end_line": 987,
-  #|    "section": "ATX headings"
+  #|    "section": "ATX headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo *bar*\n=========\n\nFoo *bar*\n---------\n",
@@ -401,7 +450,8 @@ let gfm_spec_json : String =
   #|    "example": 50,
   #|    "start_line": 1019,
   #|    "end_line": 1028,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo *bar\nbaz*\n====\n",
@@ -409,15 +459,17 @@ let gfm_spec_json : String =
   #|    "example": 51,
   #|    "start_line": 1033,
   #|    "end_line": 1040,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "  Foo *bar\nbaz*→\n====\n",
+  #|    "markdown": "  Foo *bar\nbaz*\t\n====\n",
   #|    "html": "<h1>Foo <em>bar\nbaz</em></h1>\n",
   #|    "example": 52,
   #|    "start_line": 1047,
   #|    "end_line": 1054,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n-------------------------\n\nFoo\n=\n",
@@ -425,7 +477,8 @@ let gfm_spec_json : String =
   #|    "example": 53,
   #|    "start_line": 1059,
   #|    "end_line": 1068,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   Foo\n---\n\n  Foo\n-----\n\n  Foo\n  ===\n",
@@ -433,7 +486,8 @@ let gfm_spec_json : String =
   #|    "example": 54,
   #|    "start_line": 1074,
   #|    "end_line": 1087,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    Foo\n    ---\n\n    Foo\n---\n",
@@ -441,7 +495,8 @@ let gfm_spec_json : String =
   #|    "example": 55,
   #|    "start_line": 1092,
   #|    "end_line": 1105,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n   ----      \n",
@@ -449,7 +504,8 @@ let gfm_spec_json : String =
   #|    "example": 56,
   #|    "start_line": 1111,
   #|    "end_line": 1116,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n    ---\n",
@@ -457,7 +513,8 @@ let gfm_spec_json : String =
   #|    "example": 57,
   #|    "start_line": 1121,
   #|    "end_line": 1127,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n= =\n\nFoo\n--- -\n",
@@ -465,7 +522,8 @@ let gfm_spec_json : String =
   #|    "example": 58,
   #|    "start_line": 1132,
   #|    "end_line": 1143,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo  \n-----\n",
@@ -473,7 +531,8 @@ let gfm_spec_json : String =
   #|    "example": 59,
   #|    "start_line": 1148,
   #|    "end_line": 1153,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\\\n----\n",
@@ -481,7 +540,8 @@ let gfm_spec_json : String =
   #|    "example": 60,
   #|    "start_line": 1158,
   #|    "end_line": 1163,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`Foo\n----\n`\n\n<a title=\"a lot\n---\nof dashes\"/>\n",
@@ -489,7 +549,8 @@ let gfm_spec_json : String =
   #|    "example": 61,
   #|    "start_line": 1169,
   #|    "end_line": 1182,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> Foo\n---\n",
@@ -497,7 +558,8 @@ let gfm_spec_json : String =
   #|    "example": 62,
   #|    "start_line": 1188,
   #|    "end_line": 1196,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\nbar\n===\n",
@@ -505,7 +567,8 @@ let gfm_spec_json : String =
   #|    "example": 63,
   #|    "start_line": 1199,
   #|    "end_line": 1209,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- Foo\n---\n",
@@ -513,7 +576,8 @@ let gfm_spec_json : String =
   #|    "example": 64,
   #|    "start_line": 1212,
   #|    "end_line": 1220,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\nBar\n---\n",
@@ -521,7 +585,8 @@ let gfm_spec_json : String =
   #|    "example": 65,
   #|    "start_line": 1227,
   #|    "end_line": 1234,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "---\nFoo\n---\nBar\n---\nBaz\n",
@@ -529,7 +594,8 @@ let gfm_spec_json : String =
   #|    "example": 66,
   #|    "start_line": 1240,
   #|    "end_line": 1252,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\n====\n",
@@ -537,7 +603,8 @@ let gfm_spec_json : String =
   #|    "example": 67,
   #|    "start_line": 1257,
   #|    "end_line": 1262,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "---\n---\n",
@@ -545,7 +612,8 @@ let gfm_spec_json : String =
   #|    "example": 68,
   #|    "start_line": 1269,
   #|    "end_line": 1275,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n-----\n",
@@ -553,7 +621,8 @@ let gfm_spec_json : String =
   #|    "example": 69,
   #|    "start_line": 1278,
   #|    "end_line": 1286,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    foo\n---\n",
@@ -561,7 +630,8 @@ let gfm_spec_json : String =
   #|    "example": 70,
   #|    "start_line": 1289,
   #|    "end_line": 1296,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n-----\n",
@@ -569,7 +639,8 @@ let gfm_spec_json : String =
   #|    "example": 71,
   #|    "start_line": 1299,
   #|    "end_line": 1307,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\> foo\n------\n",
@@ -577,7 +648,8 @@ let gfm_spec_json : String =
   #|    "example": 72,
   #|    "start_line": 1313,
   #|    "end_line": 1318,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n\nbar\n---\nbaz\n",
@@ -585,7 +657,8 @@ let gfm_spec_json : String =
   #|    "example": 73,
   #|    "start_line": 1344,
   #|    "end_line": 1354,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\nbar\n\n---\n\nbaz\n",
@@ -593,7 +666,8 @@ let gfm_spec_json : String =
   #|    "example": 74,
   #|    "start_line": 1360,
   #|    "end_line": 1372,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\nbar\n* * *\nbaz\n",
@@ -601,7 +675,8 @@ let gfm_spec_json : String =
   #|    "example": 75,
   #|    "start_line": 1378,
   #|    "end_line": 1388,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\nbar\n\\---\nbaz\n",
@@ -609,7 +684,8 @@ let gfm_spec_json : String =
   #|    "example": 76,
   #|    "start_line": 1393,
   #|    "end_line": 1403,
-  #|    "section": "Setext headings"
+  #|    "section": "Setext headings",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    a simple\n      indented code block\n",
@@ -617,7 +693,8 @@ let gfm_spec_json : String =
   #|    "example": 77,
   #|    "start_line": 1421,
   #|    "end_line": 1428,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  - foo\n\n    bar\n",
@@ -625,7 +702,8 @@ let gfm_spec_json : String =
   #|    "example": 78,
   #|    "start_line": 1435,
   #|    "end_line": 1446,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1.  foo\n\n    - bar\n",
@@ -633,7 +711,8 @@ let gfm_spec_json : String =
   #|    "example": 79,
   #|    "start_line": 1449,
   #|    "end_line": 1462,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    <a/>\n    *hi*\n\n    - one\n",
@@ -641,7 +720,8 @@ let gfm_spec_json : String =
   #|    "example": 80,
   #|    "start_line": 1469,
   #|    "end_line": 1480,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    chunk1\n\n    chunk2\n  \n \n \n    chunk3\n",
@@ -649,7 +729,8 @@ let gfm_spec_json : String =
   #|    "example": 81,
   #|    "start_line": 1485,
   #|    "end_line": 1502,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    chunk1\n      \n      chunk2\n",
@@ -657,7 +738,8 @@ let gfm_spec_json : String =
   #|    "example": 82,
   #|    "start_line": 1508,
   #|    "end_line": 1517,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n    bar\n\n",
@@ -665,7 +747,8 @@ let gfm_spec_json : String =
   #|    "example": 83,
   #|    "start_line": 1523,
   #|    "end_line": 1530,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    foo\nbar\n",
@@ -673,7 +756,8 @@ let gfm_spec_json : String =
   #|    "example": 84,
   #|    "start_line": 1537,
   #|    "end_line": 1544,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# Heading\n    foo\nHeading\n------\n    foo\n----\n",
@@ -681,7 +765,8 @@ let gfm_spec_json : String =
   #|    "example": 85,
   #|    "start_line": 1550,
   #|    "end_line": 1565,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "        foo\n    bar\n",
@@ -689,7 +774,8 @@ let gfm_spec_json : String =
   #|    "example": 86,
   #|    "start_line": 1570,
   #|    "end_line": 1577,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\n    \n    foo\n    \n\n",
@@ -697,7 +783,8 @@ let gfm_spec_json : String =
   #|    "example": 87,
   #|    "start_line": 1583,
   #|    "end_line": 1592,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    foo  \n",
@@ -705,7 +792,8 @@ let gfm_spec_json : String =
   #|    "example": 88,
   #|    "start_line": 1597,
   #|    "end_line": 1602,
-  #|    "section": "Indented code blocks"
+  #|    "section": "Indented code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n<\n >\n```\n",
@@ -713,7 +801,8 @@ let gfm_spec_json : String =
   #|    "example": 89,
   #|    "start_line": 1652,
   #|    "end_line": 1661,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~\n<\n >\n~~~\n",
@@ -721,7 +810,8 @@ let gfm_spec_json : String =
   #|    "example": 90,
   #|    "start_line": 1666,
   #|    "end_line": 1675,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``\nfoo\n``\n",
@@ -729,7 +819,8 @@ let gfm_spec_json : String =
   #|    "example": 91,
   #|    "start_line": 1679,
   #|    "end_line": 1685,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\naaa\n~~~\n```\n",
@@ -737,7 +828,8 @@ let gfm_spec_json : String =
   #|    "example": 92,
   #|    "start_line": 1690,
   #|    "end_line": 1699,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~\naaa\n```\n~~~\n",
@@ -745,7 +837,8 @@ let gfm_spec_json : String =
   #|    "example": 93,
   #|    "start_line": 1702,
   #|    "end_line": 1711,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "````\naaa\n```\n``````\n",
@@ -753,7 +846,8 @@ let gfm_spec_json : String =
   #|    "example": 94,
   #|    "start_line": 1716,
   #|    "end_line": 1725,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~~\naaa\n~~~\n~~~~\n",
@@ -761,7 +855,8 @@ let gfm_spec_json : String =
   #|    "example": 95,
   #|    "start_line": 1728,
   #|    "end_line": 1737,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n",
@@ -769,7 +864,8 @@ let gfm_spec_json : String =
   #|    "example": 96,
   #|    "start_line": 1743,
   #|    "end_line": 1747,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`````\n\n```\naaa\n",
@@ -777,7 +873,8 @@ let gfm_spec_json : String =
   #|    "example": 97,
   #|    "start_line": 1750,
   #|    "end_line": 1760,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> ```\n> aaa\n\nbbb\n",
@@ -785,7 +882,8 @@ let gfm_spec_json : String =
   #|    "example": 98,
   #|    "start_line": 1763,
   #|    "end_line": 1774,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n\n  \n```\n",
@@ -793,7 +891,8 @@ let gfm_spec_json : String =
   #|    "example": 99,
   #|    "start_line": 1779,
   #|    "end_line": 1788,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n```\n",
@@ -801,7 +900,8 @@ let gfm_spec_json : String =
   #|    "example": 100,
   #|    "start_line": 1793,
   #|    "end_line": 1798,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " ```\n aaa\naaa\n```\n",
@@ -809,7 +909,8 @@ let gfm_spec_json : String =
   #|    "example": 101,
   #|    "start_line": 1805,
   #|    "end_line": 1814,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  ```\naaa\n  aaa\naaa\n  ```\n",
@@ -817,7 +918,8 @@ let gfm_spec_json : String =
   #|    "example": 102,
   #|    "start_line": 1817,
   #|    "end_line": 1828,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   ```\n   aaa\n    aaa\n  aaa\n   ```\n",
@@ -825,7 +927,8 @@ let gfm_spec_json : String =
   #|    "example": 103,
   #|    "start_line": 1831,
   #|    "end_line": 1842,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    ```\n    aaa\n    ```\n",
@@ -833,7 +936,8 @@ let gfm_spec_json : String =
   #|    "example": 104,
   #|    "start_line": 1847,
   #|    "end_line": 1856,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\naaa\n  ```\n",
@@ -841,7 +945,8 @@ let gfm_spec_json : String =
   #|    "example": 105,
   #|    "start_line": 1862,
   #|    "end_line": 1869,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   ```\naaa\n  ```\n",
@@ -849,7 +954,8 @@ let gfm_spec_json : String =
   #|    "example": 106,
   #|    "start_line": 1872,
   #|    "end_line": 1879,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\naaa\n    ```\n",
@@ -857,7 +963,8 @@ let gfm_spec_json : String =
   #|    "example": 107,
   #|    "start_line": 1884,
   #|    "end_line": 1892,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``` ```\naaa\n",
@@ -865,7 +972,8 @@ let gfm_spec_json : String =
   #|    "example": 108,
   #|    "start_line": 1898,
   #|    "end_line": 1904,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~~~~\naaa\n~~~ ~~\n",
@@ -873,7 +981,8 @@ let gfm_spec_json : String =
   #|    "example": 109,
   #|    "start_line": 1907,
   #|    "end_line": 1915,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\n```\nbar\n```\nbaz\n",
@@ -881,7 +990,8 @@ let gfm_spec_json : String =
   #|    "example": 110,
   #|    "start_line": 1921,
   #|    "end_line": 1932,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\n---\n~~~\nbar\n~~~\n# baz\n",
@@ -889,7 +999,8 @@ let gfm_spec_json : String =
   #|    "example": 111,
   #|    "start_line": 1938,
   #|    "end_line": 1950,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```ruby\ndef foo(x)\n  return 3\nend\n```\n",
@@ -897,7 +1008,8 @@ let gfm_spec_json : String =
   #|    "example": 112,
   #|    "start_line": 1960,
   #|    "end_line": 1971,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~~    ruby startline=3 $%@#$\ndef foo(x)\n  return 3\nend\n~~~~~~~\n",
@@ -905,7 +1017,8 @@ let gfm_spec_json : String =
   #|    "example": 113,
   #|    "start_line": 1974,
   #|    "end_line": 1985,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "````;\n````\n",
@@ -913,7 +1026,8 @@ let gfm_spec_json : String =
   #|    "example": 114,
   #|    "start_line": 1988,
   #|    "end_line": 1993,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``` aa ```\nfoo\n",
@@ -921,7 +1035,8 @@ let gfm_spec_json : String =
   #|    "example": 115,
   #|    "start_line": 1998,
   #|    "end_line": 2004,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~ aa ``` ~~~\nfoo\n~~~\n",
@@ -929,7 +1044,8 @@ let gfm_spec_json : String =
   #|    "example": 116,
   #|    "start_line": 2009,
   #|    "end_line": 2016,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n``` aaa\n```\n",
@@ -937,7 +1053,8 @@ let gfm_spec_json : String =
   #|    "example": 117,
   #|    "start_line": 2021,
   #|    "end_line": 2028,
-  #|    "section": "Fenced code blocks"
+  #|    "section": "Fenced code blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<table><tr><td>\n<pre>\n**Hello**,\n\n_world_.\n</pre>\n</td></tr></table>\n",
@@ -945,7 +1062,8 @@ let gfm_spec_json : String =
   #|    "example": 118,
   #|    "start_line": 2100,
   #|    "end_line": 2115,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<table>\n  <tr>\n    <td>\n           hi\n    </td>\n  </tr>\n</table>\n\nokay.\n",
@@ -953,7 +1071,8 @@ let gfm_spec_json : String =
   #|    "example": 119,
   #|    "start_line": 2129,
   #|    "end_line": 2148,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " <div>\n  *hello*\n         <foo><a>\n",
@@ -961,7 +1080,8 @@ let gfm_spec_json : String =
   #|    "example": 120,
   #|    "start_line": 2151,
   #|    "end_line": 2159,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "</div>\n*foo*\n",
@@ -969,7 +1089,8 @@ let gfm_spec_json : String =
   #|    "example": 121,
   #|    "start_line": 2164,
   #|    "end_line": 2170,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<DIV CLASS=\"foo\">\n\n*Markdown*\n\n</DIV>\n",
@@ -977,7 +1098,8 @@ let gfm_spec_json : String =
   #|    "example": 122,
   #|    "start_line": 2175,
   #|    "end_line": 2185,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div id=\"foo\"\n  class=\"bar\">\n</div>\n",
@@ -985,7 +1107,8 @@ let gfm_spec_json : String =
   #|    "example": 123,
   #|    "start_line": 2191,
   #|    "end_line": 2199,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div id=\"foo\" class=\"bar\n  baz\">\n</div>\n",
@@ -993,7 +1116,8 @@ let gfm_spec_json : String =
   #|    "example": 124,
   #|    "start_line": 2202,
   #|    "end_line": 2210,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div>\n*foo*\n\n*bar*\n",
@@ -1001,7 +1125,8 @@ let gfm_spec_json : String =
   #|    "example": 125,
   #|    "start_line": 2214,
   #|    "end_line": 2223,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div id=\"foo\"\n*hi*\n",
@@ -1009,7 +1134,8 @@ let gfm_spec_json : String =
   #|    "example": 126,
   #|    "start_line": 2230,
   #|    "end_line": 2236,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div class\nfoo\n",
@@ -1017,7 +1143,8 @@ let gfm_spec_json : String =
   #|    "example": 127,
   #|    "start_line": 2239,
   #|    "end_line": 2245,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div *???-&&&-<---\n*foo*\n",
@@ -1025,7 +1152,8 @@ let gfm_spec_json : String =
   #|    "example": 128,
   #|    "start_line": 2251,
   #|    "end_line": 2257,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div><a href=\"bar\">*foo*</a></div>\n",
@@ -1033,7 +1161,8 @@ let gfm_spec_json : String =
   #|    "example": 129,
   #|    "start_line": 2263,
   #|    "end_line": 2267,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<table><tr><td>\nfoo\n</td></tr></table>\n",
@@ -1041,7 +1170,8 @@ let gfm_spec_json : String =
   #|    "example": 130,
   #|    "start_line": 2270,
   #|    "end_line": 2278,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div></div>\n``` c\nint x = 33;\n```\n",
@@ -1049,7 +1179,8 @@ let gfm_spec_json : String =
   #|    "example": 131,
   #|    "start_line": 2287,
   #|    "end_line": 2297,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"foo\">\n*bar*\n</a>\n",
@@ -1057,7 +1188,8 @@ let gfm_spec_json : String =
   #|    "example": 132,
   #|    "start_line": 2304,
   #|    "end_line": 2312,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<Warning>\n*bar*\n</Warning>\n",
@@ -1065,7 +1197,8 @@ let gfm_spec_json : String =
   #|    "example": 133,
   #|    "start_line": 2317,
   #|    "end_line": 2325,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<i class=\"foo\">\n*bar*\n</i>\n",
@@ -1073,7 +1206,8 @@ let gfm_spec_json : String =
   #|    "example": 134,
   #|    "start_line": 2328,
   #|    "end_line": 2336,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "</ins>\n*bar*\n",
@@ -1081,7 +1215,8 @@ let gfm_spec_json : String =
   #|    "example": 135,
   #|    "start_line": 2339,
   #|    "end_line": 2345,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<del>\n*foo*\n</del>\n",
@@ -1089,7 +1224,8 @@ let gfm_spec_json : String =
   #|    "example": 136,
   #|    "start_line": 2354,
   #|    "end_line": 2362,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<del>\n\n*foo*\n\n</del>\n",
@@ -1097,7 +1233,8 @@ let gfm_spec_json : String =
   #|    "example": 137,
   #|    "start_line": 2369,
   #|    "end_line": 2379,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<del>*foo*</del>\n",
@@ -1105,7 +1242,8 @@ let gfm_spec_json : String =
   #|    "example": 138,
   #|    "start_line": 2387,
   #|    "end_line": 2391,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<pre language=\"haskell\"><code>\nimport Text.HTML.TagSoup\n\nmain :: IO ()\nmain = print $ parseTags tags\n</code></pre>\nokay\n",
@@ -1113,7 +1251,8 @@ let gfm_spec_json : String =
   #|    "example": 139,
   #|    "start_line": 2403,
   #|    "end_line": 2419,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<script type=\"text/javascript\">\n// JavaScript example\n\ndocument.getElementById(\"demo\").innerHTML = \"Hello JavaScript!\";\n</script>\nokay\n",
@@ -1121,7 +1260,8 @@ let gfm_spec_json : String =
   #|    "example": 140,
   #|    "start_line": 2424,
   #|    "end_line": 2438,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<style\n  type=\"text/css\">\nh1 {color:red;}\n\np {color:blue;}\n</style>\nokay\n",
@@ -1129,7 +1269,8 @@ let gfm_spec_json : String =
   #|    "example": 141,
   #|    "start_line": 2443,
   #|    "end_line": 2459,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<style\n  type=\"text/css\">\n\nfoo\n",
@@ -1137,7 +1278,8 @@ let gfm_spec_json : String =
   #|    "example": 142,
   #|    "start_line": 2466,
   #|    "end_line": 2476,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> <div>\n> foo\n\nbar\n",
@@ -1145,7 +1287,8 @@ let gfm_spec_json : String =
   #|    "example": 143,
   #|    "start_line": 2479,
   #|    "end_line": 2490,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- <div>\n- foo\n",
@@ -1153,7 +1296,8 @@ let gfm_spec_json : String =
   #|    "example": 144,
   #|    "start_line": 2493,
   #|    "end_line": 2503,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<style>p{color:red;}</style>\n*foo*\n",
@@ -1161,7 +1305,8 @@ let gfm_spec_json : String =
   #|    "example": 145,
   #|    "start_line": 2508,
   #|    "end_line": 2514,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<!-- foo -->*bar*\n*baz*\n",
@@ -1169,7 +1314,8 @@ let gfm_spec_json : String =
   #|    "example": 146,
   #|    "start_line": 2517,
   #|    "end_line": 2523,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<script>\nfoo\n</script>1. *bar*\n",
@@ -1177,7 +1323,8 @@ let gfm_spec_json : String =
   #|    "example": 147,
   #|    "start_line": 2529,
   #|    "end_line": 2537,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<!-- Foo\n\nbar\n   baz -->\nokay\n",
@@ -1185,7 +1332,8 @@ let gfm_spec_json : String =
   #|    "example": 148,
   #|    "start_line": 2542,
   #|    "end_line": 2554,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<?php\n\n  echo '>';\n\n?>\nokay\n",
@@ -1193,7 +1341,8 @@ let gfm_spec_json : String =
   #|    "example": 149,
   #|    "start_line": 2560,
   #|    "end_line": 2574,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<!DOCTYPE html>\n",
@@ -1201,7 +1350,8 @@ let gfm_spec_json : String =
   #|    "example": 150,
   #|    "start_line": 2579,
   #|    "end_line": 2583,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<![CDATA[\nfunction matchwo(a,b)\n{\n  if (a < b && a < 0) then {\n    return 1;\n\n  } else {\n\n    return 0;\n  }\n}\n]]>\nokay\n",
@@ -1209,7 +1359,8 @@ let gfm_spec_json : String =
   #|    "example": 151,
   #|    "start_line": 2588,
   #|    "end_line": 2616,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  <!-- foo -->\n\n    <!-- foo -->\n",
@@ -1217,7 +1368,8 @@ let gfm_spec_json : String =
   #|    "example": 152,
   #|    "start_line": 2621,
   #|    "end_line": 2629,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  <div>\n\n    <div>\n",
@@ -1225,7 +1377,8 @@ let gfm_spec_json : String =
   #|    "example": 153,
   #|    "start_line": 2632,
   #|    "end_line": 2640,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n<div>\nbar\n</div>\n",
@@ -1233,7 +1386,8 @@ let gfm_spec_json : String =
   #|    "example": 154,
   #|    "start_line": 2646,
   #|    "end_line": 2656,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div>\nbar\n</div>\n*foo*\n",
@@ -1241,7 +1395,8 @@ let gfm_spec_json : String =
   #|    "example": 155,
   #|    "start_line": 2663,
   #|    "end_line": 2673,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n<a href=\"bar\">\nbaz\n",
@@ -1249,7 +1404,8 @@ let gfm_spec_json : String =
   #|    "example": 156,
   #|    "start_line": 2678,
   #|    "end_line": 2686,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div>\n\n*Emphasized* text.\n\n</div>\n",
@@ -1257,7 +1413,8 @@ let gfm_spec_json : String =
   #|    "example": 157,
   #|    "start_line": 2719,
   #|    "end_line": 2729,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<div>\n*Emphasized* text.\n</div>\n",
@@ -1265,7 +1422,8 @@ let gfm_spec_json : String =
   #|    "example": 158,
   #|    "start_line": 2732,
   #|    "end_line": 2740,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<table>\n\n<tr>\n\n<td>\nHi\n</td>\n\n</tr>\n\n</table>\n",
@@ -1273,7 +1431,8 @@ let gfm_spec_json : String =
   #|    "example": 159,
   #|    "start_line": 2754,
   #|    "end_line": 2774,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<table>\n\n  <tr>\n\n    <td>\n      Hi\n    </td>\n\n  </tr>\n\n</table>\n",
@@ -1281,7 +1440,8 @@ let gfm_spec_json : String =
   #|    "example": 160,
   #|    "start_line": 2781,
   #|    "end_line": 2802,
-  #|    "section": "HTML blocks"
+  #|    "section": "HTML blocks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url \"title\"\n\n[foo]\n",
@@ -1289,7 +1449,8 @@ let gfm_spec_json : String =
   #|    "example": 161,
   #|    "start_line": 2829,
   #|    "end_line": 2835,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   [foo]: \n      /url  \n           'the title'  \n\n[foo]\n",
@@ -1297,7 +1458,8 @@ let gfm_spec_json : String =
   #|    "example": 162,
   #|    "start_line": 2838,
   #|    "end_line": 2846,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Foo*bar\\]]:my_(url) 'title (with parens)'\n\n[Foo*bar\\]]\n",
@@ -1305,7 +1467,8 @@ let gfm_spec_json : String =
   #|    "example": 163,
   #|    "start_line": 2849,
   #|    "end_line": 2855,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Foo bar]:\n<my url>\n'title'\n\n[Foo bar]\n",
@@ -1313,7 +1476,8 @@ let gfm_spec_json : String =
   #|    "example": 164,
   #|    "start_line": 2858,
   #|    "end_line": 2866,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url '\ntitle\nline1\nline2\n'\n\n[foo]\n",
@@ -1321,7 +1485,8 @@ let gfm_spec_json : String =
   #|    "example": 165,
   #|    "start_line": 2871,
   #|    "end_line": 2885,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url 'title\n\nwith blank line'\n\n[foo]\n",
@@ -1329,7 +1494,8 @@ let gfm_spec_json : String =
   #|    "example": 166,
   #|    "start_line": 2890,
   #|    "end_line": 2900,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]:\n/url\n\n[foo]\n",
@@ -1337,7 +1503,8 @@ let gfm_spec_json : String =
   #|    "example": 167,
   #|    "start_line": 2905,
   #|    "end_line": 2912,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]:\n\n[foo]\n",
@@ -1345,7 +1512,8 @@ let gfm_spec_json : String =
   #|    "example": 168,
   #|    "start_line": 2917,
   #|    "end_line": 2924,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: <>\n\n[foo]\n",
@@ -1353,7 +1521,8 @@ let gfm_spec_json : String =
   #|    "example": 169,
   #|    "start_line": 2929,
   #|    "end_line": 2935,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: <bar>(baz)\n\n[foo]\n",
@@ -1361,7 +1530,8 @@ let gfm_spec_json : String =
   #|    "example": 170,
   #|    "start_line": 2940,
   #|    "end_line": 2947,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\\bar\\*baz \"foo\\\"bar\\baz\"\n\n[foo]\n",
@@ -1369,7 +1539,8 @@ let gfm_spec_json : String =
   #|    "example": 171,
   #|    "start_line": 2953,
   #|    "end_line": 2959,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n[foo]: url\n",
@@ -1377,7 +1548,8 @@ let gfm_spec_json : String =
   #|    "example": 172,
   #|    "start_line": 2964,
   #|    "end_line": 2970,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n[foo]: first\n[foo]: second\n",
@@ -1385,7 +1557,8 @@ let gfm_spec_json : String =
   #|    "example": 173,
   #|    "start_line": 2976,
   #|    "end_line": 2983,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[FOO]: /url\n\n[Foo]\n",
@@ -1393,7 +1566,8 @@ let gfm_spec_json : String =
   #|    "example": 174,
   #|    "start_line": 2989,
   #|    "end_line": 2995,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[ΑΓΩ]: /φου\n\n[αγω]\n",
@@ -1401,7 +1575,8 @@ let gfm_spec_json : String =
   #|    "example": 175,
   #|    "start_line": 2998,
   #|    "end_line": 3004,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\n",
@@ -1409,7 +1584,8 @@ let gfm_spec_json : String =
   #|    "example": 176,
   #|    "start_line": 3010,
   #|    "end_line": 3013,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[\nfoo\n]: /url\nbar\n",
@@ -1417,7 +1593,8 @@ let gfm_spec_json : String =
   #|    "example": 177,
   #|    "start_line": 3018,
   #|    "end_line": 3025,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url \"title\" ok\n",
@@ -1425,7 +1602,8 @@ let gfm_spec_json : String =
   #|    "example": 178,
   #|    "start_line": 3031,
   #|    "end_line": 3035,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\n\"title\" ok\n",
@@ -1433,7 +1611,8 @@ let gfm_spec_json : String =
   #|    "example": 179,
   #|    "start_line": 3040,
   #|    "end_line": 3045,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    [foo]: /url \"title\"\n\n[foo]\n",
@@ -1441,7 +1620,8 @@ let gfm_spec_json : String =
   #|    "example": 180,
   #|    "start_line": 3051,
   #|    "end_line": 3059,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```\n[foo]: /url\n```\n\n[foo]\n",
@@ -1449,7 +1629,8 @@ let gfm_spec_json : String =
   #|    "example": 181,
   #|    "start_line": 3065,
   #|    "end_line": 3075,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n[bar]: /baz\n\n[bar]\n",
@@ -1457,7 +1638,8 @@ let gfm_spec_json : String =
   #|    "example": 182,
   #|    "start_line": 3080,
   #|    "end_line": 3089,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "# [Foo]\n[foo]: /url\n> bar\n",
@@ -1465,7 +1647,8 @@ let gfm_spec_json : String =
   #|    "example": 183,
   #|    "start_line": 3095,
   #|    "end_line": 3104,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\nbar\n===\n[foo]\n",
@@ -1473,7 +1656,8 @@ let gfm_spec_json : String =
   #|    "example": 184,
   #|    "start_line": 3106,
   #|    "end_line": 3114,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\n===\n[foo]\n",
@@ -1481,7 +1665,8 @@ let gfm_spec_json : String =
   #|    "example": 185,
   #|    "start_line": 3116,
   #|    "end_line": 3123,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /foo-url \"foo\"\n[bar]: /bar-url\n  \"bar\"\n[baz]: /baz-url\n\n[foo],\n[bar],\n[baz]\n",
@@ -1489,7 +1674,8 @@ let gfm_spec_json : String =
   #|    "example": 186,
   #|    "start_line": 3129,
   #|    "end_line": 3142,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n> [foo]: /url\n",
@@ -1497,7 +1683,8 @@ let gfm_spec_json : String =
   #|    "example": 187,
   #|    "start_line": 3150,
   #|    "end_line": 3158,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url\n",
@@ -1505,7 +1692,8 @@ let gfm_spec_json : String =
   #|    "example": 188,
   #|    "start_line": 3167,
   #|    "end_line": 3170,
-  #|    "section": "Link reference definitions"
+  #|    "section": "Link reference definitions",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aaa\n\nbbb\n",
@@ -1513,7 +1701,8 @@ let gfm_spec_json : String =
   #|    "example": 189,
   #|    "start_line": 3184,
   #|    "end_line": 3191,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aaa\nbbb\n\nccc\nddd\n",
@@ -1521,7 +1710,8 @@ let gfm_spec_json : String =
   #|    "example": 190,
   #|    "start_line": 3196,
   #|    "end_line": 3207,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aaa\n\n\nbbb\n",
@@ -1529,7 +1719,8 @@ let gfm_spec_json : String =
   #|    "example": 191,
   #|    "start_line": 3212,
   #|    "end_line": 3220,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  aaa\n bbb\n",
@@ -1537,7 +1728,8 @@ let gfm_spec_json : String =
   #|    "example": 192,
   #|    "start_line": 3225,
   #|    "end_line": 3231,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aaa\n             bbb\n                                       ccc\n",
@@ -1545,7 +1737,8 @@ let gfm_spec_json : String =
   #|    "example": 193,
   #|    "start_line": 3237,
   #|    "end_line": 3245,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   aaa\nbbb\n",
@@ -1553,7 +1746,8 @@ let gfm_spec_json : String =
   #|    "example": 194,
   #|    "start_line": 3251,
   #|    "end_line": 3257,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    aaa\nbbb\n",
@@ -1561,7 +1755,8 @@ let gfm_spec_json : String =
   #|    "example": 195,
   #|    "start_line": 3260,
   #|    "end_line": 3267,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aaa     \nbbb     \n",
@@ -1569,7 +1764,8 @@ let gfm_spec_json : String =
   #|    "example": 196,
   #|    "start_line": 3274,
   #|    "end_line": 3280,
-  #|    "section": "Paragraphs"
+  #|    "section": "Paragraphs",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  \n\naaa\n  \n\n# aaa\n\n  \n",
@@ -1577,7 +1773,8 @@ let gfm_spec_json : String =
   #|    "example": 197,
   #|    "start_line": 3291,
   #|    "end_line": 3303,
-  #|    "section": "Blank lines"
+  #|    "section": "Blank lines",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "| foo | bar |\n| --- | --- |\n| baz | bim |\n",
@@ -1585,7 +1782,8 @@ let gfm_spec_json : String =
   #|    "example": 198,
   #|    "start_line": 3326,
   #|    "end_line": 3345,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | defghi |\n:-: | -----------:\nbar | baz\n",
@@ -1593,7 +1791,8 @@ let gfm_spec_json : String =
   #|    "example": 199,
   #|    "start_line": 3350,
   #|    "end_line": 3369,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| f\\|oo  |\n| ------ |\n| b `\\|` az |\n| b **\\|** im |\n",
@@ -1601,7 +1800,8 @@ let gfm_spec_json : String =
   #|    "example": 200,
   #|    "start_line": 3374,
   #|    "end_line": 3395,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | def |\n| --- | --- |\n| bar | baz |\n> bar\n",
@@ -1609,7 +1809,8 @@ let gfm_spec_json : String =
   #|    "example": 201,
   #|    "start_line": 3400,
   #|    "end_line": 3423,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | def |\n| --- | --- |\n| bar | baz |\nbar\n\nbar\n",
@@ -1617,7 +1818,8 @@ let gfm_spec_json : String =
   #|    "example": 202,
   #|    "start_line": 3425,
   #|    "end_line": 3452,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | def |\n| --- |\n| bar |\n",
@@ -1625,7 +1827,8 @@ let gfm_spec_json : String =
   #|    "example": 203,
   #|    "start_line": 3457,
   #|    "end_line": 3465,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | def |\n| --- | --- |\n| bar |\n| bar | baz | boo |\n",
@@ -1633,7 +1836,8 @@ let gfm_spec_json : String =
   #|    "example": 204,
   #|    "start_line": 3471,
   #|    "end_line": 3495,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "| abc | def |\n| --- | --- |\n",
@@ -1641,7 +1845,8 @@ let gfm_spec_json : String =
   #|    "example": 205,
   #|    "start_line": 3499,
   #|    "end_line": 3511,
-  #|    "section": "Tables (extension)"
+  #|    "section": "Tables (extension)",
+  #|    "options": "table"
   #|  },
   #|  {
   #|    "markdown": "> # Foo\n> bar\n> baz\n",
@@ -1649,7 +1854,8 @@ let gfm_spec_json : String =
   #|    "example": 206,
   #|    "start_line": 3565,
   #|    "end_line": 3575,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "># Foo\n>bar\n> baz\n",
@@ -1657,7 +1863,8 @@ let gfm_spec_json : String =
   #|    "example": 207,
   #|    "start_line": 3580,
   #|    "end_line": 3590,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   > # Foo\n   > bar\n > baz\n",
@@ -1665,7 +1872,8 @@ let gfm_spec_json : String =
   #|    "example": 208,
   #|    "start_line": 3595,
   #|    "end_line": 3605,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    > # Foo\n    > bar\n    > baz\n",
@@ -1673,7 +1881,8 @@ let gfm_spec_json : String =
   #|    "example": 209,
   #|    "start_line": 3610,
   #|    "end_line": 3619,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> # Foo\n> bar\nbaz\n",
@@ -1681,7 +1890,8 @@ let gfm_spec_json : String =
   #|    "example": 210,
   #|    "start_line": 3625,
   #|    "end_line": 3635,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> bar\nbaz\n> foo\n",
@@ -1689,7 +1899,8 @@ let gfm_spec_json : String =
   #|    "example": 211,
   #|    "start_line": 3641,
   #|    "end_line": 3651,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n---\n",
@@ -1697,7 +1908,8 @@ let gfm_spec_json : String =
   #|    "example": 212,
   #|    "start_line": 3665,
   #|    "end_line": 3673,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> - foo\n- bar\n",
@@ -1705,7 +1917,8 @@ let gfm_spec_json : String =
   #|    "example": 213,
   #|    "start_line": 3685,
   #|    "end_line": 3697,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">     foo\n    bar\n",
@@ -1713,7 +1926,8 @@ let gfm_spec_json : String =
   #|    "example": 214,
   #|    "start_line": 3703,
   #|    "end_line": 3713,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> ```\nfoo\n```\n",
@@ -1721,7 +1935,8 @@ let gfm_spec_json : String =
   #|    "example": 215,
   #|    "start_line": 3716,
   #|    "end_line": 3726,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n    - bar\n",
@@ -1729,7 +1944,8 @@ let gfm_spec_json : String =
   #|    "example": 216,
   #|    "start_line": 3732,
   #|    "end_line": 3740,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">\n",
@@ -1737,7 +1953,8 @@ let gfm_spec_json : String =
   #|    "example": 217,
   #|    "start_line": 3756,
   #|    "end_line": 3761,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">\n>  \n> \n",
@@ -1745,7 +1962,8 @@ let gfm_spec_json : String =
   #|    "example": 218,
   #|    "start_line": 3764,
   #|    "end_line": 3771,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">\n> foo\n>  \n",
@@ -1753,7 +1971,8 @@ let gfm_spec_json : String =
   #|    "example": 219,
   #|    "start_line": 3776,
   #|    "end_line": 3784,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n\n> bar\n",
@@ -1761,7 +1980,8 @@ let gfm_spec_json : String =
   #|    "example": 220,
   #|    "start_line": 3789,
   #|    "end_line": 3800,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n> bar\n",
@@ -1769,7 +1989,8 @@ let gfm_spec_json : String =
   #|    "example": 221,
   #|    "start_line": 3811,
   #|    "end_line": 3819,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> foo\n>\n> bar\n",
@@ -1777,7 +1998,8 @@ let gfm_spec_json : String =
   #|    "example": 222,
   #|    "start_line": 3824,
   #|    "end_line": 3833,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\n> bar\n",
@@ -1785,7 +2007,8 @@ let gfm_spec_json : String =
   #|    "example": 223,
   #|    "start_line": 3838,
   #|    "end_line": 3846,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> aaa\n***\n> bbb\n",
@@ -1793,7 +2016,8 @@ let gfm_spec_json : String =
   #|    "example": 224,
   #|    "start_line": 3852,
   #|    "end_line": 3864,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> bar\nbaz\n",
@@ -1801,7 +2025,8 @@ let gfm_spec_json : String =
   #|    "example": 225,
   #|    "start_line": 3870,
   #|    "end_line": 3878,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> bar\n\nbaz\n",
@@ -1809,7 +2034,8 @@ let gfm_spec_json : String =
   #|    "example": 226,
   #|    "start_line": 3881,
   #|    "end_line": 3890,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> bar\n>\nbaz\n",
@@ -1817,7 +2043,8 @@ let gfm_spec_json : String =
   #|    "example": 227,
   #|    "start_line": 3893,
   #|    "end_line": 3902,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> > > foo\nbar\n",
@@ -1825,7 +2052,8 @@ let gfm_spec_json : String =
   #|    "example": 228,
   #|    "start_line": 3909,
   #|    "end_line": 3921,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">>> foo\n> bar\n>>baz\n",
@@ -1833,7 +2061,8 @@ let gfm_spec_json : String =
   #|    "example": 229,
   #|    "start_line": 3924,
   #|    "end_line": 3938,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">     code\n\n>    not code\n",
@@ -1841,7 +2070,8 @@ let gfm_spec_json : String =
   #|    "example": 230,
   #|    "start_line": 3946,
   #|    "end_line": 3958,
-  #|    "section": "Block quotes"
+  #|    "section": "Block quotes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "A paragraph\nwith two lines.\n\n    indented code\n\n> A block quote.\n",
@@ -1849,7 +2079,8 @@ let gfm_spec_json : String =
   #|    "example": 231,
   #|    "start_line": 4000,
   #|    "end_line": 4015,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1.  A paragraph\n    with two lines.\n\n        indented code\n\n    > A block quote.\n",
@@ -1857,7 +2088,8 @@ let gfm_spec_json : String =
   #|    "example": 232,
   #|    "start_line": 4022,
   #|    "end_line": 4041,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- one\n\n two\n",
@@ -1865,7 +2097,8 @@ let gfm_spec_json : String =
   #|    "example": 233,
   #|    "start_line": 4055,
   #|    "end_line": 4064,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- one\n\n  two\n",
@@ -1873,7 +2106,8 @@ let gfm_spec_json : String =
   #|    "example": 234,
   #|    "start_line": 4067,
   #|    "end_line": 4078,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " -    one\n\n     two\n",
@@ -1881,7 +2115,8 @@ let gfm_spec_json : String =
   #|    "example": 235,
   #|    "start_line": 4081,
   #|    "end_line": 4091,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " -    one\n\n      two\n",
@@ -1889,7 +2124,8 @@ let gfm_spec_json : String =
   #|    "example": 236,
   #|    "start_line": 4094,
   #|    "end_line": 4105,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   > > 1.  one\n>>\n>>     two\n",
@@ -1897,7 +2133,8 @@ let gfm_spec_json : String =
   #|    "example": 237,
   #|    "start_line": 4116,
   #|    "end_line": 4131,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": ">>- one\n>>\n  >  > two\n",
@@ -1905,7 +2142,8 @@ let gfm_spec_json : String =
   #|    "example": 238,
   #|    "start_line": 4143,
   #|    "end_line": 4156,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-one\n\n2.two\n",
@@ -1913,7 +2151,8 @@ let gfm_spec_json : String =
   #|    "example": 239,
   #|    "start_line": 4162,
   #|    "end_line": 4169,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n\n\n  bar\n",
@@ -1921,7 +2160,8 @@ let gfm_spec_json : String =
   #|    "example": 240,
   #|    "start_line": 4175,
   #|    "end_line": 4187,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1.  foo\n\n    ```\n    bar\n    ```\n\n    baz\n\n    > bam\n",
@@ -1929,7 +2169,8 @@ let gfm_spec_json : String =
   #|    "example": 241,
   #|    "start_line": 4192,
   #|    "end_line": 4214,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- Foo\n\n      bar\n\n\n      baz\n",
@@ -1937,7 +2178,8 @@ let gfm_spec_json : String =
   #|    "example": 242,
   #|    "start_line": 4220,
   #|    "end_line": 4238,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "123456789. ok\n",
@@ -1945,7 +2187,8 @@ let gfm_spec_json : String =
   #|    "example": 243,
   #|    "start_line": 4242,
   #|    "end_line": 4248,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1234567890. not ok\n",
@@ -1953,7 +2196,8 @@ let gfm_spec_json : String =
   #|    "example": 244,
   #|    "start_line": 4251,
   #|    "end_line": 4255,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "0. ok\n",
@@ -1961,7 +2205,8 @@ let gfm_spec_json : String =
   #|    "example": 245,
   #|    "start_line": 4260,
   #|    "end_line": 4266,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "003. ok\n",
@@ -1969,7 +2214,8 @@ let gfm_spec_json : String =
   #|    "example": 246,
   #|    "start_line": 4269,
   #|    "end_line": 4275,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-1. not ok\n",
@@ -1977,7 +2223,8 @@ let gfm_spec_json : String =
   #|    "example": 247,
   #|    "start_line": 4280,
   #|    "end_line": 4284,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n\n      bar\n",
@@ -1985,7 +2232,8 @@ let gfm_spec_json : String =
   #|    "example": 248,
   #|    "start_line": 4303,
   #|    "end_line": 4315,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  10.  foo\n\n           bar\n",
@@ -1993,7 +2241,8 @@ let gfm_spec_json : String =
   #|    "example": 249,
   #|    "start_line": 4320,
   #|    "end_line": 4332,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    indented code\n\nparagraph\n\n    more code\n",
@@ -2001,7 +2250,8 @@ let gfm_spec_json : String =
   #|    "example": 250,
   #|    "start_line": 4339,
   #|    "end_line": 4351,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1.     indented code\n\n   paragraph\n\n       more code\n",
@@ -2009,7 +2259,8 @@ let gfm_spec_json : String =
   #|    "example": 251,
   #|    "start_line": 4354,
   #|    "end_line": 4370,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1.      indented code\n\n   paragraph\n\n       more code\n",
@@ -2017,7 +2268,8 @@ let gfm_spec_json : String =
   #|    "example": 252,
   #|    "start_line": 4376,
   #|    "end_line": 4392,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   foo\n\nbar\n",
@@ -2025,7 +2277,8 @@ let gfm_spec_json : String =
   #|    "example": 253,
   #|    "start_line": 4403,
   #|    "end_line": 4410,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-    foo\n\n  bar\n",
@@ -2033,7 +2286,8 @@ let gfm_spec_json : String =
   #|    "example": 254,
   #|    "start_line": 4413,
   #|    "end_line": 4422,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-  foo\n\n   bar\n",
@@ -2041,7 +2295,8 @@ let gfm_spec_json : String =
   #|    "example": 255,
   #|    "start_line": 4430,
   #|    "end_line": 4441,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-\n  foo\n-\n  ```\n  bar\n  ```\n-\n      baz\n",
@@ -2049,7 +2304,8 @@ let gfm_spec_json : String =
   #|    "example": 256,
   #|    "start_line": 4458,
   #|    "end_line": 4479,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-   \n  foo\n",
@@ -2057,7 +2313,8 @@ let gfm_spec_json : String =
   #|    "example": 257,
   #|    "start_line": 4484,
   #|    "end_line": 4491,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-\n\n  foo\n",
@@ -2065,7 +2322,8 @@ let gfm_spec_json : String =
   #|    "example": 258,
   #|    "start_line": 4498,
   #|    "end_line": 4507,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n-\n- bar\n",
@@ -2073,7 +2331,8 @@ let gfm_spec_json : String =
   #|    "example": 259,
   #|    "start_line": 4512,
   #|    "end_line": 4522,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n-   \n- bar\n",
@@ -2081,7 +2340,8 @@ let gfm_spec_json : String =
   #|    "example": 260,
   #|    "start_line": 4527,
   #|    "end_line": 4537,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. foo\n2.\n3. bar\n",
@@ -2089,7 +2349,8 @@ let gfm_spec_json : String =
   #|    "example": 261,
   #|    "start_line": 4542,
   #|    "end_line": 4552,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*\n",
@@ -2097,7 +2358,8 @@ let gfm_spec_json : String =
   #|    "example": 262,
   #|    "start_line": 4557,
   #|    "end_line": 4563,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\n*\n\nfoo\n1.\n",
@@ -2105,7 +2367,8 @@ let gfm_spec_json : String =
   #|    "example": 263,
   #|    "start_line": 4567,
   #|    "end_line": 4578,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": " 1.  A paragraph\n     with two lines.\n\n         indented code\n\n     > A block quote.\n",
@@ -2113,7 +2376,8 @@ let gfm_spec_json : String =
   #|    "example": 264,
   #|    "start_line": 4589,
   #|    "end_line": 4608,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  1.  A paragraph\n      with two lines.\n\n          indented code\n\n      > A block quote.\n",
@@ -2121,7 +2385,8 @@ let gfm_spec_json : String =
   #|    "example": 265,
   #|    "start_line": 4613,
   #|    "end_line": 4632,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "   1.  A paragraph\n       with two lines.\n\n           indented code\n\n       > A block quote.\n",
@@ -2129,7 +2394,8 @@ let gfm_spec_json : String =
   #|    "example": 266,
   #|    "start_line": 4637,
   #|    "end_line": 4656,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    1.  A paragraph\n        with two lines.\n\n            indented code\n\n        > A block quote.\n",
@@ -2137,7 +2403,8 @@ let gfm_spec_json : String =
   #|    "example": 267,
   #|    "start_line": 4661,
   #|    "end_line": 4676,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  1.  A paragraph\nwith two lines.\n\n          indented code\n\n      > A block quote.\n",
@@ -2145,7 +2412,8 @@ let gfm_spec_json : String =
   #|    "example": 268,
   #|    "start_line": 4691,
   #|    "end_line": 4710,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "  1.  A paragraph\n    with two lines.\n",
@@ -2153,7 +2421,8 @@ let gfm_spec_json : String =
   #|    "example": 269,
   #|    "start_line": 4715,
   #|    "end_line": 4723,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> 1. > Blockquote\ncontinued here.\n",
@@ -2161,7 +2430,8 @@ let gfm_spec_json : String =
   #|    "example": 270,
   #|    "start_line": 4728,
   #|    "end_line": 4742,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "> 1. > Blockquote\n> continued here.\n",
@@ -2169,7 +2439,8 @@ let gfm_spec_json : String =
   #|    "example": 271,
   #|    "start_line": 4745,
   #|    "end_line": 4759,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n  - bar\n    - baz\n      - boo\n",
@@ -2177,7 +2448,8 @@ let gfm_spec_json : String =
   #|    "example": 272,
   #|    "start_line": 4773,
   #|    "end_line": 4794,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n - bar\n  - baz\n   - boo\n",
@@ -2185,7 +2457,8 @@ let gfm_spec_json : String =
   #|    "example": 273,
   #|    "start_line": 4799,
   #|    "end_line": 4811,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "10) foo\n    - bar\n",
@@ -2193,7 +2466,8 @@ let gfm_spec_json : String =
   #|    "example": 274,
   #|    "start_line": 4816,
   #|    "end_line": 4827,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "10) foo\n   - bar\n",
@@ -2201,7 +2475,8 @@ let gfm_spec_json : String =
   #|    "example": 275,
   #|    "start_line": 4832,
   #|    "end_line": 4842,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- - foo\n",
@@ -2209,7 +2484,8 @@ let gfm_spec_json : String =
   #|    "example": 276,
   #|    "start_line": 4847,
   #|    "end_line": 4857,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. - 2. foo\n",
@@ -2217,7 +2493,8 @@ let gfm_spec_json : String =
   #|    "example": 277,
   #|    "start_line": 4860,
   #|    "end_line": 4874,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- # Foo\n- Bar\n  ---\n  baz\n",
@@ -2225,7 +2502,8 @@ let gfm_spec_json : String =
   #|    "example": 278,
   #|    "start_line": 4879,
   #|    "end_line": 4893,
-  #|    "section": "List items"
+  #|    "section": "List items",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- [ ] foo\n- [x] bar\n",
@@ -2233,7 +2511,8 @@ let gfm_spec_json : String =
   #|    "example": 279,
   #|    "start_line": 5108,
   #|    "end_line": 5116,
-  #|    "section": "Task list items (extension)"
+  #|    "section": "Task list items (extension)",
+  #|    "options": "disabled"
   #|  },
   #|  {
   #|    "markdown": "- [x] foo\n  - [ ] bar\n  - [x] baz\n- [ ] bim\n",
@@ -2241,7 +2520,8 @@ let gfm_spec_json : String =
   #|    "example": 280,
   #|    "start_line": 5120,
   #|    "end_line": 5135,
-  #|    "section": "Task list items (extension)"
+  #|    "section": "Task list items (extension)",
+  #|    "options": "disabled"
   #|  },
   #|  {
   #|    "markdown": "- foo\n- bar\n+ baz\n",
@@ -2249,7 +2529,8 @@ let gfm_spec_json : String =
   #|    "example": 281,
   #|    "start_line": 5172,
   #|    "end_line": 5184,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. foo\n2. bar\n3) baz\n",
@@ -2257,7 +2538,8 @@ let gfm_spec_json : String =
   #|    "example": 282,
   #|    "start_line": 5187,
   #|    "end_line": 5199,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo\n- bar\n- baz\n",
@@ -2265,7 +2547,8 @@ let gfm_spec_json : String =
   #|    "example": 283,
   #|    "start_line": 5206,
   #|    "end_line": 5216,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "The number of windows in my house is\n14.  The number of doors is 6.\n",
@@ -2273,7 +2556,8 @@ let gfm_spec_json : String =
   #|    "example": 284,
   #|    "start_line": 5283,
   #|    "end_line": 5289,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "The number of windows in my house is\n1.  The number of doors is 6.\n",
@@ -2281,7 +2565,8 @@ let gfm_spec_json : String =
   #|    "example": 285,
   #|    "start_line": 5293,
   #|    "end_line": 5301,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n\n- bar\n\n\n- baz\n",
@@ -2289,7 +2574,8 @@ let gfm_spec_json : String =
   #|    "example": 286,
   #|    "start_line": 5307,
   #|    "end_line": 5326,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n  - bar\n    - baz\n\n\n      bim\n",
@@ -2297,7 +2583,8 @@ let gfm_spec_json : String =
   #|    "example": 287,
   #|    "start_line": 5328,
   #|    "end_line": 5350,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- foo\n- bar\n\n<!-- -->\n\n- baz\n- bim\n",
@@ -2305,7 +2592,8 @@ let gfm_spec_json : String =
   #|    "example": 288,
   #|    "start_line": 5358,
   #|    "end_line": 5376,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "-   foo\n\n    notcode\n\n-   foo\n\n<!-- -->\n\n    code\n",
@@ -2313,7 +2601,8 @@ let gfm_spec_json : String =
   #|    "example": 289,
   #|    "start_line": 5379,
   #|    "end_line": 5402,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n - b\n  - c\n   - d\n  - e\n - f\n- g\n",
@@ -2321,7 +2610,8 @@ let gfm_spec_json : String =
   #|    "example": 290,
   #|    "start_line": 5410,
   #|    "end_line": 5428,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. a\n\n  2. b\n\n   3. c\n",
@@ -2329,7 +2619,8 @@ let gfm_spec_json : String =
   #|    "example": 291,
   #|    "start_line": 5431,
   #|    "end_line": 5449,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n - b\n  - c\n   - d\n    - e\n",
@@ -2337,7 +2628,8 @@ let gfm_spec_json : String =
   #|    "example": 292,
   #|    "start_line": 5455,
   #|    "end_line": 5469,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. a\n\n  2. b\n\n    3. c\n",
@@ -2345,7 +2637,8 @@ let gfm_spec_json : String =
   #|    "example": 293,
   #|    "start_line": 5475,
   #|    "end_line": 5492,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n- b\n\n- c\n",
@@ -2353,7 +2646,8 @@ let gfm_spec_json : String =
   #|    "example": 294,
   #|    "start_line": 5498,
   #|    "end_line": 5515,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "* a\n*\n\n* c\n",
@@ -2361,7 +2655,8 @@ let gfm_spec_json : String =
   #|    "example": 295,
   #|    "start_line": 5520,
   #|    "end_line": 5535,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n- b\n\n  c\n- d\n",
@@ -2369,7 +2664,8 @@ let gfm_spec_json : String =
   #|    "example": 296,
   #|    "start_line": 5542,
   #|    "end_line": 5561,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n- b\n\n  [ref]: /url\n- d\n",
@@ -2377,7 +2673,8 @@ let gfm_spec_json : String =
   #|    "example": 297,
   #|    "start_line": 5564,
   #|    "end_line": 5582,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n- ```\n  b\n\n\n  ```\n- c\n",
@@ -2385,7 +2682,8 @@ let gfm_spec_json : String =
   #|    "example": 298,
   #|    "start_line": 5587,
   #|    "end_line": 5606,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n  - b\n\n    c\n- d\n",
@@ -2393,7 +2691,8 @@ let gfm_spec_json : String =
   #|    "example": 299,
   #|    "start_line": 5613,
   #|    "end_line": 5631,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "* a\n  > b\n  >\n* c\n",
@@ -2401,7 +2700,8 @@ let gfm_spec_json : String =
   #|    "example": 300,
   #|    "start_line": 5637,
   #|    "end_line": 5651,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n  > b\n  ```\n  c\n  ```\n- d\n",
@@ -2409,7 +2709,8 @@ let gfm_spec_json : String =
   #|    "example": 301,
   #|    "start_line": 5657,
   #|    "end_line": 5675,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n",
@@ -2417,7 +2718,8 @@ let gfm_spec_json : String =
   #|    "example": 302,
   #|    "start_line": 5680,
   #|    "end_line": 5686,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n  - b\n",
@@ -2425,7 +2727,8 @@ let gfm_spec_json : String =
   #|    "example": 303,
   #|    "start_line": 5689,
   #|    "end_line": 5700,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "1. ```\n   foo\n   ```\n\n   bar\n",
@@ -2433,7 +2736,8 @@ let gfm_spec_json : String =
   #|    "example": 304,
   #|    "start_line": 5706,
   #|    "end_line": 5720,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "* foo\n  * bar\n\n  baz\n",
@@ -2441,7 +2745,8 @@ let gfm_spec_json : String =
   #|    "example": 305,
   #|    "start_line": 5725,
   #|    "end_line": 5740,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "- a\n  - b\n  - c\n\n- d\n  - e\n  - f\n",
@@ -2449,7 +2754,8 @@ let gfm_spec_json : String =
   #|    "example": 306,
   #|    "start_line": 5743,
   #|    "end_line": 5768,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`hi`lo`\n",
@@ -2457,7 +2763,8 @@ let gfm_spec_json : String =
   #|    "example": 307,
   #|    "start_line": 5777,
   #|    "end_line": 5781,
-  #|    "section": "Lists"
+  #|    "section": "Lists",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\!\\\"\\#\\$\\%\\&\\'\\(\\)\\*\\+\\,\\-\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\\\\\]\\^\\_\\`\\{\\|\\}\\~\n",
@@ -2465,15 +2772,17 @@ let gfm_spec_json : String =
   #|    "example": 308,
   #|    "start_line": 5791,
   #|    "end_line": 5795,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
-  #|    "markdown": "\\→\\A\\a\\ \\3\\φ\\«\n",
-  #|    "html": "<p>\\→\\A\\a\\ \\3\\φ\\«</p>\n",
+  #|    "markdown": "\\\t\\A\\a\\ \\3\\φ\\«\n",
+  #|    "html": "<p>\\\t\\A\\a\\ \\3\\φ\\«</p>\n",
   #|    "example": 309,
   #|    "start_line": 5801,
   #|    "end_line": 5805,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\*not emphasized*\n\\<br/> not a tag\n\\[not a link](/foo)\n\\`not code`\n1\\. not a list\n\\* not a list\n\\# not a heading\n\\[foo]: /url \"not a reference\"\n\\&ouml; not a character entity\n",
@@ -2481,7 +2790,8 @@ let gfm_spec_json : String =
   #|    "example": 310,
   #|    "start_line": 5811,
   #|    "end_line": 5831,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\\\*emphasis*\n",
@@ -2489,7 +2799,8 @@ let gfm_spec_json : String =
   #|    "example": 311,
   #|    "start_line": 5836,
   #|    "end_line": 5840,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\\\nbar\n",
@@ -2497,7 +2808,8 @@ let gfm_spec_json : String =
   #|    "example": 312,
   #|    "start_line": 5845,
   #|    "end_line": 5851,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`` \\[\\` ``\n",
@@ -2505,7 +2817,8 @@ let gfm_spec_json : String =
   #|    "example": 313,
   #|    "start_line": 5857,
   #|    "end_line": 5861,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    \\[\\]\n",
@@ -2513,7 +2826,8 @@ let gfm_spec_json : String =
   #|    "example": 314,
   #|    "start_line": 5864,
   #|    "end_line": 5869,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~~\n\\[\\]\n~~~\n",
@@ -2521,7 +2835,8 @@ let gfm_spec_json : String =
   #|    "example": 315,
   #|    "start_line": 5872,
   #|    "end_line": 5879,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://example.com?find=\\*>\n",
@@ -2529,7 +2844,8 @@ let gfm_spec_json : String =
   #|    "example": 316,
   #|    "start_line": 5882,
   #|    "end_line": 5886,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"/bar\\/)\">\n",
@@ -2537,7 +2853,8 @@ let gfm_spec_json : String =
   #|    "example": 317,
   #|    "start_line": 5889,
   #|    "end_line": 5893,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo](/bar\\* \"ti\\*tle\")\n",
@@ -2545,7 +2862,8 @@ let gfm_spec_json : String =
   #|    "example": 318,
   #|    "start_line": 5899,
   #|    "end_line": 5903,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n[foo]: /bar\\* \"ti\\*tle\"\n",
@@ -2553,7 +2871,8 @@ let gfm_spec_json : String =
   #|    "example": 319,
   #|    "start_line": 5906,
   #|    "end_line": 5912,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``` foo\\+bar\nfoo\n```\n",
@@ -2561,7 +2880,8 @@ let gfm_spec_json : String =
   #|    "example": 320,
   #|    "start_line": 5915,
   #|    "end_line": 5922,
-  #|    "section": "Backslash escapes"
+  #|    "section": "Backslash escapes",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&nbsp; &amp; &copy; &AElig; &Dcaron;\n&frac34; &HilbertSpace; &DifferentialD;\n&ClockwiseContourIntegral; &ngE;\n",
@@ -2569,7 +2889,8 @@ let gfm_spec_json : String =
   #|    "example": 321,
   #|    "start_line": 5952,
   #|    "end_line": 5960,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&#35; &#1234; &#992; &#0;\n",
@@ -2577,7 +2898,8 @@ let gfm_spec_json : String =
   #|    "example": 322,
   #|    "start_line": 5971,
   #|    "end_line": 5975,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&#X22; &#XD06; &#xcab;\n",
@@ -2585,7 +2907,8 @@ let gfm_spec_json : String =
   #|    "example": 323,
   #|    "start_line": 5984,
   #|    "end_line": 5988,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&nbsp &x; &#; &#x;\n&#987654321;\n&#abcdef0;\n&ThisIsNotDefined; &hi?;\n",
@@ -2593,7 +2916,8 @@ let gfm_spec_json : String =
   #|    "example": 324,
   #|    "start_line": 5993,
   #|    "end_line": 6003,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&copy\n",
@@ -2601,7 +2925,8 @@ let gfm_spec_json : String =
   #|    "example": 325,
   #|    "start_line": 6010,
   #|    "end_line": 6014,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&MadeUpEntity;\n",
@@ -2609,7 +2934,8 @@ let gfm_spec_json : String =
   #|    "example": 326,
   #|    "start_line": 6020,
   #|    "end_line": 6024,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"&ouml;&ouml;.html\">\n",
@@ -2617,7 +2943,8 @@ let gfm_spec_json : String =
   #|    "example": 327,
   #|    "start_line": 6031,
   #|    "end_line": 6035,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo](/f&ouml;&ouml; \"f&ouml;&ouml;\")\n",
@@ -2625,7 +2952,8 @@ let gfm_spec_json : String =
   #|    "example": 328,
   #|    "start_line": 6038,
   #|    "end_line": 6042,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n[foo]: /f&ouml;&ouml; \"f&ouml;&ouml;\"\n",
@@ -2633,7 +2961,8 @@ let gfm_spec_json : String =
   #|    "example": 329,
   #|    "start_line": 6045,
   #|    "end_line": 6051,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``` f&ouml;&ouml;\nfoo\n```\n",
@@ -2641,7 +2970,8 @@ let gfm_spec_json : String =
   #|    "example": 330,
   #|    "start_line": 6054,
   #|    "end_line": 6061,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`f&ouml;&ouml;`\n",
@@ -2649,7 +2979,8 @@ let gfm_spec_json : String =
   #|    "example": 331,
   #|    "start_line": 6067,
   #|    "end_line": 6071,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "    f&ouml;f&ouml;\n",
@@ -2657,7 +2988,8 @@ let gfm_spec_json : String =
   #|    "example": 332,
   #|    "start_line": 6074,
   #|    "end_line": 6079,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&#42;foo&#42;\n*foo*\n",
@@ -2665,7 +2997,8 @@ let gfm_spec_json : String =
   #|    "example": 333,
   #|    "start_line": 6086,
   #|    "end_line": 6092,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&#42; foo\n\n* foo\n",
@@ -2673,7 +3006,8 @@ let gfm_spec_json : String =
   #|    "example": 334,
   #|    "start_line": 6094,
   #|    "end_line": 6103,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo&#10;&#10;bar\n",
@@ -2681,15 +3015,17 @@ let gfm_spec_json : String =
   #|    "example": 335,
   #|    "start_line": 6105,
   #|    "end_line": 6111,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "&#9;foo\n",
-  #|    "html": "<p>→foo</p>\n",
+  #|    "html": "<p>\tfoo</p>\n",
   #|    "example": 336,
   #|    "start_line": 6113,
   #|    "end_line": 6117,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[a](url &quot;tit&quot;)\n",
@@ -2697,7 +3033,8 @@ let gfm_spec_json : String =
   #|    "example": 337,
   #|    "start_line": 6120,
   #|    "end_line": 6124,
-  #|    "section": "Entity and numeric character references"
+  #|    "section": "Entity and numeric character references",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`foo`\n",
@@ -2705,7 +3042,8 @@ let gfm_spec_json : String =
   #|    "example": 338,
   #|    "start_line": 6148,
   #|    "end_line": 6152,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`` foo ` bar ``\n",
@@ -2713,7 +3051,8 @@ let gfm_spec_json : String =
   #|    "example": 339,
   #|    "start_line": 6159,
   #|    "end_line": 6163,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "` `` `\n",
@@ -2721,7 +3060,8 @@ let gfm_spec_json : String =
   #|    "example": 340,
   #|    "start_line": 6169,
   #|    "end_line": 6173,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`  ``  `\n",
@@ -2729,7 +3069,8 @@ let gfm_spec_json : String =
   #|    "example": 341,
   #|    "start_line": 6177,
   #|    "end_line": 6181,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "` a`\n",
@@ -2737,7 +3078,8 @@ let gfm_spec_json : String =
   #|    "example": 342,
   #|    "start_line": 6186,
   #|    "end_line": 6190,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "` b `\n",
@@ -2745,7 +3087,8 @@ let gfm_spec_json : String =
   #|    "example": 343,
   #|    "start_line": 6195,
   #|    "end_line": 6199,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "` `\n`  `\n",
@@ -2753,7 +3096,8 @@ let gfm_spec_json : String =
   #|    "example": 344,
   #|    "start_line": 6203,
   #|    "end_line": 6209,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``\nfoo\nbar  \nbaz\n``\n",
@@ -2761,7 +3105,8 @@ let gfm_spec_json : String =
   #|    "example": 345,
   #|    "start_line": 6214,
   #|    "end_line": 6222,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``\nfoo \n``\n",
@@ -2769,7 +3114,8 @@ let gfm_spec_json : String =
   #|    "example": 346,
   #|    "start_line": 6224,
   #|    "end_line": 6230,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`foo   bar \nbaz`\n",
@@ -2777,7 +3123,8 @@ let gfm_spec_json : String =
   #|    "example": 347,
   #|    "start_line": 6235,
   #|    "end_line": 6240,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`foo\\`bar`\n",
@@ -2785,7 +3132,8 @@ let gfm_spec_json : String =
   #|    "example": 348,
   #|    "start_line": 6252,
   #|    "end_line": 6256,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "``foo`bar``\n",
@@ -2793,7 +3141,8 @@ let gfm_spec_json : String =
   #|    "example": 349,
   #|    "start_line": 6263,
   #|    "end_line": 6267,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "` foo `` bar `\n",
@@ -2801,7 +3150,8 @@ let gfm_spec_json : String =
   #|    "example": 350,
   #|    "start_line": 6269,
   #|    "end_line": 6273,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo`*`\n",
@@ -2809,7 +3159,8 @@ let gfm_spec_json : String =
   #|    "example": 351,
   #|    "start_line": 6281,
   #|    "end_line": 6285,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[not a `link](/foo`)\n",
@@ -2817,7 +3168,8 @@ let gfm_spec_json : String =
   #|    "example": 352,
   #|    "start_line": 6290,
   #|    "end_line": 6294,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`<a href=\"`\">`\n",
@@ -2825,7 +3177,8 @@ let gfm_spec_json : String =
   #|    "example": 353,
   #|    "start_line": 6300,
   #|    "end_line": 6304,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"`\">`\n",
@@ -2833,7 +3186,8 @@ let gfm_spec_json : String =
   #|    "example": 354,
   #|    "start_line": 6309,
   #|    "end_line": 6313,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`<http://foo.bar.`baz>`\n",
@@ -2841,7 +3195,8 @@ let gfm_spec_json : String =
   #|    "example": 355,
   #|    "start_line": 6318,
   #|    "end_line": 6322,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://foo.bar.`baz>`\n",
@@ -2849,7 +3204,8 @@ let gfm_spec_json : String =
   #|    "example": 356,
   #|    "start_line": 6327,
   #|    "end_line": 6331,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "```foo``\n",
@@ -2857,7 +3213,8 @@ let gfm_spec_json : String =
   #|    "example": 357,
   #|    "start_line": 6337,
   #|    "end_line": 6341,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`foo\n",
@@ -2865,7 +3222,8 @@ let gfm_spec_json : String =
   #|    "example": 358,
   #|    "start_line": 6344,
   #|    "end_line": 6348,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`foo``bar``\n",
@@ -2873,7 +3231,8 @@ let gfm_spec_json : String =
   #|    "example": 359,
   #|    "start_line": 6353,
   #|    "end_line": 6357,
-  #|    "section": "Code spans"
+  #|    "section": "Code spans",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo bar*\n",
@@ -2881,7 +3240,8 @@ let gfm_spec_json : String =
   #|    "example": 360,
   #|    "start_line": 6570,
   #|    "end_line": 6574,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "a * foo bar*\n",
@@ -2889,7 +3249,8 @@ let gfm_spec_json : String =
   #|    "example": 361,
   #|    "start_line": 6580,
   #|    "end_line": 6584,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "a*\"foo\"*\n",
@@ -2897,7 +3258,8 @@ let gfm_spec_json : String =
   #|    "example": 362,
   #|    "start_line": 6591,
   #|    "end_line": 6595,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "* a *\n",
@@ -2905,7 +3267,8 @@ let gfm_spec_json : String =
   #|    "example": 363,
   #|    "start_line": 6600,
   #|    "end_line": 6604,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo*bar*\n",
@@ -2913,7 +3276,8 @@ let gfm_spec_json : String =
   #|    "example": 364,
   #|    "start_line": 6609,
   #|    "end_line": 6613,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "5*6*78\n",
@@ -2921,7 +3285,8 @@ let gfm_spec_json : String =
   #|    "example": 365,
   #|    "start_line": 6616,
   #|    "end_line": 6620,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo bar_\n",
@@ -2929,7 +3294,8 @@ let gfm_spec_json : String =
   #|    "example": 366,
   #|    "start_line": 6625,
   #|    "end_line": 6629,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_ foo bar_\n",
@@ -2937,7 +3303,8 @@ let gfm_spec_json : String =
   #|    "example": 367,
   #|    "start_line": 6635,
   #|    "end_line": 6639,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "a_\"foo\"_\n",
@@ -2945,7 +3312,8 @@ let gfm_spec_json : String =
   #|    "example": 368,
   #|    "start_line": 6645,
   #|    "end_line": 6649,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo_bar_\n",
@@ -2953,7 +3321,8 @@ let gfm_spec_json : String =
   #|    "example": 369,
   #|    "start_line": 6654,
   #|    "end_line": 6658,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "5_6_78\n",
@@ -2961,7 +3330,8 @@ let gfm_spec_json : String =
   #|    "example": 370,
   #|    "start_line": 6661,
   #|    "end_line": 6665,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "пристаням_стремятся_\n",
@@ -2969,7 +3339,8 @@ let gfm_spec_json : String =
   #|    "example": 371,
   #|    "start_line": 6668,
   #|    "end_line": 6672,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "aa_\"bb\"_cc\n",
@@ -2977,7 +3348,8 @@ let gfm_spec_json : String =
   #|    "example": 372,
   #|    "start_line": 6678,
   #|    "end_line": 6682,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo-_(bar)_\n",
@@ -2985,7 +3357,8 @@ let gfm_spec_json : String =
   #|    "example": 373,
   #|    "start_line": 6689,
   #|    "end_line": 6693,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo*\n",
@@ -2993,7 +3366,8 @@ let gfm_spec_json : String =
   #|    "example": 374,
   #|    "start_line": 6701,
   #|    "end_line": 6705,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo bar *\n",
@@ -3001,7 +3375,8 @@ let gfm_spec_json : String =
   #|    "example": 375,
   #|    "start_line": 6711,
   #|    "end_line": 6715,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo bar\n*\n",
@@ -3009,7 +3384,8 @@ let gfm_spec_json : String =
   #|    "example": 376,
   #|    "start_line": 6720,
   #|    "end_line": 6726,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*(*foo)\n",
@@ -3017,7 +3393,8 @@ let gfm_spec_json : String =
   #|    "example": 377,
   #|    "start_line": 6733,
   #|    "end_line": 6737,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*(*foo*)*\n",
@@ -3025,7 +3402,8 @@ let gfm_spec_json : String =
   #|    "example": 378,
   #|    "start_line": 6743,
   #|    "end_line": 6747,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo*bar\n",
@@ -3033,7 +3411,8 @@ let gfm_spec_json : String =
   #|    "example": 379,
   #|    "start_line": 6752,
   #|    "end_line": 6756,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo bar _\n",
@@ -3041,7 +3420,8 @@ let gfm_spec_json : String =
   #|    "example": 380,
   #|    "start_line": 6765,
   #|    "end_line": 6769,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_(_foo)\n",
@@ -3049,7 +3429,8 @@ let gfm_spec_json : String =
   #|    "example": 381,
   #|    "start_line": 6775,
   #|    "end_line": 6779,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_(_foo_)_\n",
@@ -3057,7 +3438,8 @@ let gfm_spec_json : String =
   #|    "example": 382,
   #|    "start_line": 6784,
   #|    "end_line": 6788,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo_bar\n",
@@ -3065,7 +3447,8 @@ let gfm_spec_json : String =
   #|    "example": 383,
   #|    "start_line": 6793,
   #|    "end_line": 6797,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_пристаням_стремятся\n",
@@ -3073,7 +3456,8 @@ let gfm_spec_json : String =
   #|    "example": 384,
   #|    "start_line": 6800,
   #|    "end_line": 6804,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo_bar_baz_\n",
@@ -3081,7 +3465,8 @@ let gfm_spec_json : String =
   #|    "example": 385,
   #|    "start_line": 6807,
   #|    "end_line": 6811,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_(bar)_.\n",
@@ -3089,7 +3474,8 @@ let gfm_spec_json : String =
   #|    "example": 386,
   #|    "start_line": 6818,
   #|    "end_line": 6822,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo bar**\n",
@@ -3097,7 +3483,8 @@ let gfm_spec_json : String =
   #|    "example": 387,
   #|    "start_line": 6827,
   #|    "end_line": 6831,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "** foo bar**\n",
@@ -3105,7 +3492,8 @@ let gfm_spec_json : String =
   #|    "example": 388,
   #|    "start_line": 6837,
   #|    "end_line": 6841,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "a**\"foo\"**\n",
@@ -3113,7 +3501,8 @@ let gfm_spec_json : String =
   #|    "example": 389,
   #|    "start_line": 6848,
   #|    "end_line": 6852,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo**bar**\n",
@@ -3121,7 +3510,8 @@ let gfm_spec_json : String =
   #|    "example": 390,
   #|    "start_line": 6857,
   #|    "end_line": 6861,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo bar__\n",
@@ -3129,7 +3519,8 @@ let gfm_spec_json : String =
   #|    "example": 391,
   #|    "start_line": 6866,
   #|    "end_line": 6870,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__ foo bar__\n",
@@ -3137,7 +3528,8 @@ let gfm_spec_json : String =
   #|    "example": 392,
   #|    "start_line": 6876,
   #|    "end_line": 6880,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__\nfoo bar__\n",
@@ -3145,7 +3537,8 @@ let gfm_spec_json : String =
   #|    "example": 393,
   #|    "start_line": 6884,
   #|    "end_line": 6890,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "a__\"foo\"__\n",
@@ -3153,7 +3546,8 @@ let gfm_spec_json : String =
   #|    "example": 394,
   #|    "start_line": 6896,
   #|    "end_line": 6900,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo__bar__\n",
@@ -3161,7 +3555,8 @@ let gfm_spec_json : String =
   #|    "example": 395,
   #|    "start_line": 6905,
   #|    "end_line": 6909,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "5__6__78\n",
@@ -3169,7 +3564,8 @@ let gfm_spec_json : String =
   #|    "example": 396,
   #|    "start_line": 6912,
   #|    "end_line": 6916,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "пристаням__стремятся__\n",
@@ -3177,7 +3573,8 @@ let gfm_spec_json : String =
   #|    "example": 397,
   #|    "start_line": 6919,
   #|    "end_line": 6923,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo, __bar__, baz__\n",
@@ -3185,7 +3582,8 @@ let gfm_spec_json : String =
   #|    "example": 398,
   #|    "start_line": 6926,
   #|    "end_line": 6930,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo-__(bar)__\n",
@@ -3193,7 +3591,8 @@ let gfm_spec_json : String =
   #|    "example": 399,
   #|    "start_line": 6937,
   #|    "end_line": 6941,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo bar **\n",
@@ -3201,7 +3600,8 @@ let gfm_spec_json : String =
   #|    "example": 400,
   #|    "start_line": 6950,
   #|    "end_line": 6954,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**(**foo)\n",
@@ -3209,7 +3609,8 @@ let gfm_spec_json : String =
   #|    "example": 401,
   #|    "start_line": 6963,
   #|    "end_line": 6967,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*(**foo**)*\n",
@@ -3217,7 +3618,8 @@ let gfm_spec_json : String =
   #|    "example": 402,
   #|    "start_line": 6973,
   #|    "end_line": 6977,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**Gomphocarpus (*Gomphocarpus physocarpus*, syn.\n*Asclepias physocarpa*)**\n",
@@ -3225,7 +3627,8 @@ let gfm_spec_json : String =
   #|    "example": 403,
   #|    "start_line": 6980,
   #|    "end_line": 6986,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo \"*bar*\" foo**\n",
@@ -3233,7 +3636,8 @@ let gfm_spec_json : String =
   #|    "example": 404,
   #|    "start_line": 6989,
   #|    "end_line": 6993,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo**bar\n",
@@ -3241,7 +3645,8 @@ let gfm_spec_json : String =
   #|    "example": 405,
   #|    "start_line": 6998,
   #|    "end_line": 7002,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo bar __\n",
@@ -3249,7 +3654,8 @@ let gfm_spec_json : String =
   #|    "example": 406,
   #|    "start_line": 7010,
   #|    "end_line": 7014,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__(__foo)\n",
@@ -3257,7 +3663,8 @@ let gfm_spec_json : String =
   #|    "example": 407,
   #|    "start_line": 7020,
   #|    "end_line": 7024,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_(__foo__)_\n",
@@ -3265,7 +3672,8 @@ let gfm_spec_json : String =
   #|    "example": 408,
   #|    "start_line": 7030,
   #|    "end_line": 7034,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo__bar\n",
@@ -3273,7 +3681,8 @@ let gfm_spec_json : String =
   #|    "example": 409,
   #|    "start_line": 7039,
   #|    "end_line": 7043,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__пристаням__стремятся\n",
@@ -3281,7 +3690,8 @@ let gfm_spec_json : String =
   #|    "example": 410,
   #|    "start_line": 7046,
   #|    "end_line": 7050,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo__bar__baz__\n",
@@ -3289,7 +3699,8 @@ let gfm_spec_json : String =
   #|    "example": 411,
   #|    "start_line": 7053,
   #|    "end_line": 7057,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__(bar)__.\n",
@@ -3297,7 +3708,8 @@ let gfm_spec_json : String =
   #|    "example": 412,
   #|    "start_line": 7064,
   #|    "end_line": 7068,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo [bar](/url)*\n",
@@ -3305,7 +3717,8 @@ let gfm_spec_json : String =
   #|    "example": 413,
   #|    "start_line": 7076,
   #|    "end_line": 7080,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo\nbar*\n",
@@ -3313,7 +3726,8 @@ let gfm_spec_json : String =
   #|    "example": 414,
   #|    "start_line": 7083,
   #|    "end_line": 7089,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo __bar__ baz_\n",
@@ -3321,7 +3735,8 @@ let gfm_spec_json : String =
   #|    "example": 415,
   #|    "start_line": 7095,
   #|    "end_line": 7099,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo _bar_ baz_\n",
@@ -3329,7 +3744,8 @@ let gfm_spec_json : String =
   #|    "example": 416,
   #|    "start_line": 7102,
   #|    "end_line": 7106,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo_ bar_\n",
@@ -3337,7 +3753,8 @@ let gfm_spec_json : String =
   #|    "example": 417,
   #|    "start_line": 7109,
   #|    "end_line": 7113,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo *bar**\n",
@@ -3345,7 +3762,8 @@ let gfm_spec_json : String =
   #|    "example": 418,
   #|    "start_line": 7116,
   #|    "end_line": 7120,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo **bar** baz*\n",
@@ -3353,7 +3771,8 @@ let gfm_spec_json : String =
   #|    "example": 419,
   #|    "start_line": 7123,
   #|    "end_line": 7127,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo**bar**baz*\n",
@@ -3361,7 +3780,8 @@ let gfm_spec_json : String =
   #|    "example": 420,
   #|    "start_line": 7129,
   #|    "end_line": 7133,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo**bar*\n",
@@ -3369,7 +3789,8 @@ let gfm_spec_json : String =
   #|    "example": 421,
   #|    "start_line": 7153,
   #|    "end_line": 7157,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "***foo** bar*\n",
@@ -3377,7 +3798,8 @@ let gfm_spec_json : String =
   #|    "example": 422,
   #|    "start_line": 7166,
   #|    "end_line": 7170,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo **bar***\n",
@@ -3385,7 +3807,8 @@ let gfm_spec_json : String =
   #|    "example": 423,
   #|    "start_line": 7173,
   #|    "end_line": 7177,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo**bar***\n",
@@ -3393,7 +3816,8 @@ let gfm_spec_json : String =
   #|    "example": 424,
   #|    "start_line": 7180,
   #|    "end_line": 7184,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo***bar***baz\n",
@@ -3401,7 +3825,8 @@ let gfm_spec_json : String =
   #|    "example": 425,
   #|    "start_line": 7191,
   #|    "end_line": 7195,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo******bar*********baz\n",
@@ -3409,7 +3834,8 @@ let gfm_spec_json : String =
   #|    "example": 426,
   #|    "start_line": 7197,
   #|    "end_line": 7201,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo **bar *baz* bim** bop*\n",
@@ -3417,7 +3843,8 @@ let gfm_spec_json : String =
   #|    "example": 427,
   #|    "start_line": 7206,
   #|    "end_line": 7210,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo [*bar*](/url)*\n",
@@ -3425,7 +3852,8 @@ let gfm_spec_json : String =
   #|    "example": 428,
   #|    "start_line": 7213,
   #|    "end_line": 7217,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "** is not an empty emphasis\n",
@@ -3433,7 +3861,8 @@ let gfm_spec_json : String =
   #|    "example": 429,
   #|    "start_line": 7222,
   #|    "end_line": 7226,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**** is not an empty strong emphasis\n",
@@ -3441,7 +3870,8 @@ let gfm_spec_json : String =
   #|    "example": 430,
   #|    "start_line": 7229,
   #|    "end_line": 7233,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo [bar](/url)**\n",
@@ -3449,7 +3879,8 @@ let gfm_spec_json : String =
   #|    "example": 431,
   #|    "start_line": 7242,
   #|    "end_line": 7246,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo\nbar**\n",
@@ -3457,7 +3888,8 @@ let gfm_spec_json : String =
   #|    "example": 432,
   #|    "start_line": 7249,
   #|    "end_line": 7255,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo _bar_ baz__\n",
@@ -3465,7 +3897,8 @@ let gfm_spec_json : String =
   #|    "example": 433,
   #|    "start_line": 7261,
   #|    "end_line": 7265,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo __bar__ baz__\n",
@@ -3473,7 +3906,8 @@ let gfm_spec_json : String =
   #|    "example": 434,
   #|    "start_line": 7268,
   #|    "end_line": 7272,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "____foo__ bar__\n",
@@ -3481,7 +3915,8 @@ let gfm_spec_json : String =
   #|    "example": 435,
   #|    "start_line": 7275,
   #|    "end_line": 7279,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo **bar****\n",
@@ -3489,7 +3924,8 @@ let gfm_spec_json : String =
   #|    "example": 436,
   #|    "start_line": 7282,
   #|    "end_line": 7286,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo *bar* baz**\n",
@@ -3497,7 +3933,8 @@ let gfm_spec_json : String =
   #|    "example": 437,
   #|    "start_line": 7289,
   #|    "end_line": 7293,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo*bar*baz**\n",
@@ -3505,7 +3942,8 @@ let gfm_spec_json : String =
   #|    "example": 438,
   #|    "start_line": 7296,
   #|    "end_line": 7300,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "***foo* bar**\n",
@@ -3513,7 +3951,8 @@ let gfm_spec_json : String =
   #|    "example": 439,
   #|    "start_line": 7303,
   #|    "end_line": 7307,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo *bar***\n",
@@ -3521,7 +3960,8 @@ let gfm_spec_json : String =
   #|    "example": 440,
   #|    "start_line": 7310,
   #|    "end_line": 7314,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo *bar **baz**\nbim* bop**\n",
@@ -3529,7 +3969,8 @@ let gfm_spec_json : String =
   #|    "example": 441,
   #|    "start_line": 7319,
   #|    "end_line": 7325,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo [*bar*](/url)**\n",
@@ -3537,7 +3978,8 @@ let gfm_spec_json : String =
   #|    "example": 442,
   #|    "start_line": 7328,
   #|    "end_line": 7332,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__ is not an empty emphasis\n",
@@ -3545,7 +3987,8 @@ let gfm_spec_json : String =
   #|    "example": 443,
   #|    "start_line": 7337,
   #|    "end_line": 7341,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "____ is not an empty strong emphasis\n",
@@ -3553,7 +3996,8 @@ let gfm_spec_json : String =
   #|    "example": 444,
   #|    "start_line": 7344,
   #|    "end_line": 7348,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo ***\n",
@@ -3561,7 +4005,8 @@ let gfm_spec_json : String =
   #|    "example": 445,
   #|    "start_line": 7354,
   #|    "end_line": 7358,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo *\\**\n",
@@ -3569,7 +4014,8 @@ let gfm_spec_json : String =
   #|    "example": 446,
   #|    "start_line": 7361,
   #|    "end_line": 7365,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo *_*\n",
@@ -3577,7 +4023,8 @@ let gfm_spec_json : String =
   #|    "example": 447,
   #|    "start_line": 7368,
   #|    "end_line": 7372,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo *****\n",
@@ -3585,7 +4032,8 @@ let gfm_spec_json : String =
   #|    "example": 448,
   #|    "start_line": 7375,
   #|    "end_line": 7379,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo **\\***\n",
@@ -3593,7 +4041,8 @@ let gfm_spec_json : String =
   #|    "example": 449,
   #|    "start_line": 7382,
   #|    "end_line": 7386,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo **_**\n",
@@ -3601,7 +4050,8 @@ let gfm_spec_json : String =
   #|    "example": 450,
   #|    "start_line": 7389,
   #|    "end_line": 7393,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo*\n",
@@ -3609,7 +4059,8 @@ let gfm_spec_json : String =
   #|    "example": 451,
   #|    "start_line": 7400,
   #|    "end_line": 7404,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo**\n",
@@ -3617,7 +4068,8 @@ let gfm_spec_json : String =
   #|    "example": 452,
   #|    "start_line": 7407,
   #|    "end_line": 7411,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "***foo**\n",
@@ -3625,7 +4077,8 @@ let gfm_spec_json : String =
   #|    "example": 453,
   #|    "start_line": 7414,
   #|    "end_line": 7418,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "****foo*\n",
@@ -3633,7 +4086,8 @@ let gfm_spec_json : String =
   #|    "example": 454,
   #|    "start_line": 7421,
   #|    "end_line": 7425,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo***\n",
@@ -3641,7 +4095,8 @@ let gfm_spec_json : String =
   #|    "example": 455,
   #|    "start_line": 7428,
   #|    "end_line": 7432,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo****\n",
@@ -3649,7 +4104,8 @@ let gfm_spec_json : String =
   #|    "example": 456,
   #|    "start_line": 7435,
   #|    "end_line": 7439,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo ___\n",
@@ -3657,7 +4113,8 @@ let gfm_spec_json : String =
   #|    "example": 457,
   #|    "start_line": 7445,
   #|    "end_line": 7449,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo _\\__\n",
@@ -3665,7 +4122,8 @@ let gfm_spec_json : String =
   #|    "example": 458,
   #|    "start_line": 7452,
   #|    "end_line": 7456,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo _*_\n",
@@ -3673,7 +4131,8 @@ let gfm_spec_json : String =
   #|    "example": 459,
   #|    "start_line": 7459,
   #|    "end_line": 7463,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo _____\n",
@@ -3681,7 +4140,8 @@ let gfm_spec_json : String =
   #|    "example": 460,
   #|    "start_line": 7466,
   #|    "end_line": 7470,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo __\\___\n",
@@ -3689,7 +4149,8 @@ let gfm_spec_json : String =
   #|    "example": 461,
   #|    "start_line": 7473,
   #|    "end_line": 7477,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo __*__\n",
@@ -3697,7 +4158,8 @@ let gfm_spec_json : String =
   #|    "example": 462,
   #|    "start_line": 7480,
   #|    "end_line": 7484,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo_\n",
@@ -3705,7 +4167,8 @@ let gfm_spec_json : String =
   #|    "example": 463,
   #|    "start_line": 7487,
   #|    "end_line": 7491,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo__\n",
@@ -3713,7 +4176,8 @@ let gfm_spec_json : String =
   #|    "example": 464,
   #|    "start_line": 7498,
   #|    "end_line": 7502,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "___foo__\n",
@@ -3721,7 +4185,8 @@ let gfm_spec_json : String =
   #|    "example": 465,
   #|    "start_line": 7505,
   #|    "end_line": 7509,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "____foo_\n",
@@ -3729,7 +4194,8 @@ let gfm_spec_json : String =
   #|    "example": 466,
   #|    "start_line": 7512,
   #|    "end_line": 7516,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo___\n",
@@ -3737,7 +4203,8 @@ let gfm_spec_json : String =
   #|    "example": 467,
   #|    "start_line": 7519,
   #|    "end_line": 7523,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo____\n",
@@ -3745,7 +4212,8 @@ let gfm_spec_json : String =
   #|    "example": 468,
   #|    "start_line": 7526,
   #|    "end_line": 7530,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo**\n",
@@ -3753,7 +4221,8 @@ let gfm_spec_json : String =
   #|    "example": 469,
   #|    "start_line": 7536,
   #|    "end_line": 7540,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*_foo_*\n",
@@ -3761,7 +4230,8 @@ let gfm_spec_json : String =
   #|    "example": 470,
   #|    "start_line": 7543,
   #|    "end_line": 7547,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__foo__\n",
@@ -3769,7 +4239,8 @@ let gfm_spec_json : String =
   #|    "example": 471,
   #|    "start_line": 7550,
   #|    "end_line": 7554,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_*foo*_\n",
@@ -3777,7 +4248,8 @@ let gfm_spec_json : String =
   #|    "example": 472,
   #|    "start_line": 7557,
   #|    "end_line": 7561,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "****foo****\n",
@@ -3785,7 +4257,8 @@ let gfm_spec_json : String =
   #|    "example": 473,
   #|    "start_line": 7567,
   #|    "end_line": 7571,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "____foo____\n",
@@ -3793,7 +4266,8 @@ let gfm_spec_json : String =
   #|    "example": 474,
   #|    "start_line": 7574,
   #|    "end_line": 7578,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "******foo******\n",
@@ -3801,7 +4275,8 @@ let gfm_spec_json : String =
   #|    "example": 475,
   #|    "start_line": 7585,
   #|    "end_line": 7589,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "***foo***\n",
@@ -3809,7 +4284,8 @@ let gfm_spec_json : String =
   #|    "example": 476,
   #|    "start_line": 7594,
   #|    "end_line": 7598,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_____foo_____\n",
@@ -3817,7 +4293,8 @@ let gfm_spec_json : String =
   #|    "example": 477,
   #|    "start_line": 7601,
   #|    "end_line": 7605,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo _bar* baz_\n",
@@ -3825,7 +4302,8 @@ let gfm_spec_json : String =
   #|    "example": 478,
   #|    "start_line": 7610,
   #|    "end_line": 7614,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo __bar *baz bim__ bam*\n",
@@ -3833,7 +4311,8 @@ let gfm_spec_json : String =
   #|    "example": 479,
   #|    "start_line": 7617,
   #|    "end_line": 7621,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**foo **bar baz**\n",
@@ -3841,7 +4320,8 @@ let gfm_spec_json : String =
   #|    "example": 480,
   #|    "start_line": 7626,
   #|    "end_line": 7630,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo *bar baz*\n",
@@ -3849,7 +4329,8 @@ let gfm_spec_json : String =
   #|    "example": 481,
   #|    "start_line": 7633,
   #|    "end_line": 7637,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*[bar*](/url)\n",
@@ -3857,7 +4338,8 @@ let gfm_spec_json : String =
   #|    "example": 482,
   #|    "start_line": 7642,
   #|    "end_line": 7646,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_foo [bar_](/url)\n",
@@ -3865,7 +4347,8 @@ let gfm_spec_json : String =
   #|    "example": 483,
   #|    "start_line": 7649,
   #|    "end_line": 7653,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*<img src=\"foo\" title=\"*\"/>\n",
@@ -3873,7 +4356,8 @@ let gfm_spec_json : String =
   #|    "example": 484,
   #|    "start_line": 7656,
   #|    "end_line": 7660,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**<a href=\"**\">\n",
@@ -3881,7 +4365,8 @@ let gfm_spec_json : String =
   #|    "example": 485,
   #|    "start_line": 7663,
   #|    "end_line": 7667,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__<a href=\"__\">\n",
@@ -3889,7 +4374,8 @@ let gfm_spec_json : String =
   #|    "example": 486,
   #|    "start_line": 7670,
   #|    "end_line": 7674,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*a `*`*\n",
@@ -3897,7 +4383,8 @@ let gfm_spec_json : String =
   #|    "example": 487,
   #|    "start_line": 7677,
   #|    "end_line": 7681,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "_a `_`_\n",
@@ -3905,7 +4392,8 @@ let gfm_spec_json : String =
   #|    "example": 488,
   #|    "start_line": 7684,
   #|    "end_line": 7688,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "**a<http://foo.bar/?q=**>\n",
@@ -3913,7 +4401,8 @@ let gfm_spec_json : String =
   #|    "example": 489,
   #|    "start_line": 7691,
   #|    "end_line": 7695,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "__a<http://foo.bar/?q=__>\n",
@@ -3921,7 +4410,8 @@ let gfm_spec_json : String =
   #|    "example": 490,
   #|    "start_line": 7698,
   #|    "end_line": 7702,
-  #|    "section": "Emphasis and strong emphasis"
+  #|    "section": "Emphasis and strong emphasis",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "~~Hi~~ Hello, world!\n",
@@ -3929,7 +4419,8 @@ let gfm_spec_json : String =
   #|    "example": 491,
   #|    "start_line": 7714,
   #|    "end_line": 7718,
-  #|    "section": "Strikethrough (extension)"
+  #|    "section": "Strikethrough (extension)",
+  #|    "options": "strikethrough"
   #|  },
   #|  {
   #|    "markdown": "This ~~has a\n\nnew paragraph~~.\n",
@@ -3937,7 +4428,8 @@ let gfm_spec_json : String =
   #|    "example": 492,
   #|    "start_line": 7723,
   #|    "end_line": 7730,
-  #|    "section": "Strikethrough (extension)"
+  #|    "section": "Strikethrough (extension)",
+  #|    "options": "strikethrough"
   #|  },
   #|  {
   #|    "markdown": "[link](/uri \"title\")\n",
@@ -3945,7 +4437,8 @@ let gfm_spec_json : String =
   #|    "example": 493,
   #|    "start_line": 7809,
   #|    "end_line": 7813,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/uri)\n",
@@ -3953,7 +4446,8 @@ let gfm_spec_json : String =
   #|    "example": 494,
   #|    "start_line": 7818,
   #|    "end_line": 7822,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link]()\n",
@@ -3961,7 +4455,8 @@ let gfm_spec_json : String =
   #|    "example": 495,
   #|    "start_line": 7827,
   #|    "end_line": 7831,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](<>)\n",
@@ -3969,7 +4464,8 @@ let gfm_spec_json : String =
   #|    "example": 496,
   #|    "start_line": 7834,
   #|    "end_line": 7838,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/my uri)\n",
@@ -3977,7 +4473,8 @@ let gfm_spec_json : String =
   #|    "example": 497,
   #|    "start_line": 7843,
   #|    "end_line": 7847,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](</my uri>)\n",
@@ -3985,7 +4482,8 @@ let gfm_spec_json : String =
   #|    "example": 498,
   #|    "start_line": 7849,
   #|    "end_line": 7853,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo\nbar)\n",
@@ -3993,7 +4491,8 @@ let gfm_spec_json : String =
   #|    "example": 499,
   #|    "start_line": 7858,
   #|    "end_line": 7864,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](<foo\nbar>)\n",
@@ -4001,7 +4500,8 @@ let gfm_spec_json : String =
   #|    "example": 500,
   #|    "start_line": 7866,
   #|    "end_line": 7872,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[a](<b)c>)\n",
@@ -4009,7 +4509,8 @@ let gfm_spec_json : String =
   #|    "example": 501,
   #|    "start_line": 7877,
   #|    "end_line": 7881,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](<foo\\>)\n",
@@ -4017,7 +4518,8 @@ let gfm_spec_json : String =
   #|    "example": 502,
   #|    "start_line": 7885,
   #|    "end_line": 7889,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[a](<b)c\n[a](<b)c>\n[a](<b>c)\n",
@@ -4025,7 +4527,8 @@ let gfm_spec_json : String =
   #|    "example": 503,
   #|    "start_line": 7894,
   #|    "end_line": 7902,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](\\(foo\\))\n",
@@ -4033,7 +4536,8 @@ let gfm_spec_json : String =
   #|    "example": 504,
   #|    "start_line": 7906,
   #|    "end_line": 7910,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo(and(bar)))\n",
@@ -4041,7 +4545,8 @@ let gfm_spec_json : String =
   #|    "example": 505,
   #|    "start_line": 7915,
   #|    "end_line": 7919,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo\\(and\\(bar\\))\n",
@@ -4049,7 +4554,8 @@ let gfm_spec_json : String =
   #|    "example": 506,
   #|    "start_line": 7924,
   #|    "end_line": 7928,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](<foo(and(bar)>)\n",
@@ -4057,7 +4563,8 @@ let gfm_spec_json : String =
   #|    "example": 507,
   #|    "start_line": 7931,
   #|    "end_line": 7935,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo\\)\\:)\n",
@@ -4065,7 +4572,8 @@ let gfm_spec_json : String =
   #|    "example": 508,
   #|    "start_line": 7941,
   #|    "end_line": 7945,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](#fragment)\n\n[link](http://example.com#fragment)\n\n[link](http://example.com?foo=3#frag)\n",
@@ -4073,7 +4581,8 @@ let gfm_spec_json : String =
   #|    "example": 509,
   #|    "start_line": 7950,
   #|    "end_line": 7960,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo\\bar)\n",
@@ -4081,7 +4590,8 @@ let gfm_spec_json : String =
   #|    "example": 510,
   #|    "start_line": 7966,
   #|    "end_line": 7970,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](foo%20b&auml;)\n",
@@ -4089,7 +4599,8 @@ let gfm_spec_json : String =
   #|    "example": 511,
   #|    "start_line": 7982,
   #|    "end_line": 7986,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](\"title\")\n",
@@ -4097,7 +4608,8 @@ let gfm_spec_json : String =
   #|    "example": 512,
   #|    "start_line": 7993,
   #|    "end_line": 7997,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/url \"title\")\n[link](/url 'title')\n[link](/url (title))\n",
@@ -4105,7 +4617,8 @@ let gfm_spec_json : String =
   #|    "example": 513,
   #|    "start_line": 8002,
   #|    "end_line": 8010,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/url \"title \\\"&quot;\")\n",
@@ -4113,7 +4626,8 @@ let gfm_spec_json : String =
   #|    "example": 514,
   #|    "start_line": 8016,
   #|    "end_line": 8020,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/url \"title\")\n",
@@ -4121,7 +4635,8 @@ let gfm_spec_json : String =
   #|    "example": 515,
   #|    "start_line": 8026,
   #|    "end_line": 8030,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/url \"title \"and\" title\")\n",
@@ -4129,7 +4644,8 @@ let gfm_spec_json : String =
   #|    "example": 516,
   #|    "start_line": 8035,
   #|    "end_line": 8039,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](/url 'title \"and\" title')\n",
@@ -4137,7 +4653,8 @@ let gfm_spec_json : String =
   #|    "example": 517,
   #|    "start_line": 8044,
   #|    "end_line": 8048,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link](   /uri\n  \"title\"  )\n",
@@ -4145,7 +4662,8 @@ let gfm_spec_json : String =
   #|    "example": 518,
   #|    "start_line": 8068,
   #|    "end_line": 8073,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link] (/uri)\n",
@@ -4153,7 +4671,8 @@ let gfm_spec_json : String =
   #|    "example": 519,
   #|    "start_line": 8079,
   #|    "end_line": 8083,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link [foo [bar]]](/uri)\n",
@@ -4161,7 +4680,8 @@ let gfm_spec_json : String =
   #|    "example": 520,
   #|    "start_line": 8089,
   #|    "end_line": 8093,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link] bar](/uri)\n",
@@ -4169,7 +4689,8 @@ let gfm_spec_json : String =
   #|    "example": 521,
   #|    "start_line": 8096,
   #|    "end_line": 8100,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link [bar](/uri)\n",
@@ -4177,7 +4698,8 @@ let gfm_spec_json : String =
   #|    "example": 522,
   #|    "start_line": 8103,
   #|    "end_line": 8107,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link \\[bar](/uri)\n",
@@ -4185,7 +4707,8 @@ let gfm_spec_json : String =
   #|    "example": 523,
   #|    "start_line": 8110,
   #|    "end_line": 8114,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link *foo **bar** `#`*](/uri)\n",
@@ -4193,7 +4716,8 @@ let gfm_spec_json : String =
   #|    "example": 524,
   #|    "start_line": 8119,
   #|    "end_line": 8123,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[![moon](moon.jpg)](/uri)\n",
@@ -4201,7 +4725,8 @@ let gfm_spec_json : String =
   #|    "example": 525,
   #|    "start_line": 8126,
   #|    "end_line": 8130,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo [bar](/uri)](/uri)\n",
@@ -4209,7 +4734,8 @@ let gfm_spec_json : String =
   #|    "example": 526,
   #|    "start_line": 8135,
   #|    "end_line": 8139,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo *[bar [baz](/uri)](/uri)*](/uri)\n",
@@ -4217,7 +4743,8 @@ let gfm_spec_json : String =
   #|    "example": 527,
   #|    "start_line": 8142,
   #|    "end_line": 8146,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![[[foo](uri1)](uri2)](uri3)\n",
@@ -4225,7 +4752,8 @@ let gfm_spec_json : String =
   #|    "example": 528,
   #|    "start_line": 8149,
   #|    "end_line": 8153,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*[foo*](/uri)\n",
@@ -4233,7 +4761,8 @@ let gfm_spec_json : String =
   #|    "example": 529,
   #|    "start_line": 8159,
   #|    "end_line": 8163,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo *bar](baz*)\n",
@@ -4241,7 +4770,8 @@ let gfm_spec_json : String =
   #|    "example": 530,
   #|    "start_line": 8166,
   #|    "end_line": 8170,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo [bar* baz]\n",
@@ -4249,7 +4779,8 @@ let gfm_spec_json : String =
   #|    "example": 531,
   #|    "start_line": 8176,
   #|    "end_line": 8180,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo <bar attr=\"](baz)\">\n",
@@ -4257,7 +4788,8 @@ let gfm_spec_json : String =
   #|    "example": 532,
   #|    "start_line": 8186,
   #|    "end_line": 8190,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo`](/uri)`\n",
@@ -4265,7 +4797,8 @@ let gfm_spec_json : String =
   #|    "example": 533,
   #|    "start_line": 8193,
   #|    "end_line": 8197,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo<http://example.com/?search=](uri)>\n",
@@ -4273,7 +4806,8 @@ let gfm_spec_json : String =
   #|    "example": 534,
   #|    "start_line": 8200,
   #|    "end_line": 8204,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][bar]\n\n[bar]: /url \"title\"\n",
@@ -4281,7 +4815,8 @@ let gfm_spec_json : String =
   #|    "example": 535,
   #|    "start_line": 8238,
   #|    "end_line": 8244,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link [foo [bar]]][ref]\n\n[ref]: /uri\n",
@@ -4289,7 +4824,8 @@ let gfm_spec_json : String =
   #|    "example": 536,
   #|    "start_line": 8253,
   #|    "end_line": 8259,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link \\[bar][ref]\n\n[ref]: /uri\n",
@@ -4297,7 +4833,8 @@ let gfm_spec_json : String =
   #|    "example": 537,
   #|    "start_line": 8262,
   #|    "end_line": 8268,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[link *foo **bar** `#`*][ref]\n\n[ref]: /uri\n",
@@ -4305,7 +4842,8 @@ let gfm_spec_json : String =
   #|    "example": 538,
   #|    "start_line": 8273,
   #|    "end_line": 8279,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[![moon](moon.jpg)][ref]\n\n[ref]: /uri\n",
@@ -4313,7 +4851,8 @@ let gfm_spec_json : String =
   #|    "example": 539,
   #|    "start_line": 8282,
   #|    "end_line": 8288,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo [bar](/uri)][ref]\n\n[ref]: /uri\n",
@@ -4321,7 +4860,8 @@ let gfm_spec_json : String =
   #|    "example": 540,
   #|    "start_line": 8293,
   #|    "end_line": 8299,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo *bar [baz][ref]*][ref]\n\n[ref]: /uri\n",
@@ -4329,7 +4869,8 @@ let gfm_spec_json : String =
   #|    "example": 541,
   #|    "start_line": 8302,
   #|    "end_line": 8308,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*[foo*][ref]\n\n[ref]: /uri\n",
@@ -4337,7 +4878,8 @@ let gfm_spec_json : String =
   #|    "example": 542,
   #|    "start_line": 8317,
   #|    "end_line": 8323,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo *bar][ref]\n\n[ref]: /uri\n",
@@ -4345,7 +4887,8 @@ let gfm_spec_json : String =
   #|    "example": 543,
   #|    "start_line": 8326,
   #|    "end_line": 8332,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo <bar attr=\"][ref]\">\n\n[ref]: /uri\n",
@@ -4353,7 +4896,8 @@ let gfm_spec_json : String =
   #|    "example": 544,
   #|    "start_line": 8338,
   #|    "end_line": 8344,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo`][ref]`\n\n[ref]: /uri\n",
@@ -4361,7 +4905,8 @@ let gfm_spec_json : String =
   #|    "example": 545,
   #|    "start_line": 8347,
   #|    "end_line": 8353,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo<http://example.com/?search=][ref]>\n\n[ref]: /uri\n",
@@ -4369,7 +4914,8 @@ let gfm_spec_json : String =
   #|    "example": 546,
   #|    "start_line": 8356,
   #|    "end_line": 8362,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][BaR]\n\n[bar]: /url \"title\"\n",
@@ -4377,7 +4923,8 @@ let gfm_spec_json : String =
   #|    "example": 547,
   #|    "start_line": 8367,
   #|    "end_line": 8373,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Толпой][Толпой] is a Russian word.\n\n[ТОЛПОЙ]: /url\n",
@@ -4385,7 +4932,8 @@ let gfm_spec_json : String =
   #|    "example": 548,
   #|    "start_line": 8378,
   #|    "end_line": 8384,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Foo\n  bar]: /url\n\n[Baz][Foo bar]\n",
@@ -4393,7 +4941,8 @@ let gfm_spec_json : String =
   #|    "example": 549,
   #|    "start_line": 8390,
   #|    "end_line": 8397,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo] [bar]\n\n[bar]: /url \"title\"\n",
@@ -4401,7 +4950,8 @@ let gfm_spec_json : String =
   #|    "example": 550,
   #|    "start_line": 8403,
   #|    "end_line": 8409,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n[bar]\n\n[bar]: /url \"title\"\n",
@@ -4409,7 +4959,8 @@ let gfm_spec_json : String =
   #|    "example": 551,
   #|    "start_line": 8412,
   #|    "end_line": 8420,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]: /url1\n\n[foo]: /url2\n\n[bar][foo]\n",
@@ -4417,7 +4968,8 @@ let gfm_spec_json : String =
   #|    "example": 552,
   #|    "start_line": 8453,
   #|    "end_line": 8461,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[bar][foo\\!]\n\n[foo!]: /url\n",
@@ -4425,7 +4977,8 @@ let gfm_spec_json : String =
   #|    "example": 553,
   #|    "start_line": 8468,
   #|    "end_line": 8474,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][ref[]\n\n[ref[]: /uri\n",
@@ -4433,7 +4986,8 @@ let gfm_spec_json : String =
   #|    "example": 554,
   #|    "start_line": 8480,
   #|    "end_line": 8487,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][ref[bar]]\n\n[ref[bar]]: /uri\n",
@@ -4441,7 +4995,8 @@ let gfm_spec_json : String =
   #|    "example": 555,
   #|    "start_line": 8490,
   #|    "end_line": 8497,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[[[foo]]]\n\n[[[foo]]]: /url\n",
@@ -4449,7 +5004,8 @@ let gfm_spec_json : String =
   #|    "example": 556,
   #|    "start_line": 8500,
   #|    "end_line": 8507,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][ref\\[]\n\n[ref\\[]: /uri\n",
@@ -4457,7 +5013,8 @@ let gfm_spec_json : String =
   #|    "example": 557,
   #|    "start_line": 8510,
   #|    "end_line": 8516,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[bar\\\\]: /uri\n\n[bar\\\\]\n",
@@ -4465,7 +5022,8 @@ let gfm_spec_json : String =
   #|    "example": 558,
   #|    "start_line": 8521,
   #|    "end_line": 8527,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[]\n\n[]: /uri\n",
@@ -4473,7 +5031,8 @@ let gfm_spec_json : String =
   #|    "example": 559,
   #|    "start_line": 8532,
   #|    "end_line": 8539,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[\n ]\n\n[\n ]: /uri\n",
@@ -4481,7 +5040,8 @@ let gfm_spec_json : String =
   #|    "example": 560,
   #|    "start_line": 8542,
   #|    "end_line": 8553,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][]\n\n[foo]: /url \"title\"\n",
@@ -4489,7 +5049,8 @@ let gfm_spec_json : String =
   #|    "example": 561,
   #|    "start_line": 8565,
   #|    "end_line": 8571,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[*foo* bar][]\n\n[*foo* bar]: /url \"title\"\n",
@@ -4497,7 +5058,8 @@ let gfm_spec_json : String =
   #|    "example": 562,
   #|    "start_line": 8574,
   #|    "end_line": 8580,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Foo][]\n\n[foo]: /url \"title\"\n",
@@ -4505,7 +5067,8 @@ let gfm_spec_json : String =
   #|    "example": 563,
   #|    "start_line": 8585,
   #|    "end_line": 8591,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo] \n[]\n\n[foo]: /url \"title\"\n",
@@ -4513,7 +5076,8 @@ let gfm_spec_json : String =
   #|    "example": 564,
   #|    "start_line": 8598,
   #|    "end_line": 8606,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]\n\n[foo]: /url \"title\"\n",
@@ -4521,7 +5085,8 @@ let gfm_spec_json : String =
   #|    "example": 565,
   #|    "start_line": 8618,
   #|    "end_line": 8624,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[*foo* bar]\n\n[*foo* bar]: /url \"title\"\n",
@@ -4529,7 +5094,8 @@ let gfm_spec_json : String =
   #|    "example": 566,
   #|    "start_line": 8627,
   #|    "end_line": 8633,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[[*foo* bar]]\n\n[*foo* bar]: /url \"title\"\n",
@@ -4537,7 +5103,8 @@ let gfm_spec_json : String =
   #|    "example": 567,
   #|    "start_line": 8636,
   #|    "end_line": 8642,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[[bar [foo]\n\n[foo]: /url\n",
@@ -4545,7 +5112,8 @@ let gfm_spec_json : String =
   #|    "example": 568,
   #|    "start_line": 8645,
   #|    "end_line": 8651,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[Foo]\n\n[foo]: /url \"title\"\n",
@@ -4553,7 +5121,8 @@ let gfm_spec_json : String =
   #|    "example": 569,
   #|    "start_line": 8656,
   #|    "end_line": 8662,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo] bar\n\n[foo]: /url\n",
@@ -4561,7 +5130,8 @@ let gfm_spec_json : String =
   #|    "example": 570,
   #|    "start_line": 8667,
   #|    "end_line": 8673,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\[foo]\n\n[foo]: /url \"title\"\n",
@@ -4569,7 +5139,8 @@ let gfm_spec_json : String =
   #|    "example": 571,
   #|    "start_line": 8679,
   #|    "end_line": 8685,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo*]: /url\n\n*[foo*]\n",
@@ -4577,7 +5148,8 @@ let gfm_spec_json : String =
   #|    "example": 572,
   #|    "start_line": 8691,
   #|    "end_line": 8697,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][bar]\n\n[foo]: /url1\n[bar]: /url2\n",
@@ -4585,7 +5157,8 @@ let gfm_spec_json : String =
   #|    "example": 573,
   #|    "start_line": 8703,
   #|    "end_line": 8710,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][]\n\n[foo]: /url1\n",
@@ -4593,7 +5166,8 @@ let gfm_spec_json : String =
   #|    "example": 574,
   #|    "start_line": 8712,
   #|    "end_line": 8718,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo]()\n\n[foo]: /url1\n",
@@ -4601,7 +5175,8 @@ let gfm_spec_json : String =
   #|    "example": 575,
   #|    "start_line": 8722,
   #|    "end_line": 8728,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo](not a link)\n\n[foo]: /url1\n",
@@ -4609,7 +5184,8 @@ let gfm_spec_json : String =
   #|    "example": 576,
   #|    "start_line": 8730,
   #|    "end_line": 8736,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][bar][baz]\n\n[baz]: /url\n",
@@ -4617,7 +5193,8 @@ let gfm_spec_json : String =
   #|    "example": 577,
   #|    "start_line": 8741,
   #|    "end_line": 8747,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][bar][baz]\n\n[baz]: /url1\n[bar]: /url2\n",
@@ -4625,7 +5202,8 @@ let gfm_spec_json : String =
   #|    "example": 578,
   #|    "start_line": 8753,
   #|    "end_line": 8760,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "[foo][bar][baz]\n\n[baz]: /url1\n[foo]: /url2\n",
@@ -4633,7 +5211,8 @@ let gfm_spec_json : String =
   #|    "example": 579,
   #|    "start_line": 8766,
   #|    "end_line": 8773,
-  #|    "section": "Links"
+  #|    "section": "Links",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo](/url \"title\")\n",
@@ -4641,7 +5220,8 @@ let gfm_spec_json : String =
   #|    "example": 580,
   #|    "start_line": 8789,
   #|    "end_line": 8793,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo *bar*]\n\n[foo *bar*]: train.jpg \"train & tracks\"\n",
@@ -4649,7 +5229,8 @@ let gfm_spec_json : String =
   #|    "example": 581,
   #|    "start_line": 8796,
   #|    "end_line": 8802,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo ![bar](/url)](/url2)\n",
@@ -4657,7 +5238,8 @@ let gfm_spec_json : String =
   #|    "example": 582,
   #|    "start_line": 8805,
   #|    "end_line": 8809,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo [bar](/url)](/url2)\n",
@@ -4665,7 +5247,8 @@ let gfm_spec_json : String =
   #|    "example": 583,
   #|    "start_line": 8812,
   #|    "end_line": 8816,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo *bar*][]\n\n[foo *bar*]: train.jpg \"train & tracks\"\n",
@@ -4673,7 +5256,8 @@ let gfm_spec_json : String =
   #|    "example": 584,
   #|    "start_line": 8826,
   #|    "end_line": 8832,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo *bar*][foobar]\n\n[FOOBAR]: train.jpg \"train & tracks\"\n",
@@ -4681,7 +5265,8 @@ let gfm_spec_json : String =
   #|    "example": 585,
   #|    "start_line": 8835,
   #|    "end_line": 8841,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo](train.jpg)\n",
@@ -4689,7 +5274,8 @@ let gfm_spec_json : String =
   #|    "example": 586,
   #|    "start_line": 8844,
   #|    "end_line": 8848,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "My ![foo bar](/path/to/train.jpg  \"title\"   )\n",
@@ -4697,7 +5283,8 @@ let gfm_spec_json : String =
   #|    "example": 587,
   #|    "start_line": 8851,
   #|    "end_line": 8855,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo](<url>)\n",
@@ -4705,7 +5292,8 @@ let gfm_spec_json : String =
   #|    "example": 588,
   #|    "start_line": 8858,
   #|    "end_line": 8862,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![](/url)\n",
@@ -4713,7 +5301,8 @@ let gfm_spec_json : String =
   #|    "example": 589,
   #|    "start_line": 8865,
   #|    "end_line": 8869,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo][bar]\n\n[bar]: /url\n",
@@ -4721,7 +5310,8 @@ let gfm_spec_json : String =
   #|    "example": 590,
   #|    "start_line": 8874,
   #|    "end_line": 8880,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo][bar]\n\n[BAR]: /url\n",
@@ -4729,7 +5319,8 @@ let gfm_spec_json : String =
   #|    "example": 591,
   #|    "start_line": 8883,
   #|    "end_line": 8889,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo][]\n\n[foo]: /url \"title\"\n",
@@ -4737,7 +5328,8 @@ let gfm_spec_json : String =
   #|    "example": 592,
   #|    "start_line": 8894,
   #|    "end_line": 8900,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![*foo* bar][]\n\n[*foo* bar]: /url \"title\"\n",
@@ -4745,7 +5337,8 @@ let gfm_spec_json : String =
   #|    "example": 593,
   #|    "start_line": 8903,
   #|    "end_line": 8909,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![Foo][]\n\n[foo]: /url \"title\"\n",
@@ -4753,7 +5346,8 @@ let gfm_spec_json : String =
   #|    "example": 594,
   #|    "start_line": 8914,
   #|    "end_line": 8920,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo] \n[]\n\n[foo]: /url \"title\"\n",
@@ -4761,7 +5355,8 @@ let gfm_spec_json : String =
   #|    "example": 595,
   #|    "start_line": 8926,
   #|    "end_line": 8934,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![foo]\n\n[foo]: /url \"title\"\n",
@@ -4769,7 +5364,8 @@ let gfm_spec_json : String =
   #|    "example": 596,
   #|    "start_line": 8939,
   #|    "end_line": 8945,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![*foo* bar]\n\n[*foo* bar]: /url \"title\"\n",
@@ -4777,7 +5373,8 @@ let gfm_spec_json : String =
   #|    "example": 597,
   #|    "start_line": 8948,
   #|    "end_line": 8954,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![[foo]]\n\n[[foo]]: /url \"title\"\n",
@@ -4785,7 +5382,8 @@ let gfm_spec_json : String =
   #|    "example": 598,
   #|    "start_line": 8959,
   #|    "end_line": 8966,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "![Foo]\n\n[foo]: /url \"title\"\n",
@@ -4793,7 +5391,8 @@ let gfm_spec_json : String =
   #|    "example": 599,
   #|    "start_line": 8971,
   #|    "end_line": 8977,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "!\\[foo]\n\n[foo]: /url \"title\"\n",
@@ -4801,7 +5400,8 @@ let gfm_spec_json : String =
   #|    "example": 600,
   #|    "start_line": 8983,
   #|    "end_line": 8989,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "\\![foo]\n\n[foo]: /url \"title\"\n",
@@ -4809,7 +5409,8 @@ let gfm_spec_json : String =
   #|    "example": 601,
   #|    "start_line": 8995,
   #|    "end_line": 9001,
-  #|    "section": "Images"
+  #|    "section": "Images",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://foo.bar.baz>\n",
@@ -4817,7 +5418,8 @@ let gfm_spec_json : String =
   #|    "example": 602,
   #|    "start_line": 9028,
   #|    "end_line": 9032,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://foo.bar.baz/test?q=hello&id=22&boolean>\n",
@@ -4825,7 +5427,8 @@ let gfm_spec_json : String =
   #|    "example": 603,
   #|    "start_line": 9035,
   #|    "end_line": 9039,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<irc://foo.bar:2233/baz>\n",
@@ -4833,7 +5436,8 @@ let gfm_spec_json : String =
   #|    "example": 604,
   #|    "start_line": 9042,
   #|    "end_line": 9046,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<MAILTO:FOO@BAR.BAZ>\n",
@@ -4841,7 +5445,8 @@ let gfm_spec_json : String =
   #|    "example": 605,
   #|    "start_line": 9051,
   #|    "end_line": 9055,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a+b+c:d>\n",
@@ -4849,7 +5454,8 @@ let gfm_spec_json : String =
   #|    "example": 606,
   #|    "start_line": 9063,
   #|    "end_line": 9067,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<made-up-scheme://foo,bar>\n",
@@ -4857,7 +5463,8 @@ let gfm_spec_json : String =
   #|    "example": 607,
   #|    "start_line": 9070,
   #|    "end_line": 9074,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://../>\n",
@@ -4865,7 +5472,8 @@ let gfm_spec_json : String =
   #|    "example": 608,
   #|    "start_line": 9077,
   #|    "end_line": 9081,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<localhost:5001/foo>\n",
@@ -4873,7 +5481,8 @@ let gfm_spec_json : String =
   #|    "example": 609,
   #|    "start_line": 9084,
   #|    "end_line": 9088,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://foo.bar/baz bim>\n",
@@ -4881,7 +5490,8 @@ let gfm_spec_json : String =
   #|    "example": 610,
   #|    "start_line": 9093,
   #|    "end_line": 9097,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<http://example.com/\\[\\>\n",
@@ -4889,7 +5499,8 @@ let gfm_spec_json : String =
   #|    "example": 611,
   #|    "start_line": 9102,
   #|    "end_line": 9106,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<foo@bar.example.com>\n",
@@ -4897,7 +5508,8 @@ let gfm_spec_json : String =
   #|    "example": 612,
   #|    "start_line": 9124,
   #|    "end_line": 9128,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<foo+special@Bar.baz-bar0.com>\n",
@@ -4905,7 +5517,8 @@ let gfm_spec_json : String =
   #|    "example": 613,
   #|    "start_line": 9131,
   #|    "end_line": 9135,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<foo\\+@bar.example.com>\n",
@@ -4913,7 +5526,8 @@ let gfm_spec_json : String =
   #|    "example": 614,
   #|    "start_line": 9140,
   #|    "end_line": 9144,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<>\n",
@@ -4921,7 +5535,8 @@ let gfm_spec_json : String =
   #|    "example": 615,
   #|    "start_line": 9149,
   #|    "end_line": 9153,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "< http://foo.bar >\n",
@@ -4929,7 +5544,8 @@ let gfm_spec_json : String =
   #|    "example": 616,
   #|    "start_line": 9156,
   #|    "end_line": 9160,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<m:abc>\n",
@@ -4937,7 +5553,8 @@ let gfm_spec_json : String =
   #|    "example": 617,
   #|    "start_line": 9163,
   #|    "end_line": 9167,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<foo.bar.baz>\n",
@@ -4945,7 +5562,8 @@ let gfm_spec_json : String =
   #|    "example": 618,
   #|    "start_line": 9170,
   #|    "end_line": 9174,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "http://example.com\n",
@@ -4953,7 +5571,8 @@ let gfm_spec_json : String =
   #|    "example": 619,
   #|    "start_line": 9177,
   #|    "end_line": 9181,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo@bar.example.com\n",
@@ -4961,7 +5580,8 @@ let gfm_spec_json : String =
   #|    "example": 620,
   #|    "start_line": 9184,
   #|    "end_line": 9188,
-  #|    "section": "Autolinks"
+  #|    "section": "Autolinks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "www.commonmark.org\n",
@@ -4969,7 +5589,8 @@ let gfm_spec_json : String =
   #|    "example": 621,
   #|    "start_line": 9213,
   #|    "end_line": 9217,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "Visit www.commonmark.org/help for more information.\n",
@@ -4977,7 +5598,8 @@ let gfm_spec_json : String =
   #|    "example": 622,
   #|    "start_line": 9221,
   #|    "end_line": 9225,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "Visit www.commonmark.org.\n\nVisit www.commonmark.org/a.b.\n",
@@ -4985,7 +5607,8 @@ let gfm_spec_json : String =
   #|    "example": 623,
   #|    "start_line": 9233,
   #|    "end_line": 9240,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "www.google.com/search?q=Markup+(business)\n\nwww.google.com/search?q=Markup+(business)))\n\n(www.google.com/search?q=Markup+(business))\n\n(www.google.com/search?q=Markup+(business)\n",
@@ -4993,7 +5616,8 @@ let gfm_spec_json : String =
   #|    "example": 624,
   #|    "start_line": 9247,
   #|    "end_line": 9260,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "www.google.com/search?q=(business))+ok\n",
@@ -5001,7 +5625,8 @@ let gfm_spec_json : String =
   #|    "example": 625,
   #|    "start_line": 9266,
   #|    "end_line": 9270,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "www.google.com/search?q=commonmark&hl=en\n\nwww.google.com/search?q=commonmark&hl;\n",
@@ -5009,7 +5634,8 @@ let gfm_spec_json : String =
   #|    "example": 626,
   #|    "start_line": 9277,
   #|    "end_line": 9284,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "www.commonmark.org/he<lp\n",
@@ -5017,7 +5643,8 @@ let gfm_spec_json : String =
   #|    "example": 627,
   #|    "start_line": 9288,
   #|    "end_line": 9292,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "http://commonmark.org\n\n(Visit https://encrypted.google.com/search?q=Markup+(business))\n\nAnonymous FTP is available at ftp://foo.bar.baz.\n",
@@ -5025,7 +5652,8 @@ let gfm_spec_json : String =
   #|    "example": 628,
   #|    "start_line": 9299,
   #|    "end_line": 9309,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "foo@bar.baz\n",
@@ -5033,7 +5661,8 @@ let gfm_spec_json : String =
   #|    "example": 629,
   #|    "start_line": 9325,
   #|    "end_line": 9329,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "hello@mail+xyz.example isn't valid, but hello+xyz@mail.example is.\n",
@@ -5041,7 +5670,8 @@ let gfm_spec_json : String =
   #|    "example": 630,
   #|    "start_line": 9333,
   #|    "end_line": 9337,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "a.b-c_d@a.b\n\na.b-c_d@a.b.\n\na.b-c_d@a.b-\n\na.b-c_d@a.b_\n",
@@ -5049,7 +5679,8 @@ let gfm_spec_json : String =
   #|    "example": 631,
   #|    "start_line": 9343,
   #|    "end_line": 9356,
-  #|    "section": "Autolinks (extension)"
+  #|    "section": "Autolinks (extension)",
+  #|    "options": "autolink"
   #|  },
   #|  {
   #|    "markdown": "<a><bab><c2c>\n",
@@ -5057,7 +5688,8 @@ let gfm_spec_json : String =
   #|    "example": 632,
   #|    "start_line": 9434,
   #|    "end_line": 9438,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a/><b2/>\n",
@@ -5065,7 +5697,8 @@ let gfm_spec_json : String =
   #|    "example": 633,
   #|    "start_line": 9443,
   #|    "end_line": 9447,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a  /><b2\ndata=\"foo\" >\n",
@@ -5073,7 +5706,8 @@ let gfm_spec_json : String =
   #|    "example": 634,
   #|    "start_line": 9452,
   #|    "end_line": 9458,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a foo=\"bar\" bam = 'baz <em>\"</em>'\n_boolean zoop:33=zoop:33 />\n",
@@ -5081,7 +5715,8 @@ let gfm_spec_json : String =
   #|    "example": 635,
   #|    "start_line": 9463,
   #|    "end_line": 9469,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo <responsive-image src=\"foo.jpg\" />\n",
@@ -5089,7 +5724,8 @@ let gfm_spec_json : String =
   #|    "example": 636,
   #|    "start_line": 9474,
   #|    "end_line": 9478,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<33> <__>\n",
@@ -5097,7 +5733,8 @@ let gfm_spec_json : String =
   #|    "example": 637,
   #|    "start_line": 9483,
   #|    "end_line": 9487,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a h*#ref=\"hi\">\n",
@@ -5105,7 +5742,8 @@ let gfm_spec_json : String =
   #|    "example": 638,
   #|    "start_line": 9492,
   #|    "end_line": 9496,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"hi'> <a href=hi'>\n",
@@ -5113,7 +5751,8 @@ let gfm_spec_json : String =
   #|    "example": 639,
   #|    "start_line": 9501,
   #|    "end_line": 9505,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "< a><\nfoo><bar/ >\n<foo bar=baz\nbim!bop />\n",
@@ -5121,7 +5760,8 @@ let gfm_spec_json : String =
   #|    "example": 640,
   #|    "start_line": 9510,
   #|    "end_line": 9520,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href='bar'title=title>\n",
@@ -5129,7 +5769,8 @@ let gfm_spec_json : String =
   #|    "example": 641,
   #|    "start_line": 9525,
   #|    "end_line": 9529,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "</a></foo >\n",
@@ -5137,7 +5778,8 @@ let gfm_spec_json : String =
   #|    "example": 642,
   #|    "start_line": 9534,
   #|    "end_line": 9538,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "</a href=\"foo\">\n",
@@ -5145,7 +5787,8 @@ let gfm_spec_json : String =
   #|    "example": 643,
   #|    "start_line": 9543,
   #|    "end_line": 9547,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <!-- this is a --\ncomment - with hyphens -->\n",
@@ -5153,7 +5796,8 @@ let gfm_spec_json : String =
   #|    "example": 644,
   #|    "start_line": 9552,
   #|    "end_line": 9558,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <!--> foo -->\n\nfoo <!---> foo -->\n",
@@ -5161,7 +5805,8 @@ let gfm_spec_json : String =
   #|    "example": 645,
   #|    "start_line": 9560,
   #|    "end_line": 9567,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <?php echo $a; ?>\n",
@@ -5169,7 +5814,8 @@ let gfm_spec_json : String =
   #|    "example": 646,
   #|    "start_line": 9572,
   #|    "end_line": 9576,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <!ELEMENT br EMPTY>\n",
@@ -5177,7 +5823,8 @@ let gfm_spec_json : String =
   #|    "example": 647,
   #|    "start_line": 9581,
   #|    "end_line": 9585,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <![CDATA[>&<]]>\n",
@@ -5185,7 +5832,8 @@ let gfm_spec_json : String =
   #|    "example": 648,
   #|    "start_line": 9590,
   #|    "end_line": 9594,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <a href=\"&ouml;\">\n",
@@ -5193,7 +5841,8 @@ let gfm_spec_json : String =
   #|    "example": 649,
   #|    "start_line": 9600,
   #|    "end_line": 9604,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo <a href=\"\\*\">\n",
@@ -5201,7 +5850,8 @@ let gfm_spec_json : String =
   #|    "example": 650,
   #|    "start_line": 9609,
   #|    "end_line": 9613,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"\\\"\">\n",
@@ -5209,7 +5859,8 @@ let gfm_spec_json : String =
   #|    "example": 651,
   #|    "start_line": 9616,
   #|    "end_line": 9620,
-  #|    "section": "Raw HTML"
+  #|    "section": "Raw HTML",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<strong> <title> <style> <em>\n\n<blockquote>\n  <xmp> is disallowed.  <XMP> is also disallowed.\n</blockquote>\n",
@@ -5217,7 +5868,8 @@ let gfm_spec_json : String =
   #|    "example": 652,
   #|    "start_line": 9647,
   #|    "end_line": 9658,
-  #|    "section": "Disallowed Raw HTML (extension)"
+  #|    "section": "Disallowed Raw HTML (extension)",
+  #|    "options": "tagfilter"
   #|  },
   #|  {
   #|    "markdown": "foo  \nbaz\n",
@@ -5225,7 +5877,8 @@ let gfm_spec_json : String =
   #|    "example": 653,
   #|    "start_line": 9669,
   #|    "end_line": 9675,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\\\nbaz\n",
@@ -5233,7 +5886,8 @@ let gfm_spec_json : String =
   #|    "example": 654,
   #|    "start_line": 9681,
   #|    "end_line": 9687,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo       \nbaz\n",
@@ -5241,7 +5895,8 @@ let gfm_spec_json : String =
   #|    "example": 655,
   #|    "start_line": 9692,
   #|    "end_line": 9698,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo  \n     bar\n",
@@ -5249,7 +5904,8 @@ let gfm_spec_json : String =
   #|    "example": 656,
   #|    "start_line": 9703,
   #|    "end_line": 9709,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\\\n     bar\n",
@@ -5257,7 +5913,8 @@ let gfm_spec_json : String =
   #|    "example": 657,
   #|    "start_line": 9712,
   #|    "end_line": 9718,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo  \nbar*\n",
@@ -5265,7 +5922,8 @@ let gfm_spec_json : String =
   #|    "example": 658,
   #|    "start_line": 9724,
   #|    "end_line": 9730,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "*foo\\\nbar*\n",
@@ -5273,7 +5931,8 @@ let gfm_spec_json : String =
   #|    "example": 659,
   #|    "start_line": 9733,
   #|    "end_line": 9739,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`code  \nspan`\n",
@@ -5281,7 +5940,8 @@ let gfm_spec_json : String =
   #|    "example": 660,
   #|    "start_line": 9744,
   #|    "end_line": 9749,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "`code\\\nspan`\n",
@@ -5289,7 +5949,8 @@ let gfm_spec_json : String =
   #|    "example": 661,
   #|    "start_line": 9752,
   #|    "end_line": 9757,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"foo  \nbar\">\n",
@@ -5297,7 +5958,8 @@ let gfm_spec_json : String =
   #|    "example": 662,
   #|    "start_line": 9762,
   #|    "end_line": 9768,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "<a href=\"foo\\\nbar\">\n",
@@ -5305,7 +5967,8 @@ let gfm_spec_json : String =
   #|    "example": 663,
   #|    "start_line": 9771,
   #|    "end_line": 9777,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\\\n",
@@ -5313,7 +5976,8 @@ let gfm_spec_json : String =
   #|    "example": 664,
   #|    "start_line": 9784,
   #|    "end_line": 9788,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo  \n",
@@ -5321,7 +5985,8 @@ let gfm_spec_json : String =
   #|    "example": 665,
   #|    "start_line": 9791,
   #|    "end_line": 9795,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "### foo\\\n",
@@ -5329,7 +5994,8 @@ let gfm_spec_json : String =
   #|    "example": 666,
   #|    "start_line": 9798,
   #|    "end_line": 9802,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "### foo  \n",
@@ -5337,7 +6003,8 @@ let gfm_spec_json : String =
   #|    "example": 667,
   #|    "start_line": 9805,
   #|    "end_line": 9809,
-  #|    "section": "Hard line breaks"
+  #|    "section": "Hard line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo\nbaz\n",
@@ -5345,7 +6012,8 @@ let gfm_spec_json : String =
   #|    "example": 668,
   #|    "start_line": 9820,
   #|    "end_line": 9826,
-  #|    "section": "Soft line breaks"
+  #|    "section": "Soft line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "foo \n baz\n",
@@ -5353,7 +6021,8 @@ let gfm_spec_json : String =
   #|    "example": 669,
   #|    "start_line": 9832,
   #|    "end_line": 9838,
-  #|    "section": "Soft line breaks"
+  #|    "section": "Soft line breaks",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "hello $.;'there\n",
@@ -5361,7 +6030,8 @@ let gfm_spec_json : String =
   #|    "example": 670,
   #|    "start_line": 9852,
   #|    "end_line": 9856,
-  #|    "section": "Textual content"
+  #|    "section": "Textual content",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Foo χρῆν\n",
@@ -5369,7 +6039,8 @@ let gfm_spec_json : String =
   #|    "example": 671,
   #|    "start_line": 9859,
   #|    "end_line": 9863,
-  #|    "section": "Textual content"
+  #|    "section": "Textual content",
+  #|    "options": ""
   #|  },
   #|  {
   #|    "markdown": "Multiple     spaces\n",
@@ -5377,7 +6048,8 @@ let gfm_spec_json : String =
   #|    "example": 672,
   #|    "start_line": 9868,
   #|    "end_line": 9872,
-  #|    "section": "Textual content"
+  #|    "section": "Textual content",
+  #|    "options": ""
   #|  }
   #|]
   #|

@@ -33,7 +33,11 @@ verify:
   moon info
   just fmt
 
-# Run conformance: commonmark or the GFM extension suite.
+# Run conformance.
+#
+# `gfm` intentionally runs only the GFM extension examples. The full GFM 0.29
+# fixture is useful for diagnostics, but this parser targets CommonMark 0.31.2
+# and the older GFM 0.29 fixture differs in non-extension emphasis examples.
 conformance target="commonmark" *args:
   @case "{{target}}" in \
     commonmark|cmark|cm) moon -C conformance run . {{args}} ;; \

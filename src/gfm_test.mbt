@@ -62,3 +62,37 @@ test "gfm tagfilter escapes disallowed raw html tags" {
     "<p><strong> &lt;title> &lt;style> <em></p>\n",
   )
 }
+
+///|
+test "gfm extensions can be enabled individually" {
+  let table_only = @commonmark.rule().extend(@gfm.tables())
+  assert_eq(
+    render_html(table_only, "| a |\n| - |\n| b |\n\n~~x~~ www.example.com\n"),
+    "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n<p>~~x~~ www.example.com</p>\n",
+  )
+  let strike_and_link = @commonmark.rule()
+    .extend(@gfm.strikethrough())
+    .extend(@gfm.autolinks())
+  assert_eq(
+    render_html(strike_and_link, "~~x~~ www.example.com"),
+    "<p><del>x</del> <a href=\"http://www.example.com\">www.example.com</a></p>\n",
+  )
+}
+
+///|
+test "gfm task list and tagfilter extensions can be enabled individually" {
+  assert_eq(
+    render_html(
+      @commonmark.rule().extend(@gfm.task_list_items()),
+      "- [x] done\n",
+    ),
+    "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n</ul>\n",
+  )
+  assert_eq(
+    render_html(
+      @commonmark.rule().extend(@gfm.tagfilter()),
+      "<script>x</script>\n",
+    ),
+    "&lt;script>x&lt;/script>\n",
+  )
+}
