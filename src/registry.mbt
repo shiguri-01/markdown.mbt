@@ -12,9 +12,17 @@ priv struct PreparedRulePlan {
   block_rules : Array[RuleEntry]
   block_continue_rules : Array[RuleEntry]
   inline_parse_rules : Array[RuleEntry]
+  inline_fallback_rules : Array[RuleEntry]
+  inline_rule_buckets : Array[InlineRuleBucket]
   inline_mode : InlineParseMode
   inline_trigger_chars : String
   core_rules : Array[RuleEntry]
+}
+
+///|
+priv struct InlineRuleBucket {
+  trigger : Int
+  rules : Array[RuleEntry]
 }
 
 ///|
@@ -30,13 +38,18 @@ fn PreparedRulePlan::PreparedRulePlan(
   let block_continue_rules = registry.block_continue_rules()
   let inline_parse_rules = registry.inline_parse_rules()
   let core_rules = registry.core_rules()
+  let inline_trigger_chars = inline_trigger_chars(inline_parse_rules)
   {
     registry,
     block_rules,
     block_continue_rules,
     inline_parse_rules,
+    inline_fallback_rules: inline_fallback_rules(inline_parse_rules),
+    inline_rule_buckets: inline_rule_buckets(
+      inline_parse_rules, inline_trigger_chars,
+    ),
     inline_mode: inline_parse_mode(inline_parse_rules),
-    inline_trigger_chars: inline_trigger_chars(inline_parse_rules),
+    inline_trigger_chars,
     core_rules,
   }
 }
@@ -202,15 +215,60 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 ///|
 fn inline_trigger_chars(rules : Array[RuleEntry]) -> String {
   let out = StringBuilder::new()
+  let seen : Array[Int] = []
   for rule in rules {
     for i in 0..<rule.triggers.length() {
       let c = char_at(rule.triggers, i)
-      if !contains_char(out.to_string(), c) {
+      if !array_contains_int(seen, c) {
+        seen.push(c)
         out.write_string(rule.triggers[i:i + 1].to_owned())
       }
     }
   }
   out.to_string()
+}
+
+///|
+fn inline_fallback_rules(rules : Array[RuleEntry]) -> Array[RuleEntry] {
+  let selected : Array[RuleEntry] = []
+  for rule in rules {
+    if rule.triggers == "" {
+      selected.push(rule)
+    }
+  }
+  selected
+}
+
+///|
+fn inline_rule_buckets(
+  rules : Array[RuleEntry],
+  triggers : String,
+) -> Array[InlineRuleBucket] {
+  let buckets : Array[InlineRuleBucket] = []
+  for i in 0..<triggers.length() {
+    let trigger = char_at(triggers, i)
+    let selected : Array[RuleEntry] = []
+    for rule in rules {
+      if rule.triggers == "" || contains_char(rule.triggers, trigger) {
+        selected.push(rule)
+      }
+    }
+    buckets.push({ trigger, rules: selected })
+  }
+  buckets
+}
+
+///|
+fn PreparedRulePlan::inline_rules_for(
+  self : PreparedRulePlan,
+  trigger : Int,
+) -> Array[RuleEntry] {
+  for bucket in self.inline_rule_buckets {
+    if bucket.trigger == trigger {
+      return bucket.rules
+    }
+  }
+  self.inline_fallback_rules
 }
 
 ///|
@@ -309,6 +367,16 @@ fn move_rule(rules : Array[RuleEntry], from : Int, to : Int) -> Unit {
 
 ///|
 fn array_contains_string(items : Array[RuleName], needle : RuleName) -> Bool {
+  for item in items {
+    if item == needle {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn array_contains_int(items : Array[Int], needle : Int) -> Bool {
   for item in items {
     if item == needle {
       return true

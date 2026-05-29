@@ -28,7 +28,8 @@ fn parse_inlines_with_rules(
       inline_trigger_chars,
       state,
     }
-    let consumed = try_inline_rules(ctx, rules, sink)
+    let candidates = plan.inline_rules_for(char_at(text, i))
+    let consumed = try_inline_rules(ctx, candidates, sink)
     if consumed == 0 {
       sink.emit(Text(text[i:i + 1].to_owned()))
       i = i + 1
@@ -45,10 +46,6 @@ fn try_inline_rules(
   sink : Sink,
 ) -> Int {
   for rule in rules {
-    if rule.triggers != "" &&
-      !contains_char(rule.triggers, char_at(ctx.text, ctx.index)) {
-      continue
-    }
     if rule.inline is Some(f) {
       if f(ctx, sink) is Match(chars) {
         return chars.to_int()
