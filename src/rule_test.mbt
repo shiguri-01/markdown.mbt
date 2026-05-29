@@ -44,10 +44,7 @@ test "custom block rules keep two pass reference behavior" {
     },
   )
   assert_eq(
-    render_html(
-      @markdown.commonmark().extend(blocker),
-      "[x]\n\n[x]: /blocked\n",
-    ),
+    render_html(@commonmark.rule().extend(blocker), "[x]\n\n[x]: /blocked\n"),
     "<p>[x]</p>\nblocked",
   )
 }
@@ -57,6 +54,7 @@ test "custom inline rules keep two pass reference behavior" {
   let marker = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
+    triggers="@",
     fn(ctx) {
       if ctx.scanner().has_prefix("@") {
         inline_result(1, @markdown.EventFragment::text("marker"))
@@ -66,7 +64,7 @@ test "custom inline rules keep two pass reference behavior" {
     },
   )
   assert_eq(
-    render_html(@markdown.commonmark().extend(marker), "[x] @\n\n[x]: /url\n"),
+    render_html(@commonmark.rule().extend(marker), "[x] @\n\n[x]: /url\n"),
     "<p><a href=\"/url\">x</a> marker</p>\n",
   )
 }
@@ -79,7 +77,7 @@ test "custom core rules keep two pass reference behavior" {
     sink
   })
   assert_eq(
-    render_html(@markdown.commonmark().extend(core), "[x]\n\n[x]: /url\n"),
+    render_html(@commonmark.rule().extend(core), "[x]\n\n[x]: /url\n"),
     "<p><a href=\"/url\">x</a></p>\n",
   )
 }
@@ -89,9 +87,10 @@ test "inline nomatch cannot emit partial events" {
   let rule = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:nomatch"),
     priority=100,
+    triggers="@",
     fn(_ctx) { NoMatch },
   )
-  assert_eq(render_html(@markdown.commonmark().extend(rule), "@"), "<p>@</p>\n")
+  assert_eq(render_html(@commonmark.rule().extend(rule), "@"), "<p>@</p>\n")
 }
 
 ///|
@@ -102,7 +101,7 @@ test "block nomatch cannot emit partial events" {
     fn(_ctx) { NoMatch },
   )
   assert_eq(
-    render_html(@markdown.commonmark().extend(rule), "plain"),
+    render_html(@commonmark.rule().extend(rule), "plain"),
     "<p>plain</p>\n",
   )
 }
@@ -112,6 +111,7 @@ test "matched inline emits fragment and consumes exact chars" {
   let rule = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
+    triggers="@",
     fn(ctx) {
       if ctx.scanner().has_prefix("@@") {
         inline_result(
@@ -127,7 +127,7 @@ test "matched inline emits fragment and consumes exact chars" {
     },
   )
   assert_eq(
-    render_html(@markdown.commonmark().extend(rule), "@@x"),
+    render_html(@commonmark.rule().extend(rule), "@@x"),
     "<p><x:marker>marked</x:marker>x</p>\n",
   )
 }
@@ -156,7 +156,7 @@ test "matched block emits fragment and consumes exact lines" {
     },
   )
   assert_eq(
-    render_html(@markdown.commonmark().extend(rule), "!!! note\nnext"),
+    render_html(@commonmark.rule().extend(rule), "!!! note\nnext"),
     "<x:admonition kind=\"note\"></x:admonition><p>next</p>\n",
   )
 }
@@ -166,6 +166,7 @@ test "delimiter rules run before inline rules and honor ordering" {
   let delimiter = @markdown.Rule::delimiter(
     @markdown.RuleName::raw("x:delimiter:first"),
     priority=0,
+    triggers="^",
     fn(ctx) {
       if ctx.scanner().has_prefix("^") {
         inline_result(1, @markdown.EventFragment::text("delimiter"))
@@ -177,6 +178,7 @@ test "delimiter rules run before inline rules and honor ordering" {
   let inline = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:second"),
     priority=100,
+    triggers="^",
     fn(ctx) {
       if ctx.scanner().has_prefix("^") {
         inline_result(1, @markdown.EventFragment::text("inline"))
@@ -187,7 +189,7 @@ test "delimiter rules run before inline rules and honor ordering" {
   )
   let rule = @markdown.Rule("order").extend(inline).extend(delimiter)
   assert_eq(
-    render_html(@markdown.commonmark().extend(rule), "^"),
+    render_html(@commonmark.rule().extend(rule), "^"),
     "<p>delimiter</p>\n",
   )
 }
@@ -217,7 +219,7 @@ test "block continue runs before block start" {
     },
   )
   let rule = @markdown.Rule("block-continue").extend(start).extend(continuation)
-  assert_eq(render_html(@markdown.commonmark().extend(rule), "%"), "continue")
+  assert_eq(render_html(@commonmark.rule().extend(rule), "%"), "continue")
 }
 
 ///|
@@ -225,6 +227,7 @@ test "rule priority disable enable and replace remain intact" {
   let marker = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
+    triggers="@",
     fn(ctx) {
       if ctx.scanner().has_prefix("@") {
         inline_result(1, @markdown.EventFragment::text("marker"))
@@ -236,21 +239,19 @@ test "rule priority disable enable and replace remain intact" {
   let disabled = @markdown.Rule("config")
     .extend(marker)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
-  assert_eq(
-    render_html(@markdown.commonmark().extend(disabled), "@"),
-    "<p>@</p>\n",
-  )
+  assert_eq(render_html(@commonmark.rule().extend(disabled), "@"), "<p>@</p>\n")
   let enabled = @markdown.Rule("config")
     .extend(marker)
     .disable(@markdown.RuleName::raw("x:inline:marker"))
     .enable(@markdown.RuleName::raw("x:inline:marker"))
   assert_eq(
-    render_html(@markdown.commonmark().extend(enabled), "@"),
+    render_html(@commonmark.rule().extend(enabled), "@"),
     "<p>marker</p>\n",
   )
   let replacement = @markdown.Rule::inline(
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
+    triggers="@",
     fn(ctx) {
       if ctx.scanner().has_prefix("@") {
         inline_result(1, @markdown.EventFragment::text("replacement"))
@@ -261,7 +262,7 @@ test "rule priority disable enable and replace remain intact" {
   )
   let replaced = @markdown.Rule("config").extend(marker).replace(replacement)
   assert_eq(
-    render_html(@markdown.commonmark().extend(replaced), "@"),
+    render_html(@commonmark.rule().extend(replaced), "@"),
     "<p>replacement</p>\n",
   )
 }

@@ -2,11 +2,6 @@
 package "shiguri/markdown"
 
 // Values
-pub fn ast(String) -> AstNode raise AstError
-
-pub fn commonmark() -> Rule
-
-pub fn html(String) -> String
 
 // Errors
 pub(all) suberror AstError {
@@ -51,8 +46,15 @@ pub struct BlockContext {
 }
 pub fn BlockContext::current_line(Self) -> String
 pub fn BlockContext::current_line_start(Self) -> Int
+pub fn BlockContext::is_collecting(Self) -> Bool
+pub fn BlockContext::line(Self, Int) -> String?
 pub fn BlockContext::line_at(Self, Int) -> String?
+pub fn BlockContext::line_count(Self) -> Int
 pub fn BlockContext::line_index(Self) -> Int
+pub fn BlockContext::services(Self) -> ParserServices
+pub fn BlockContext::source_line_starts(Self) -> Array[Int]
+pub fn BlockContext::source_lines(Self) -> Array[String]
+pub fn BlockContext::source_offset(Self, Int) -> Int
 
 pub(all) enum BlockRuleResult {
   NoMatch
@@ -108,6 +110,9 @@ pub struct Events {
 }
 pub fn Events::Events() -> Self
 pub fn Events::collect(Self) -> Array[Event]
+pub fn Events::into_fragment(Self) -> EventFragment
+pub fn Events::owned_events(Self) -> Array[Event]
+pub fn Events::owned_sink(Self) -> Sink
 pub fn Events::sink(Self) -> Sink
 
 pub struct Html {
@@ -120,8 +125,10 @@ pub fn Html::to_string(Self) -> String
 pub struct InlineContext {
   // private fields
 }
+pub fn InlineContext::has_inline_trigger_at(Self, Int) -> Bool
 pub fn InlineContext::offset(Self) -> Int
 pub fn InlineContext::scanner(Self) -> InlineScanner
+pub fn InlineContext::services(Self) -> ParserServices
 pub fn InlineContext::source(Self) -> String
 
 pub(all) enum InlineRuleResult {
@@ -139,10 +146,20 @@ pub fn InlineScanner::has_prefix(Self, String) -> Bool
 pub fn InlineScanner::new(String, Int) -> Self?
 pub fn InlineScanner::slice(Self, Int, Int) -> String?
 
+pub struct ParserServices {
+  // private fields
+}
+pub fn ParserServices::collect_block_lines(Self, Array[String], Array[Int]) -> Unit
+pub fn ParserServices::parse_block_lines(Self, Array[String], Array[Int], Sink) -> Unit
+pub fn ParserServices::parse_inline(Self, String, Sink) -> Unit
+pub fn ParserServices::parse_inline_fragment(Self, String) -> EventFragment
+pub fn ParserServices::set_state_string(Self, StateKey, String, String) -> Unit
+pub fn ParserServices::state_string(Self, StateKey, String) -> String?
+
 pub struct Processor {
   // private fields
 }
-pub fn Processor::Processor(rule? : Rule) -> Self
+pub fn Processor::Processor(Rule) -> Self
 pub fn Processor::parse(Self, String, Sink) -> Unit
 
 pub struct Rule {
@@ -152,11 +169,11 @@ pub fn Rule::Rule(String) -> Self
 pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Sink) -> Sink) -> Self
-pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext) -> InlineRuleResult) -> Self
 pub fn Rule::disable(Self, RuleName) -> Self
 pub fn Rule::enable(Self, RuleName) -> Self
 pub fn Rule::extend(Self, Self) -> Self
-pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext) -> InlineRuleResult) -> Self
 pub fn Rule::name(Self) -> String
 pub fn Rule::replace(Self, Self) -> Self
 
@@ -187,6 +204,11 @@ pub struct SourceRange {
 pub fn SourceRange::end(Self) -> Int
 pub fn SourceRange::new(Int, Int) -> Self?
 pub fn SourceRange::start(Self) -> Int
+
+pub struct StateKey {
+  // private fields
+}
+pub fn StateKey::StateKey(String, String) -> Self
 
 pub struct Tag {
   // private fields

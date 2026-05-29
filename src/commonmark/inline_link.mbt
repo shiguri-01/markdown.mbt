@@ -1,7 +1,7 @@
 ///|
-fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
-  let text = ctx.text
-  let i = ctx.index
+fn link_inline(ctx : InlineContext) -> InlineRuleResult {
+  let text = ctx.source()
+  let i = ctx.offset()
   guard char_at(text, i) == '[' else { NoMatch }
   let close_text = find_link_text_end(text, i + 1)
   guard close_text >= 0 else { NoMatch }
@@ -18,10 +18,9 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
       close_text,
       close_dest + 1,
       attrs,
-      ctx.registry,
-      ctx.state,
+      ctx.services(),
     )
-  } else if reference_attrs_for_link_text(text, i, close_text, ctx.state)
+  } else if reference_attrs_for_link_text(text, i, close_text, ctx.services())
     is Some(resolved) {
     link_inline_match(
       text,
@@ -29,8 +28,7 @@ fn cm_link_inline(ctx : InlineContext) -> InlineRuleResult {
       close_text,
       resolved.end,
       resolved.attrs,
-      ctx.registry,
-      ctx.state,
+      ctx.services(),
     )
   } else {
     NoMatch
@@ -56,21 +54,22 @@ fn link_inline_match(
   close_text : Int,
   end : Int,
   attrs : Array[Attr],
-  registry : RuleRegistry,
-  state : ParseState,
+  services : ParserServices,
 ) -> InlineRuleResult {
-  let buffer = Events()
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
-  sink.emit(Enter(Element::with_attrs(tag_name("cm:link"), attrs)))
-  parse_inlines(text[start + 1:close_text].to_owned(), registry, sink, state)
-  sink.emit(Exit(tag_name("cm:link")))
+  sink.emit(
+    @markdown.Enter(@markdown.Element::with_attrs(tag_name("cm:link"), attrs)),
+  )
+  services.parse_inline(text[start + 1:close_text].to_owned(), sink)
+  sink.emit(@markdown.Exit(tag_name("cm:link")))
   inline_match(end - start, buffer.into_fragment())
 }
 
 ///|
-fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
-  let text = ctx.text
-  let i = ctx.index
+fn image_inline(ctx : InlineContext) -> InlineRuleResult {
+  let text = ctx.source()
+  let i = ctx.offset()
   guard i + 1 < text.length() &&
     char_at(text, i) == '!' &&
     char_at(text, i + 1) == '[' else {
@@ -81,23 +80,27 @@ fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
     !link_text_has_unclosed_priority_span(text, i + 2, close_text) else {
     NoMatch
   }
-  let alt = image_alt_text(
-    text[i + 2:close_text].to_owned(),
-    ctx.registry,
-    ctx.state,
-  )
+  let alt = image_alt_text(text[i + 2:close_text].to_owned(), ctx.services())
   if direct_link_attrs(text, close_text) is Some((close_dest, attrs)) {
-    attrs.push({ name: attr_name("alt"), value: alt })
+    attrs.push(attr("alt", alt))
     inline_match(
       close_dest - i + 1,
-      EventFragment::element(Element::with_attrs(tag_name("cm:image"), attrs)),
+      @markdown.EventFragment::element(
+        @markdown.Element::with_attrs(tag_name("cm:image"), attrs),
+      ),
     )
-  } else if reference_attrs_for_image_alt(text, i, close_text, alt, ctx.state)
+  } else if reference_attrs_for_image_alt(
+      text,
+      i,
+      close_text,
+      alt,
+      ctx.services(),
+    )
     is Some(resolved) {
     inline_match(
       resolved.end - i,
-      EventFragment::element(
-        Element::with_attrs(tag_name("cm:image"), resolved.attrs),
+      @markdown.EventFragment::element(
+        @markdown.Element::with_attrs(tag_name("cm:image"), resolved.attrs),
       ),
     )
   } else {
@@ -106,23 +109,19 @@ fn cm_image_inline(ctx : InlineContext) -> InlineRuleResult {
 }
 
 ///|
-fn image_alt_text(
-  text : String,
-  registry : RuleRegistry,
-  state : ParseState,
-) -> String {
-  let buffer = Events()
-  parse_inlines(text, registry, buffer.owned_sink(), state)
+fn image_alt_text(text : String, services : ParserServices) -> String {
+  let buffer = @markdown.Events()
+  services.parse_inline(text, buffer.owned_sink())
   let out = StringBuilder::new(size_hint=text.length())
   for event in buffer.owned_events() {
     match event {
-      Text(text) => out.write_string(text)
-      SoftBreak => out.write_string("\n")
-      HardBreak => out.write_string("\n")
-      RawHtml(raw) => out.write_string(raw)
-      Enter(el) =>
-        if el.tag.value == "cm:image" {
-          out.write_string(attr_value(el.attrs, "alt", ""))
+      @markdown.Text(text) => out.write_string(text)
+      @markdown.SoftBreak => out.write_string("\n")
+      @markdown.HardBreak => out.write_string("\n")
+      @markdown.RawHtml(raw) => out.write_string(raw)
+      @markdown.Enter(el) =>
+        if el.tag().to_string() == "cm:image" {
+          out.write_string(attr_value(el.attrs(), "alt", ""))
         }
       _ => ()
     }
@@ -348,25 +347,21 @@ fn parse_link_attrs(spec : String) -> Array[Attr] {
     if !is_valid_link_destination(trimmed) {
       return attrs
     }
-    attrs.push({
-      name: attr_name("destination"),
-      value: normalize_link_destination(trimmed),
-    })
+    attrs.push(attr("destination", normalize_link_destination(trimmed)))
   } else {
     let destination = trim(trimmed[:split].to_owned())
     if !is_valid_link_destination(destination) {
       return attrs
     }
-    attrs.push({
-      name: attr_name("destination"),
-      value: normalize_link_destination(destination),
-    })
-    attrs.push({
-      name: attr_name("title"),
-      value: normalize_attribute_text(
-        trimmed[split + 2:trimmed.length() - 1].to_owned(),
+    attrs.push(attr("destination", normalize_link_destination(destination)))
+    attrs.push(
+      attr(
+        "title",
+        normalize_attribute_text(
+          trimmed[split + 2:trimmed.length() - 1].to_owned(),
+        ),
       ),
-    })
+    )
   }
   attrs
 }

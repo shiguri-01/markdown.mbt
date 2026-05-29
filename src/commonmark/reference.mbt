@@ -6,57 +6,62 @@ priv struct ReferenceDefinition {
 }
 
 ///|
-priv struct ReferenceIndex {
-  by_label : @hashmap.HashMap[String, ReferenceDefinition]
+fn reference_destination_key() -> StateKey {
+  @markdown.StateKey("commonmark", "reference-destination")
 }
 
 ///|
-fn ReferenceIndex::ReferenceIndex() -> ReferenceIndex {
-  { by_label: @hashmap.HashMap([]) }
+fn reference_title_key() -> StateKey {
+  @markdown.StateKey("commonmark", "reference-title")
 }
 
 ///|
-fn ReferenceIndex::add_if_absent(
-  self : ReferenceIndex,
+fn reference_has_title_key() -> StateKey {
+  @markdown.StateKey("commonmark", "reference-has-title")
+}
+
+///|
+fn add_reference(
+  services : ParserServices,
   definition : ReferenceDefinition,
 ) -> Unit {
-  if !self.by_label.contains(definition.label) {
-    self.by_label.set(definition.label, definition)
+  if services.state_string(reference_destination_key(), definition.label)
+    is None {
+    services.set_state_string(
+      reference_destination_key(),
+      definition.label,
+      definition.destination,
+    )
+    services.set_state_string(
+      reference_title_key(),
+      definition.label,
+      definition.title,
+    )
+    services.set_state_string(reference_has_title_key(), definition.label, "1")
   }
 }
 
 ///|
-fn ReferenceIndex::find(
-  self : ReferenceIndex,
-  normalized_label : String,
-) -> ReferenceDefinition? {
-  self.by_label.get(normalized_label)
-}
-
-///|
-priv struct ParseState {
-  references : ReferenceIndex
-}
-
-///|
-fn ParseState::ParseState() -> ParseState {
-  { references: ReferenceIndex() }
-}
-
-///|
-fn ParseState::add_reference(
-  self : ParseState,
-  definition : ReferenceDefinition,
-) -> Unit {
-  self.references.add_if_absent(definition)
-}
-
-///|
-fn ParseState::find_reference(
-  self : ParseState,
+fn find_reference(
+  services : ParserServices,
   label : String,
 ) -> ReferenceDefinition? {
-  self.references.find(normalize_reference_label(label))
+  let normalized = normalize_reference_label(label)
+  match services.state_string(reference_destination_key(), normalized) {
+    Some(destination) => {
+      let title = match
+        services.state_string(reference_has_title_key(), normalized) {
+        Some(_) =>
+          match services.state_string(reference_title_key(), normalized) {
+            Some(title) => title
+            None => ""
+          }
+        None => ""
+      }
+      Some({ label: normalized, destination, title })
+    }
+    None => None
+  }
 }
 
 ///|
@@ -66,11 +71,14 @@ priv struct ParsedReferenceDefinition {
 }
 
 ///|
-fn cm_reference_definition_block(ctx : BlockContext) -> BlockRuleResult {
-  match parse_reference_definition_at(ctx.lines, ctx.index) {
+fn reference_definition_block(ctx : BlockContext) -> BlockRuleResult {
+  match parse_reference_definition_at(ctx.source_lines(), ctx.line_index()) {
     Some(parsed) => {
-      ctx.state.add_reference(parsed.definition)
-      block_match(parsed.next_index - ctx.index, EventFragment::empty())
+      add_reference(ctx.services(), parsed.definition)
+      block_match(
+        parsed.next_index - ctx.line_index(),
+        @markdown.EventFragment::empty(),
+      )
     }
     None => NoMatch
   }
@@ -87,7 +95,7 @@ fn reference_attrs_for_link_text(
   text : String,
   start : Int,
   close_text : Int,
-  state : ParseState,
+  services : ParserServices,
 ) -> ResolvedReferenceAttrs? {
   if close_text + 1 < text.length() && char_at(text, close_text + 1) == '[' {
     let close_label = find_link_text_end(text, close_text + 2)
@@ -98,7 +106,7 @@ fn reference_attrs_for_link_text(
       } else {
         raw_label
       }
-      return reference_attrs_for_label(label, close_label + 1, state)
+      return reference_attrs_for_label(label, close_label + 1, services)
     }
   }
   if should_rewrite_shortcut_reference(text, close_text) {
@@ -106,7 +114,7 @@ fn reference_attrs_for_link_text(
       return None
     }
     let label_text = text[start + 1:close_text].to_owned()
-    reference_attrs_for_label(label_text, close_text + 1, state)
+    reference_attrs_for_label(label_text, close_text + 1, services)
   } else {
     None
   }
@@ -118,7 +126,7 @@ fn reference_attrs_for_image_alt(
   start : Int,
   close_alt : Int,
   alt : String,
-  state : ParseState,
+  services : ParserServices,
 ) -> ResolvedReferenceAttrs? {
   if close_alt + 1 < text.length() && char_at(text, close_alt + 1) == '[' {
     let close_label = find_link_text_end(text, close_alt + 2)
@@ -133,7 +141,7 @@ fn reference_attrs_for_image_alt(
         label,
         close_label + 1,
         alt,
-        state,
+        services,
       )
     }
   }
@@ -142,7 +150,7 @@ fn reference_attrs_for_image_alt(
       return None
     }
     let label_text = text[start + 2:close_alt].to_owned()
-    reference_attrs_for_label_with_alt(label_text, close_alt + 1, alt, state)
+    reference_attrs_for_label_with_alt(label_text, close_alt + 1, alt, services)
   } else {
     None
   }
@@ -152,9 +160,9 @@ fn reference_attrs_for_image_alt(
 fn reference_attrs_for_label(
   label : String,
   end : Int,
-  state : ParseState,
+  services : ParserServices,
 ) -> ResolvedReferenceAttrs? {
-  match state.find_reference(label) {
+  match find_reference(services, label) {
     Some(definition) => Some({ attrs: reference_attrs(definition), end })
     None => None
   }
@@ -165,12 +173,12 @@ fn reference_attrs_for_label_with_alt(
   label : String,
   end : Int,
   alt : String,
-  state : ParseState,
+  services : ParserServices,
 ) -> ResolvedReferenceAttrs? {
-  match state.find_reference(label) {
+  match find_reference(services, label) {
     Some(definition) => {
       let attrs = reference_attrs(definition)
-      attrs.push({ name: attr_name("alt"), value: alt })
+      attrs.push(attr("alt", alt))
       Some({ attrs, end })
     }
     None => None
@@ -195,11 +203,9 @@ fn is_reference_label_range_blank(
 
 ///|
 fn reference_attrs(definition : ReferenceDefinition) -> Array[Attr] {
-  let attrs = [
-    { name: attr_name("destination"), value: definition.destination },
-  ]
+  let attrs = [attr("destination", definition.destination)]
   if definition.title != "" {
-    attrs.push({ name: attr_name("title"), value: definition.title })
+    attrs.push(attr("title", definition.title))
   }
   attrs
 }
@@ -466,11 +472,11 @@ fn parse_reference_definition(line : String) -> ReferenceDefinition? {
   let mut destination = ""
   let mut title = ""
   for attr in attrs {
-    if attr.name.value == "destination" {
+    if attr.name().to_string() == "destination" {
       has_destination = true
-      destination = attr.value
-    } else if attr.name.value == "title" {
-      title = attr.value
+      destination = attr.value()
+    } else if attr.name().to_string() == "title" {
+      title = attr.value()
     }
   }
   if !has_destination {
@@ -520,9 +526,7 @@ fn is_valid_reference_label_range(
 
 ///|
 fn normalize_reference_label(label : String) -> String {
-  collapse_spaces(
-    commonmark_case_fold(normalize_reference_label_escapes(trim(label))),
-  )
+  collapse_spaces(case_fold(normalize_reference_label_escapes(trim(label))))
 }
 
 ///|
@@ -588,7 +592,7 @@ fn ascii_lower(input : String) -> String {
 }
 
 ///|
-fn commonmark_case_fold(input : String) -> String {
+fn case_fold(input : String) -> String {
   let mut first_fold = -1
   for i in 0..<input.length() {
     let c = char_at(input, i)

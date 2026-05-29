@@ -1,4 +1,5 @@
 import {
   "shiguri/markdown" @markdown,
+  "shiguri/markdown/commonmark" @commonmark,
   "moonbitlang/core/bench" @bench,
 }

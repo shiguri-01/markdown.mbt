@@ -14,8 +14,6 @@ priv struct PreparedRulePlan {
   inline_parse_rules : Array[RuleEntry]
   inline_mode : InlineParseMode
   core_rules : Array[RuleEntry]
-  has_enabled_block_rules : Bool
-  can_use_commonmark_deferred_block_parse : Bool
 }
 
 ///|
@@ -38,10 +36,6 @@ fn PreparedRulePlan::PreparedRulePlan(
     inline_parse_rules,
     inline_mode: inline_parse_mode(inline_parse_rules),
     core_rules,
-    has_enabled_block_rules: registry.has_enabled_block_rules(),
-    can_use_commonmark_deferred_block_parse: registry.can_use_commonmark_deferred_block_parse_with(
-      block_rules, block_continue_rules, inline_parse_rules, core_rules,
-    ),
   }
 }
 
@@ -68,6 +62,7 @@ fn RuleRegistry::register_raw(
     after: copy_rule_names(rule.after),
     priority: rule.priority,
     order: self.next_order,
+    triggers: rule.triggers,
     block: rule.block,
     inline: rule.inline,
     core: rule.core,
@@ -203,92 +198,8 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
 }
 
 ///|
-fn RuleRegistry::can_use_commonmark_deferred_block_parse_with(
-  self : RuleRegistry,
-  block_rules : Array[RuleEntry],
-  block_continue_rules : Array[RuleEntry],
-  inline_rules : Array[RuleEntry],
-  core_rules : Array[RuleEntry],
-) -> Bool {
-  if self.overrides.length() != 0 ||
-    block_continue_rules.length() != 0 ||
-    core_rules.length() != 0 {
-    return false
-  }
-  if block_rules.length() != 11 {
-    return false
-  }
-  has_commonmark_block_rules(block_rules) &&
-  has_commonmark_inline_pipeline_rules(inline_rules)
-}
-
-///|
-fn has_commonmark_block_rules(rules : Array[RuleEntry]) -> Bool {
-  has_rule_named(rules, "cm:block:blank") &&
-  has_rule_named(rules, "cm:block:fenced_code") &&
-  has_rule_named(rules, "cm:block:indented_code") &&
-  has_rule_named(rules, "cm:block:thematic_break") &&
-  has_rule_named(rules, "cm:block:setext_heading") &&
-  has_rule_named(rules, "cm:block:html") &&
-  has_rule_named(rules, "cm:block:atx_heading") &&
-  has_rule_named(rules, "cm:block:block_quote") &&
-  has_rule_named(rules, "cm:block:list") &&
-  has_rule_named(rules, "cm:block:reference_definition") &&
-  has_rule_named(rules, "cm:block:paragraph")
-}
-
-///|
-fn inline_parse_mode(rules : Array[RuleEntry]) -> InlineParseMode {
-  if has_commonmark_inline_pipeline_rules(rules) {
-    CommonMarkInlinePipeline
-  } else {
-    CustomInlinePipeline
-  }
-}
-
-///|
-fn has_commonmark_inline_pipeline_rules(rules : Array[RuleEntry]) -> Bool {
-  if rules.length() != 11 {
-    return false
-  }
-  for rule in rules {
-    if !has_prefix_at(rule.name.value, "cm:inline:", 0) &&
-      !has_prefix_at(rule.name.value, "cm:delimiter:", 0) {
-      return false
-    }
-  }
-  has_rule_named(rules, "cm:inline:image") &&
-  has_rule_named(rules, "cm:inline:link") &&
-  has_rule_named(rules, "cm:inline:autolink") &&
-  has_rule_named(rules, "cm:inline:raw_html") &&
-  has_rule_named(rules, "cm:inline:entity") &&
-  has_rule_named(rules, "cm:inline:code_span") &&
-  has_rule_named(rules, "cm:delimiter:emphasis") &&
-  has_rule_named(rules, "cm:inline:hard_break") &&
-  has_rule_named(rules, "cm:inline:escape") &&
-  has_rule_named(rules, "cm:inline:soft_break") &&
-  has_rule_named(rules, "cm:inline:text")
-}
-
-///|
-fn has_rule_named(rules : Array[RuleEntry], name : String) -> Bool {
-  for rule in rules {
-    if rule.name.value == name {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn RuleRegistry::has_enabled_block_rules(self : RuleRegistry) -> Bool {
-  for rule in self.rules {
-    if rule.chain == BlockStart &&
-      !array_contains_string(self.disabled, rule.name) {
-      return true
-    }
-  }
-  false
+fn inline_parse_mode(_rules : Array[RuleEntry]) -> InlineParseMode {
+  CustomInlinePipeline
 }
 
 ///|
@@ -408,6 +319,7 @@ fn copy_rule_entry(rule : RuleEntry) -> RuleEntry {
     after: copy_rule_names(rule.after),
     priority: rule.priority,
     order: rule.order,
+    triggers: rule.triggers,
     block: rule.block,
     inline: rule.inline,
     core: rule.core,

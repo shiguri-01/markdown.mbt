@@ -8,26 +8,10 @@ pub struct Processor {
 }
 
 ///|
-/// Creates a processor from `rule`, defaulting to CommonMark.
-pub fn Processor::Processor(rule? : Rule = commonmark()) -> Processor {
+/// Creates a processor from `rule`.
+pub fn Processor::Processor(rule : Rule) -> Processor {
   let registry = RuleRegistry().use_rule(rule)
   { plan: PreparedRulePlan(registry) }
-}
-
-///|
-/// Parses CommonMark and renders it to HTML.
-pub fn html(source : String) -> String {
-  let html = Html(size_hint=source.length())
-  Processor().parse(source, html.sink())
-  html.to_string()
-}
-
-///|
-/// Parses CommonMark and returns the event-derived AST.
-pub fn ast(source : String) -> AstNode raise AstError {
-  let ast = Ast()
-  Processor().parse(source, ast.sink())
-  ast.result()
 }
 
 ///|
@@ -39,18 +23,6 @@ pub fn Processor::parse(self : Processor, input : String, sink : Sink) -> Unit {
   let downstream = apply_core_rules(sink, self.plan)
   let state = ParseState()
   let source = split_lines(input)
-  if source.may_contain_reference &&
-    self.plan.can_use_commonmark_deferred_block_parse {
-    parse_commonmark_deferred_blocks_into(
-      source.lines,
-      source.line_starts,
-      self.plan,
-      downstream,
-      state,
-    )
-    downstream.finish()
-    return
-  }
   if source.may_contain_reference {
     collect_reference_definitions_with_block_lines(
       source.lines,
@@ -154,11 +126,7 @@ fn parse_block_lines_range_into(
       consumed = try_block_rules(ctx, block_start_rules, sink)
     }
     if consumed <= 0 {
-      consumed = if plan.has_enabled_block_rules {
-        emit_block_rule_result(emit_fallback_text(ctx), sink)
-      } else {
-        emit_block_rule_result(cm_paragraph_block(ctx), sink)
-      }
+      consumed = emit_block_rule_result(emit_fallback_text(ctx), sink)
     }
     i = i + consumed
   }
@@ -197,146 +165,8 @@ fn emit_block_rule_result(
 }
 
 ///|
-priv struct BlockPayload {
-  first : String
-  mut lines : Array[String]?
-  mut line_starts : Array[Int]?
-  mut next_start : Int
-  mut length : Int
-  mut may_contain_reference : Bool
-}
-
-///|
-fn BlockPayload::BlockPayload(first : String) -> BlockPayload {
-  {
-    first,
-    lines: None,
-    line_starts: None,
-    next_start: first.length() + 1,
-    length: 1,
-    may_contain_reference: may_contain_reference_definition(first),
-  }
-}
-
-///|
-fn BlockPayload::append(self : BlockPayload, line : String) -> Unit {
-  self.materialize()
-  if self.lines is Some(lines) {
-    lines.push(line)
-  }
-  if self.line_starts is Some(line_starts) {
-    line_starts.push(self.next_start)
-  }
-  self.next_start = self.next_start + line.length() + 1
-  self.length = self.length + 1
-  if !self.may_contain_reference && may_contain_reference_definition(line) {
-    self.may_contain_reference = true
-  }
-}
-
-///|
-fn BlockPayload::materialize(self : BlockPayload) -> Unit {
-  if self.lines is None {
-    self.lines = Some([self.first])
-    self.line_starts = Some([0])
-  }
-}
-
-///|
-fn BlockPayload::source(self : BlockPayload) -> LineSource {
-  match (self.lines, self.line_starts) {
-    (Some(lines), Some(line_starts)) =>
-      { lines, line_starts, may_contain_reference: self.may_contain_reference }
-    _ =>
-      {
-        lines: [self.first],
-        line_starts: [0],
-        may_contain_reference: self.may_contain_reference,
-      }
-  }
-}
-
-///|
-fn BlockPayload::to_text(self : BlockPayload) -> String {
-  match self.lines {
-    Some(lines) => block_lines_text(lines)
-    None => self.first
-  }
-}
-
-///|
-fn BlockPayload::is_not_empty(self : BlockPayload) -> Bool {
-  match self.lines {
-    Some(lines) => block_lines_not_empty(lines)
-    None => self.first != ""
-  }
-}
-
-///|
-fn BlockPayload::parse_into(
-  self : BlockPayload,
-  plan : PreparedRulePlan,
-  sink : Sink,
-  state : ParseState,
-  collect_only? : Bool = false,
-) -> Unit {
-  let source = self.source()
-  parse_block_lines_range_into(
-    source.lines,
-    source.line_starts,
-    0,
-    source.lines.length(),
-    plan,
-    sink,
-    state,
-    collect_only~,
-  )
-}
-
-///|
-fn BlockPayload::collect_references(
-  self : BlockPayload,
-  plan : PreparedRulePlan,
-  state : ParseState,
-) -> Unit {
-  self.parse_into(plan, Sink(fn(_) { () }), state, collect_only=true)
-}
-
-///|
-fn block_lines_not_empty(lines : Array[String]) -> Bool {
-  for line in lines {
-    if line != "" {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn block_lines_text(lines : Array[String]) -> String {
-  block_lines_text_range(lines, 0, lines.length())
-}
-
-///|
-fn block_lines_text_range(
-  lines : Array[String],
-  start : Int,
-  end : Int,
-) -> String {
-  if end <= start {
-    return ""
-  }
-  if end == start + 1 {
-    return lines[start]
-  }
-  let text = StringBuilder::new()
-  for i in start..<end {
-    if i > start {
-      text.write_string("\n")
-    }
-    text.write_string(lines[i])
-  }
-  text.to_string()
+fn emit_fallback_text(ctx : BlockContext) -> BlockRuleResult {
+  Match(ConsumedLines(1), EventFragment::text(ctx.current_line()))
 }
 
 ///|

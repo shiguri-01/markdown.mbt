@@ -1,7 +1,7 @@
 ///|
 test "commonmark block and inline html rendering" {
   let html = render_html(
-    @markdown.commonmark(),
+    @commonmark.rule(),
     "## Hello *MoonBit*\n\n- one\n- two",
   )
   assert_eq(

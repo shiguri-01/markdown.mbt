@@ -1,27 +1,30 @@
 ///|
-fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
-  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
-  let line = trim(ctx.lines[ctx.index])
+fn list_block(ctx : BlockContext) -> BlockRuleResult {
+  guard count_leading_spaces(ctx.source_lines()[ctx.line_index()]) <= 3 else {
+    NoMatch
+  }
+  let line = trim(ctx.source_lines()[ctx.line_index()])
   let ordered = is_ordered_list_marker(line)
   let unordered = is_unordered_list_marker(line)
   guard ordered || unordered else { NoMatch }
   let ordered_delimiter = if ordered { ordered_list_delimiter(line) } else { 0 }
   let unordered_delimiter = if unordered { char_at(line, 0) } else { 0 }
   let list_attrs = list_attrs(ordered, line)
-  let mut i = ctx.index
+  let mut i = ctx.line_index()
   let mut loose = false
   let item_sources : Array[ListItemSource] = []
-  while i < ctx.lines.length() {
+  while i < ctx.source_lines().length() {
     let item_start = i
-    if i > ctx.index && is_thematic_break_marker_line(ctx.lines[i]) {
+    if i > ctx.line_index() &&
+      is_thematic_break_marker_line(ctx.source_lines()[i]) {
       break
     }
-    let marker_indent = count_leading_spaces(ctx.lines[i])
+    let marker_indent = count_leading_spaces(ctx.source_lines()[i])
     if marker_indent > 3 {
       break
     }
     if !same_list_marker_line_at(
-        ctx.lines[i],
+        ctx.source_lines()[i],
         marker_indent,
         ordered,
         ordered_delimiter,
@@ -29,8 +32,15 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       ) {
       break
     }
-    let item = strip_list_marker_line_at(ctx.lines[i], marker_indent, ordered)
-    let content_indent = list_item_content_indent(ctx.lines[i], ordered)
+    let item = strip_list_marker_line_at(
+      ctx.source_lines()[i],
+      marker_indent,
+      ordered,
+    )
+    let content_indent = list_item_content_indent(
+      ctx.source_lines()[i],
+      ordered,
+    )
     let first_line = if count_leading_spaces(item) >= 4 {
       item
     } else {
@@ -40,23 +50,23 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     i = i + 1
     i = collect_list_continuation_into(
       item_payload,
-      ctx.lines,
+      ctx.source_lines(),
       i,
       true,
       content_indent,
     )
     let mut item_end = i
     let mut blank_count = 0
-    while i < ctx.lines.length() && is_blank(ctx.lines[i]) {
+    while i < ctx.source_lines().length() && is_blank(ctx.source_lines()[i]) {
       blank_count = blank_count + 1
       i = i + 1
     }
     if blank_count > 0 &&
-      i < ctx.lines.length() &&
+      i < ctx.source_lines().length() &&
       item_payload.is_not_empty() &&
-      is_list_continuation_after_blank(ctx.lines[i], content_indent) {
+      is_list_continuation_after_blank(ctx.source_lines()[i], content_indent) {
       if is_loose_list_blank_continuation(
-          ctx.lines[i],
+          ctx.source_lines()[i],
           content_indent,
           item_payload,
         ) {
@@ -67,16 +77,16 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       }
       i = collect_list_continuation_into(
         item_payload,
-        ctx.lines,
+        ctx.source_lines(),
         i,
         false,
         content_indent,
       )
       item_end = i
     } else if blank_count > 0 &&
-      i < ctx.lines.length() &&
+      i < ctx.source_lines().length() &&
       same_list_marker_line(
-        ctx.lines[i],
+        ctx.source_lines()[i],
         ordered,
         ordered_delimiter,
         unordered_delimiter,
@@ -89,16 +99,16 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
     while collecting {
       let mut more_blanks = 0
       let blank_start = i
-      while i < ctx.lines.length() && is_blank(ctx.lines[i]) {
+      while i < ctx.source_lines().length() && is_blank(ctx.source_lines()[i]) {
         more_blanks = more_blanks + 1
         i = i + 1
       }
       if more_blanks > 0 &&
-        i < ctx.lines.length() &&
+        i < ctx.source_lines().length() &&
         item_payload.is_not_empty() &&
-        is_list_continuation_after_blank(ctx.lines[i], content_indent) {
+        is_list_continuation_after_blank(ctx.source_lines()[i], content_indent) {
         if is_loose_list_blank_continuation(
-            ctx.lines[i],
+            ctx.source_lines()[i],
             content_indent,
             item_payload,
           ) {
@@ -109,16 +119,16 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
         }
         i = collect_list_continuation_into(
           item_payload,
-          ctx.lines,
+          ctx.source_lines(),
           i,
           false,
           content_indent,
         )
         item_end = i
       } else if more_blanks > 0 &&
-        i < ctx.lines.length() &&
+        i < ctx.source_lines().length() &&
         same_list_marker_line(
-          ctx.lines[i],
+          ctx.source_lines()[i],
           ordered,
           ordered_delimiter,
           unordered_delimiter,
@@ -136,32 +146,32 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
       source_start: item_start,
       source_end: item_end,
     }
-    if ctx.collect_only {
+    if ctx.is_collecting() {
       if item_source.payload.may_contain_reference {
-        collect_list_item_references(item_source, ctx.plan, ctx.state)
+        collect_list_item_references(item_source, ctx.services())
       }
     } else {
       item_sources.push(item_source)
     }
   }
-  if ctx.collect_only {
-    return block_match(i - ctx.index, EventFragment::empty())
+  if ctx.is_collecting() {
+    return block_match(i - ctx.line_index(), @markdown.EventFragment::empty())
   }
-  let buffer = Events()
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
   sink.emit(
-    Enter(
-      Element::with_attrs(
+    @markdown.Enter(
+      @markdown.Element::with_attrs(
         tag_name("cm:list"),
         list_attrs,
-        range=Some(block_source_range(ctx, ctx.index, i)),
+        range=Some(block_source_range(ctx, ctx.line_index(), i)),
       ),
     ),
   )
   for item_source in item_sources {
     sink.emit(
-      Enter(
-        Element::with_attrs(
+      @markdown.Enter(
+        @markdown.Element::with_attrs(
           tag_name("cm:item"),
           [],
           range=Some(
@@ -174,20 +184,11 @@ fn cm_list_block(ctx : BlockContext) -> BlockRuleResult {
         ),
       ),
     )
-    emit_list_item_content(
-      item_source,
-      ctx.registry,
-      ctx.plan,
-      ctx.inline_rules,
-      ctx.inline_mode,
-      sink,
-      ctx.state,
-      loose~,
-    )
-    sink.emit(Exit(tag_name("cm:item")))
+    emit_list_item_content(item_source, ctx.services(), sink, loose~)
+    sink.emit(@markdown.Exit(tag_name("cm:item")))
   }
-  sink.emit(Exit(tag_name("cm:list")))
-  block_match(i - ctx.index, buffer.into_fragment())
+  sink.emit(@markdown.Exit(tag_name("cm:list")))
+  block_match(i - ctx.line_index(), buffer.into_fragment())
 }
 
 ///|
@@ -200,10 +201,9 @@ priv struct ListItemSource {
 ///|
 fn collect_list_item_references(
   item_source : ListItemSource,
-  plan : PreparedRulePlan,
-  state : ParseState,
+  services : ParserServices,
 ) -> Unit {
-  item_source.payload.collect_references(plan, state)
+  item_source.payload.collect_references(services)
 }
 
 ///|
@@ -215,19 +215,15 @@ fn is_list_marker_item_content(text : String) -> Bool {
 ///|
 fn emit_list_item_content(
   item_source : ListItemSource,
-  registry : RuleRegistry,
-  plan : PreparedRulePlan,
-  inline_rules : Array[RuleEntry],
-  inline_mode : InlineParseMode,
+  services : ParserServices,
   sink : Sink,
-  state : ParseState,
   loose? : Bool = false,
 ) -> Unit {
   if item_source.payload.may_contain_reference &&
     item_source.payload.length == 1 {
     if parse_reference_definition(trim(item_source.payload.first))
       is Some(definition) {
-      state.add_reference(definition)
+      add_reference(services, definition)
       return
     }
   }
@@ -239,13 +235,11 @@ fn emit_list_item_content(
     count_leading_spaces(item_line) < 4 &&
     !is_list_marker_item_content(item_line) &&
     !is_paragraph_interrupt(item_line) {
-    parse_inlines_with_rules(
-      item_line, registry, inline_rules, inline_mode, sink, state,
-    )
+    services.parse_inline(item_line, sink)
     return
   }
-  let buffer = Events()
-  item_source.payload.parse_into(plan, buffer.owned_sink(), state)
+  let buffer = @markdown.Events()
+  item_source.payload.parse_into(services, buffer.owned_sink())
   let events = buffer.owned_events()
   if !loose && events.length() >= 2 && is_single_paragraph_events(events) {
     for i in 1..<(events.length() - 1) {
@@ -266,26 +260,26 @@ fn emit_without_paragraph_wrappers(events : Array[Event], sink : Sink) -> Unit {
   let mut previous_text = false
   for event in events {
     match event {
-      Enter(el) =>
-        if el.tag.value == "cm:paragraph" && depth == 0 {
+      @markdown.Enter(el) =>
+        if el.tag().to_string() == "cm:paragraph" && depth == 0 {
           ()
         } else {
-          if depth == 0 && previous_text && is_tight_list_block_child(el.tag) {
-            sink.emit(SoftBreak)
+          if depth == 0 && previous_text && is_tight_list_block_child(el.tag()) {
+            sink.emit(@markdown.SoftBreak)
           }
           sink.emit(event)
           depth = depth + 1
           previous_text = false
         }
-      Exit(tag) =>
-        if tag.value == "cm:paragraph" && depth == 0 {
+      @markdown.Exit(tag) =>
+        if tag.to_string() == "cm:paragraph" && depth == 0 {
           ()
         } else {
           sink.emit(event)
           depth = depth - 1
           previous_text = false
         }
-      Text(_) => {
+      @markdown.Text(_) => {
         sink.emit(event)
         previous_text = depth == 0
       }
@@ -299,10 +293,10 @@ fn emit_without_paragraph_wrappers(events : Array[Event], sink : Sink) -> Unit {
 
 ///|
 fn is_tight_list_block_child(tag : Tag) -> Bool {
-  tag.value == "cm:list" ||
-  tag.value == "cm:block_quote" ||
-  tag.value == "cm:code_block" ||
-  tag.value == "cm:heading"
+  tag.to_string() == "cm:list" ||
+  tag.to_string() == "cm:block_quote" ||
+  tag.to_string() == "cm:code_block" ||
+  tag.to_string() == "cm:heading"
 }
 
 ///|
@@ -477,15 +471,15 @@ fn strip_list_marker_line_at(
 
 ///|
 fn is_single_paragraph_events(events : Array[Event]) -> Bool {
-  guard events[0] is Enter(el) else { false }
-  guard el.tag.value == "cm:paragraph" else { false }
-  guard events[events.length() - 1] is Exit(tag) else { false }
-  guard tag.value == "cm:paragraph" else { false }
+  guard events[0] is @markdown.Enter(el) else { false }
+  guard el.tag().to_string() == "cm:paragraph" else { false }
+  guard events[events.length() - 1] is @markdown.Exit(tag) else { false }
+  guard tag.to_string() == "cm:paragraph" else { false }
   let mut depth = 0
   for i in 0..<events.length() {
     match events[i] {
-      Enter(_) => depth = depth + 1
-      Exit(_) => {
+      @markdown.Enter(_) => depth = depth + 1
+      @markdown.Exit(_) => {
         depth = depth - 1
         if depth == 0 && i < events.length() - 1 {
           break false
@@ -545,21 +539,9 @@ fn strip_unordered_marker_at(line : String, start : Int) -> String {
 
 ///|
 fn list_attrs(ordered : Bool, line : String) -> Array[Attr] {
-  let attrs = [
-    {
-      name: attr_name("ordered"),
-      value: if ordered {
-        "true"
-      } else {
-        "false"
-      },
-    },
-  ]
+  let attrs = [attr("ordered", if ordered { "true" } else { "false" })]
   if ordered {
-    attrs.push({
-      name: attr_name("start"),
-      value: ordered_list_start(line).to_string(),
-    })
+    attrs.push(attr("start", ordered_list_start(line).to_string()))
   }
   attrs
 }

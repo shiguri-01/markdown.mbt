@@ -93,7 +93,9 @@ fn readme_like_document_sections(count : Int) -> String {
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
   out.write_string("let html = @markdown.Html()\n")
-  out.write_string("@markdown.Processor().parse(source, html.sink())\n")
+  out.write_string(
+    "@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n",
+  )
   out.write_string("```\n\n")
   out.write_string("## Features\n\n")
   for i in 0..<count {
@@ -112,7 +114,7 @@ fn readme_like_document_sections(count : Int) -> String {
     out.write_string("- Render known CommonMark nodes to HTML.\n")
     out.write_string("- Preserve extension elements for downstream tools.\n\n")
     out.write_string(
-      "> Note: rules can add new rules without changing the default preset.\n\n",
+      "> Note: rules can add new rules without changing the default rule.\n\n",
     )
   }
   out.to_string()
@@ -184,7 +186,7 @@ fn many_inline_rules_rule(count : Int) -> @markdown.Rule {
 
 ///|
 fn parse_event_count(input : String) -> Int {
-  parse_event_count_with(@markdown.Processor(), input)
+  parse_event_count_with(@markdown.Processor(@commonmark.rule()), input)
 }
 
 ///|
@@ -201,16 +203,14 @@ fn parse_event_count_with(
 ///|
 fn parse_with_rules_event_count(input : String) -> Int {
   parse_event_count_with(
-    @markdown.Processor(
-      rule=@markdown.commonmark().extend(many_inline_rules_rule(50)),
-    ),
+    @markdown.Processor(@commonmark.rule().extend(many_inline_rules_rule(50))),
     input,
   )
 }
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  parse_render_length_with(@markdown.Processor(), input)
+  parse_render_length_with(@markdown.Processor(@commonmark.rule()), input)
 }
 
 ///|
@@ -270,9 +270,9 @@ test "markdown processing speed" (b : @bench.T) {
   let issue_thread = issue_thread_document()
   let large_issue_thread = issue_thread_large_document()
   let huge_issue_thread = issue_thread_huge_document()
-  let commonmark = @markdown.Processor()
+  let commonmark = @markdown.Processor(@commonmark.rule())
   let commonmark_with_rules = @markdown.Processor(
-    rule=@markdown.commonmark().extend(many_inline_rules_rule(50)),
+    @commonmark.rule().extend(many_inline_rules_rule(50)),
   )
   b.bench(
     name="micro/plain_single/1mb",

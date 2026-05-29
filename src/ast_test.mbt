@@ -12,8 +12,17 @@ fn ast_result_from_events(
 }
 
 ///|
+fn commonmark_ast(
+  source : String,
+) -> @markdown.AstNode raise @markdown.AstError {
+  let ast = @markdown.Ast()
+  @markdown.Processor(@commonmark.rule()).parse(source, ast.sink())
+  ast.result()
+}
+
+///|
 test "commonmark list item ast has no renderer-only block attribute" {
-  let root = @markdown.ast("- one\n\n- two\n")
+  let root = commonmark_ast("- one\n\n- two\n")
   let lists = root.children()
   assert_eq(lists.length(), 1)
   let items = lists[0].children()
@@ -65,7 +74,7 @@ test "ast reports invalid event streams" {
 
 ///|
 test "ast preserves source ranges and returns defensive children copies" {
-  let root = @markdown.ast("# Hi\n\ntext\n")
+  let root = commonmark_ast("# Hi\n\ntext\n")
   let children = root.children()
   assert_eq(children.length(), 2)
   match children[0].element() {

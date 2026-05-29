@@ -40,7 +40,7 @@ function readmeLikeDocumentSections(count) {
   out.push("## Installation\n\n");
   out.push("```moonbit\n");
   out.push("let html = @markdown.Html()\n");
-  out.push("@markdown.Processor().parse(source, html.sink())\n");
+  out.push("@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n");
   out.push("```\n\n");
   out.push("## Features\n\n");
   for (let i = 0; i < count; i += 1) {
@@ -56,7 +56,7 @@ function readmeLikeDocumentSections(count) {
     out.push("- Parse source into a stable event stream.\n");
     out.push("- Render known CommonMark nodes to HTML.\n");
     out.push("- Preserve extension elements for downstream tools.\n\n");
-    out.push("> Note: rules can add new rules without changing the default preset.\n\n");
+    out.push("> Note: rules can add new rules without changing the default rule.\n\n");
   }
   return out.join("");
 }

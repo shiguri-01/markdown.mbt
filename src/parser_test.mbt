@@ -27,8 +27,8 @@ test "canonical parser path is independent of input size" {
     #|
   let small = sample + "[ref]\n"
   let large = sample + repeated_paragraphs(900) + "[ref]\n"
-  let small_html = render_html(@markdown.commonmark(), small)
-  let large_html = render_html(@markdown.commonmark(), large)
+  let small_html = render_html(@commonmark.rule(), small)
+  let large_html = render_html(@commonmark.rule(), large)
   assert_true(
     small_html.has_suffix("<p><a href=\"/url\" title=\"title\">ref</a></p>\n"),
   )

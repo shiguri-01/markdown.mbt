@@ -1,7 +1,7 @@
 ///|
 fn main {
   let input = fixture()
-  let processor = @markdown.Processor()
+  let processor = @markdown.Processor(@commonmark.rule())
   let mut checksum = 0
   for _ in 0..<20 {
     checksum += render_length(processor, input)

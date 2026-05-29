@@ -82,6 +82,7 @@ priv struct RuleEntry {
   after : Array[RuleName]
   priority : Int
   order : Int
+  triggers : String
   block : BlockRuleFn?
   inline : InlineRuleFn?
   core : CoreRuleFn?
@@ -89,7 +90,6 @@ priv struct RuleEntry {
 
 ///|
 priv enum InlineParseMode {
-  CommonMarkInlinePipeline
   CustomInlinePipeline
 }
 
@@ -106,7 +106,7 @@ priv enum RuleOp {
 ///
 /// A rule can be a single block, inline, delimiter, or core parser entry, or a
 /// larger rule made by composing smaller rules. Rules preserve operation order
-/// when composed, so a rule can model one extension or a whole preset.
+/// when composed, so a rule can model one extension or a whole rule.
 pub struct Rule {
   priv name : String
   priv ops : Array[RuleOp]
@@ -140,6 +140,7 @@ pub fn Rule::block(
     after: copy_rule_names(after),
     priority,
     order: 0,
+    triggers: "",
     block: Some(f),
     inline: None,
     core: None,
@@ -164,6 +165,7 @@ pub fn Rule::block_continue(
     after: copy_rule_names(after),
     priority,
     order: 0,
+    triggers: "",
     block: Some(f),
     inline: None,
     core: None,
@@ -177,6 +179,7 @@ pub fn Rule::inline(
   priority? : Int = 0,
   before? : Array[RuleName] = [],
   after? : Array[RuleName] = [],
+  triggers? : String = "",
   f : InlineRuleFn,
 ) -> Rule {
   Rule::from_entry({
@@ -186,6 +189,7 @@ pub fn Rule::inline(
     after: copy_rule_names(after),
     priority,
     order: 0,
+    triggers,
     block: None,
     inline: Some(f),
     core: None,
@@ -201,6 +205,7 @@ pub fn Rule::delimiter(
   priority? : Int = 0,
   before? : Array[RuleName] = [],
   after? : Array[RuleName] = [],
+  triggers? : String = "",
   f : InlineRuleFn,
 ) -> Rule {
   Rule::from_entry({
@@ -210,6 +215,7 @@ pub fn Rule::delimiter(
     after: copy_rule_names(after),
     priority,
     order: 0,
+    triggers,
     block: None,
     inline: Some(f),
     core: None,
@@ -232,6 +238,7 @@ pub fn Rule::core(
     after: copy_rule_names(after),
     priority,
     order: 0,
+    triggers: "",
     block: None,
     inline: None,
     core: Some(f),
@@ -289,21 +296,3 @@ pub fn Rule::replace(self : Rule, rule : Rule) -> Rule {
 }
 
 ///|
-fn consumed_chars(value : Int) -> ConsumedChars {
-  ConsumedChars(value)
-}
-
-///|
-fn consumed_lines(value : Int) -> ConsumedLines {
-  ConsumedLines(value)
-}
-
-///|
-fn inline_match(consumed : Int, fragment : EventFragment) -> InlineRuleResult {
-  Match(consumed_chars(consumed), fragment)
-}
-
-///|
-fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
-  Match(consumed_lines(consumed), fragment)
-}

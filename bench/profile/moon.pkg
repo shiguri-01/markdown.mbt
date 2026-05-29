@@ -1,4 +1,5 @@
 import {
+  "shiguri/markdown/commonmark" @commonmark,
   "shiguri/markdown" @markdown,
 }
 

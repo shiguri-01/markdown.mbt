@@ -1,7 +1,10 @@
 ///|
 test "commonmark inline text keeps ordinary spaces together" {
   let events = @markdown.Events()
-  @markdown.Processor().parse("hello world from moonbit", events.sink())
+  @markdown.Processor(@commonmark.rule()).parse(
+    "hello world from moonbit",
+    events.sink(),
+  )
   let collected = events.collect()
   assert_eq(collected.length(), 3)
   match collected[1] {
@@ -17,7 +20,7 @@ test "commonmark inline text keeps long ordinary space runs together" {
     spaces.write_string(" ")
   }
   let events = @markdown.Events()
-  @markdown.Processor().parse(
+  @markdown.Processor(@commonmark.rule()).parse(
     "hello" + spaces.to_string() + "*world*",
     events.sink(),
   )

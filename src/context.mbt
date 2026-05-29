@@ -47,7 +47,30 @@ pub struct InlineContext {
   priv index : Int
   priv scanner : InlineScanner
   priv registry : RuleRegistry
+  priv inline_rules : Array[RuleEntry]
+  priv inline_mode : InlineParseMode
   priv state : ParseState
+}
+
+///|
+/// Parser services exposed to rule implementations.
+pub struct ParserServices {
+  priv registry : RuleRegistry
+  priv plan : PreparedRulePlan
+  priv inline_rules : Array[RuleEntry]
+  priv inline_mode : InlineParseMode
+  priv state : ParseState
+}
+
+///|
+fn ParserServices::ParserServices(
+  registry : RuleRegistry,
+  plan : PreparedRulePlan,
+  inline_rules : Array[RuleEntry],
+  inline_mode : InlineParseMode,
+  state : ParseState,
+) -> ParserServices {
+  { registry, plan, inline_rules, inline_mode, state }
 }
 
 ///|
@@ -61,6 +84,12 @@ pub fn BlockContext::current_line(self : BlockContext) -> String {
 }
 
 ///|
+/// Returns the source line at `offset` relative to the current block line.
+pub fn BlockContext::line(self : BlockContext, offset : Int) -> String? {
+  self.line_at(self.index + offset)
+}
+
+///|
 /// Returns the source line at `index`, if it exists.
 pub fn BlockContext::line_at(self : BlockContext, index : Int) -> String? {
   if index >= 0 && index < self.lines.length() {
@@ -68,6 +97,24 @@ pub fn BlockContext::line_at(self : BlockContext, index : Int) -> String? {
   } else {
     None
   }
+}
+
+///|
+/// Returns the total number of source lines in this block parse.
+pub fn BlockContext::line_count(self : BlockContext) -> Int {
+  self.lines.length()
+}
+
+///|
+/// Returns all source lines visible to this block parse.
+pub fn BlockContext::source_lines(self : BlockContext) -> Array[String] {
+  self.lines
+}
+
+///|
+/// Returns parser offsets for all source lines visible to this block parse.
+pub fn BlockContext::source_line_starts(self : BlockContext) -> Array[Int] {
+  self.line_starts
 }
 
 ///|
@@ -87,6 +134,35 @@ pub fn BlockContext::current_line_start(self : BlockContext) -> Int {
 }
 
 ///|
+/// Returns the parser offset where the source line at `offset` starts.
+pub fn BlockContext::source_offset(self : BlockContext, offset : Int) -> Int {
+  let index = self.index + offset
+  if index >= 0 && index < self.line_starts.length() {
+    self.line_starts[index]
+  } else {
+    0
+  }
+}
+
+///|
+/// Returns parser services for nested parsing from a block rule.
+pub fn BlockContext::services(self : BlockContext) -> ParserServices {
+  ParserServices(
+    self.registry,
+    self.plan,
+    self.inline_rules,
+    self.inline_mode,
+    self.state,
+  )
+}
+
+///|
+/// Returns whether the parser is currently collecting definitions.
+pub fn BlockContext::is_collecting(self : BlockContext) -> Bool {
+  self.collect_only
+}
+
+///|
 /// Returns the full inline source being scanned.
 pub fn InlineContext::source(self : InlineContext) -> String {
   self.text
@@ -102,6 +178,116 @@ pub fn InlineContext::offset(self : InlineContext) -> Int {
 /// Returns a scanner positioned at the current inline offset.
 pub fn InlineContext::scanner(self : InlineContext) -> InlineScanner {
   self.scanner
+}
+
+///|
+/// Returns whether any inline rule declares the character at `index` as a
+/// trigger. Text rules can use this to leave extension starts visible to the
+/// extension rule instead of consuming them as ordinary text.
+pub fn InlineContext::has_inline_trigger_at(
+  self : InlineContext,
+  index : Int,
+) -> Bool {
+  if index < 0 || index >= self.text.length() {
+    return false
+  }
+  let c = char_at(self.text, index)
+  for rule in self.inline_rules {
+    if rule.triggers != "" && contains_char(rule.triggers, c) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Returns parser services for nested parsing from an inline rule.
+pub fn InlineContext::services(self : InlineContext) -> ParserServices {
+  let plan = PreparedRulePlan(self.registry)
+  ParserServices(
+    self.registry,
+    plan,
+    self.inline_rules,
+    self.inline_mode,
+    self.state,
+  )
+}
+
+///|
+/// Parses inline text with the current inline rule set into `sink`.
+pub fn ParserServices::parse_inline(
+  self : ParserServices,
+  text : String,
+  sink : Sink,
+) -> Unit {
+  parse_inlines_with_rules(
+    text,
+    self.registry,
+    self.inline_rules,
+    self.inline_mode,
+    sink,
+    self.state,
+  )
+}
+
+///|
+/// Parses inline text with the current inline rule set and returns a fragment.
+pub fn ParserServices::parse_inline_fragment(
+  self : ParserServices,
+  text : String,
+) -> EventFragment {
+  let events = Events()
+  self.parse_inline(text, events.owned_sink())
+  events.into_fragment()
+}
+
+///|
+/// Parses block lines with the current rule set into `sink`.
+pub fn ParserServices::parse_block_lines(
+  self : ParserServices,
+  lines : Array[String],
+  line_starts : Array[Int],
+  sink : Sink,
+) -> Unit {
+  parse_block_lines_into(lines, line_starts, self.plan, sink, self.state)
+}
+
+///|
+/// Runs block rules in definition-collection mode over `lines`.
+pub fn ParserServices::collect_block_lines(
+  self : ParserServices,
+  lines : Array[String],
+  line_starts : Array[Int],
+) -> Unit {
+  parse_block_lines_into(
+    lines,
+    line_starts,
+    self.plan,
+    Sink(fn(_) { () }),
+    self.state,
+    collect_only=true,
+  )
+}
+
+///|
+/// Returns a string value from parser state.
+pub fn ParserServices::state_string(
+  self : ParserServices,
+  key : StateKey,
+  item : String,
+) -> String? {
+  self.state.string_get(key, item)
+}
+
+///|
+/// Stores a string value in parser state.
+pub fn ParserServices::set_state_string(
+  self : ParserServices,
+  key : StateKey,
+  item : String,
+  value : String,
+) -> Unit {
+  self.state.string_set(key, item, value)
 }
 
 ///|

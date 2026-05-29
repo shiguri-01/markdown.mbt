@@ -105,16 +105,6 @@ fn tag_name(value : String) -> Tag {
 }
 
 ///|
-fn attr_name(value : String) -> AttrName {
-  { value, }
-}
-
-///|
-fn rule_name(value : String) -> RuleName {
-  { value, }
-}
-
-///|
 /// A parser source range measured in MoonBit string offsets.
 ///
 /// `start` is inclusive and `end` is exclusive.
@@ -439,7 +429,7 @@ pub fn Events::sink(self : Events) -> Sink {
 }
 
 ///|
-fn Events::owned_sink(self : Events) -> Sink {
+pub fn Events::owned_sink(self : Events) -> Sink {
   Sink(fn(event) { self.events.push(event) })
 }
 
@@ -450,12 +440,12 @@ pub fn Events::collect(self : Events) -> Array[Event] {
 }
 
 ///|
-fn Events::owned_events(self : Events) -> Array[Event] {
+pub fn Events::owned_events(self : Events) -> Array[Event] {
   self.events
 }
 
 ///|
-fn Events::into_fragment(self : Events) -> EventFragment {
+pub fn Events::into_fragment(self : Events) -> EventFragment {
   match event_fragment_from_owned_events(self.events) {
     Some(fragment) => fragment
     None => EventFragment::empty()

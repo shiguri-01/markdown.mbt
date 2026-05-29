@@ -827,7 +827,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 ///|
 fn render_commonmark(markdown : String) -> String {
   let html = @markdown.Html()
-  @markdown.Processor().parse(markdown, html.sink())
+  @markdown.Processor(@commonmark.rule()).parse(markdown, html.sink())
   html.to_string()
 }
 
@@ -836,7 +836,7 @@ fn ast_from_commonmark(
   markdown : String,
 ) -> @markdown.AstNode raise @markdown.AstError {
   let ast = @markdown.Ast()
-  @markdown.Processor().parse(markdown, ast.sink())
+  @markdown.Processor(@commonmark.rule()).parse(markdown, ast.sink())
   ast.result()
 }
 

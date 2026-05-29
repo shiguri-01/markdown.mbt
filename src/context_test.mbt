@@ -57,7 +57,7 @@ test "block context exposes line positions to extension rules" {
     },
   )
   assert_eq(
-    render_html(@markdown.commonmark().extend(probe), "first\nsecond\n"),
+    render_html(@commonmark.rule().extend(probe), "first\nsecond\n"),
     "0|0|first|second|none<p>second</p>\n",
   )
 }

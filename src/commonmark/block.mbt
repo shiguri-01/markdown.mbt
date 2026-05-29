@@ -1,55 +1,50 @@
 ///|
-fn cm_paragraph_block(ctx : BlockContext) -> BlockRuleResult {
-  let end = for i in ctx.index..<ctx.lines.length() {
-    if is_blank(ctx.lines[i]) ||
-      (i != ctx.index && is_paragraph_interrupt(ctx.lines[i])) {
+fn paragraph_block(ctx : BlockContext) -> BlockRuleResult {
+  let end = for i in ctx.line_index()..<ctx.source_lines().length() {
+    if is_blank(ctx.source_lines()[i]) ||
+      (i != ctx.line_index() && is_paragraph_interrupt(ctx.source_lines()[i])) {
       break i
     }
   } nobreak {
-    ctx.lines.length()
+    ctx.source_lines().length()
   }
-  if end == ctx.index {
-    block_match(1, EventFragment::empty())
-  } else if ctx.collect_only {
-    block_match(end - ctx.index, EventFragment::empty())
+  if end == ctx.line_index() {
+    block_match(1, @markdown.EventFragment::empty())
+  } else if ctx.is_collecting() {
+    block_match(end - ctx.line_index(), @markdown.EventFragment::empty())
   } else {
-    let buffer = Events()
+    let buffer = @markdown.Events()
     let sink = buffer.owned_sink()
     sink.emit(
-      Enter(
-        Element::with_attrs(
+      @markdown.Enter(
+        @markdown.Element::with_attrs(
           tag_name("cm:paragraph"),
           [],
-          range=Some(block_source_range(ctx, ctx.index, end)),
+          range=Some(block_source_range(ctx, ctx.line_index(), end)),
         ),
       ),
     )
-    let inline_text = if end == ctx.index + 1 {
-      strip_trailing_spaces(paragraph_line(ctx.lines[ctx.index]))
+    let inline_text = if end == ctx.line_index() + 1 {
+      strip_trailing_spaces(
+        paragraph_line(ctx.source_lines()[ctx.line_index()]),
+      )
     } else {
       paragraph_text(ctx, end)
     }
-    parse_inlines_with_rules(
-      inline_text,
-      ctx.registry,
-      ctx.inline_rules,
-      ctx.inline_mode,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
-    block_match(end - ctx.index, buffer.into_fragment())
+    ctx.services().parse_inline(inline_text, sink)
+    sink.emit(@markdown.Exit(tag_name("cm:paragraph")))
+    block_match(end - ctx.line_index(), buffer.into_fragment())
   }
 }
 
 ///|
 fn paragraph_text(ctx : BlockContext, end : Int) -> String {
   let text = StringBuilder::new()
-  for i in ctx.index..<end {
-    if i > ctx.index {
+  for i in ctx.line_index()..<end {
+    if i > ctx.line_index() {
       text.write_string("\n")
     }
-    let line = paragraph_line(ctx.lines[i])
+    let line = paragraph_line(ctx.source_lines()[i])
     if i + 1 == end {
       text.write_string(strip_trailing_spaces(line))
     } else {
@@ -57,11 +52,6 @@ fn paragraph_text(ctx : BlockContext, end : Int) -> String {
     }
   }
   text.to_string()
-}
-
-///|
-fn emit_fallback_text(ctx : BlockContext) -> BlockRuleResult {
-  block_match(1, EventFragment::text(ctx.lines[ctx.index]))
 }
 
 ///|
@@ -91,84 +81,83 @@ fn strip_trailing_spaces(line : String) -> String {
 }
 
 ///|
-fn cm_blank_block(ctx : BlockContext) -> BlockRuleResult {
-  if is_blank(ctx.lines[ctx.index]) {
-    block_match(1, EventFragment::empty())
+fn blank_block(ctx : BlockContext) -> BlockRuleResult {
+  if is_blank(ctx.source_lines()[ctx.line_index()]) {
+    block_match(1, @markdown.EventFragment::empty())
   } else {
     NoMatch
   }
 }
 
 ///|
-fn cm_atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
-  guard count_leading_spaces(ctx.lines[ctx.index]) <= 3 else { NoMatch }
-  let line = trim(ctx.lines[ctx.index])
+fn atx_heading_block(ctx : BlockContext) -> BlockRuleResult {
+  guard count_leading_spaces(ctx.source_lines()[ctx.line_index()]) <= 3 else {
+    NoMatch
+  }
+  let line = trim(ctx.source_lines()[ctx.line_index()])
   let level = marker_run_length_limit(line, 0, '#', 6)
   guard level > 0 else { NoMatch }
   guard level >= line.length() || is_space(char_at(line, level)) else {
     NoMatch
   }
-  if ctx.collect_only {
-    return block_match(1, EventFragment::empty())
+  if ctx.is_collecting() {
+    return block_match(1, @markdown.EventFragment::empty())
   }
   let content = if level >= line.length() {
     ""
   } else {
     trim(strip_closing_hashes(line[level:].to_owned()))
   }
-  let buffer = Events()
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
   sink.emit(
-    Enter(
-      Element::with_attrs(
+    @markdown.Enter(
+      @markdown.Element::with_attrs(
         tag_name("cm:heading"),
-        [{ name: attr_name("level"), value: heading_level_value(level) }],
-        range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
+        [attr("level", heading_level_value(level))],
+        range=Some(
+          block_source_range(ctx, ctx.line_index(), ctx.line_index() + 1),
+        ),
       ),
     ),
   )
-  parse_inlines_with_rules(
-    content,
-    ctx.registry,
-    ctx.inline_rules,
-    ctx.inline_mode,
-    sink,
-    ctx.state,
-  )
-  sink.emit(Exit(tag_name("cm:heading")))
+  ctx.services().parse_inline(content, sink)
+  sink.emit(@markdown.Exit(tag_name("cm:heading")))
   block_match(1, buffer.into_fragment())
 }
 
 ///|
-fn cm_setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
-  guard is_setext_heading_paragraph_start(ctx.lines[ctx.index]) else { NoMatch }
+fn setext_heading_block(ctx : BlockContext) -> BlockRuleResult {
+  guard is_setext_heading_paragraph_start(ctx.source_lines()[ctx.line_index()]) else {
+    NoMatch
+  }
   let underline_index = find_setext_underline(ctx)
   guard underline_index >= 0 else { NoMatch }
-  if ctx.collect_only {
-    return block_match(underline_index - ctx.index + 1, EventFragment::empty())
+  if ctx.is_collecting() {
+    return block_match(
+      underline_index - ctx.line_index() + 1,
+      @markdown.EventFragment::empty(),
+    )
   }
-  let level = setext_heading_level_line(ctx.lines[underline_index])
-  let buffer = Events()
+  let level = setext_heading_level_line(ctx.source_lines()[underline_index])
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
   sink.emit(
-    Enter(
-      Element::with_attrs(
+    @markdown.Enter(
+      @markdown.Element::with_attrs(
         tag_name("cm:heading"),
-        [{ name: attr_name("level"), value: heading_level_value(level) }],
-        range=Some(block_source_range(ctx, ctx.index, underline_index + 1)),
+        [attr("level", heading_level_value(level))],
+        range=Some(
+          block_source_range(ctx, ctx.line_index(), underline_index + 1),
+        ),
       ),
     ),
   )
-  parse_inlines_with_rules(
-    setext_heading_content(ctx, underline_index),
-    ctx.registry,
-    ctx.inline_rules,
-    ctx.inline_mode,
-    sink,
-    ctx.state,
-  )
-  sink.emit(Exit(tag_name("cm:heading")))
-  block_match(underline_index - ctx.index + 1, buffer.into_fragment())
+  ctx
+  .services()
+  .parse_inline(setext_heading_content(ctx, underline_index), sink)
+  sink.emit(@markdown.Exit(tag_name("cm:heading")))
+  block_match(underline_index - ctx.line_index() + 1, buffer.into_fragment())
 }
 
 ///|
@@ -197,17 +186,17 @@ fn is_setext_heading_paragraph_start(line : String) -> Bool {
 
 ///|
 fn find_setext_underline(ctx : BlockContext) -> Int {
-  for i in (ctx.index + 1)..<ctx.lines.length() {
-    if is_blank(ctx.lines[i]) {
+  for i in (ctx.line_index() + 1)..<ctx.source_lines().length() {
+    if is_blank(ctx.source_lines()[i]) {
       break -1
     }
-    if setext_heading_level_line(ctx.lines[i]) > 0 {
+    if setext_heading_level_line(ctx.source_lines()[i]) > 0 {
       if setext_heading_content(ctx, i) != "" {
         break i
       }
       break -1
     }
-    if i > ctx.index && is_paragraph_interrupt(ctx.lines[i]) {
+    if i > ctx.line_index() && is_paragraph_interrupt(ctx.source_lines()[i]) {
       break -1
     }
   } nobreak {
@@ -218,30 +207,36 @@ fn find_setext_underline(ctx : BlockContext) -> Int {
 ///|
 fn setext_heading_content(ctx : BlockContext, underline_index : Int) -> String {
   let text = StringBuilder::new()
-  for i in ctx.index..<underline_index {
-    if i > ctx.index {
+  for i in ctx.line_index()..<underline_index {
+    if i > ctx.line_index() {
       text.write_string("\n")
     }
-    text.write_string(paragraph_line(ctx.lines[i]))
+    text.write_string(paragraph_line(ctx.source_lines()[i]))
   }
   trim(text.to_string())
 }
 
 ///|
-fn cm_thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
-  let leading = count_leading_spaces(ctx.lines[ctx.index])
-  guard leading <= 3 && leading < ctx.lines[ctx.index].length() else { NoMatch }
-  guard is_thematic_break_at(ctx.lines[ctx.index], leading) else { NoMatch }
-  if ctx.collect_only {
-    return block_match(1, EventFragment::empty())
+fn thematic_break_block(ctx : BlockContext) -> BlockRuleResult {
+  let leading = count_leading_spaces(ctx.source_lines()[ctx.line_index()])
+  guard leading <= 3 && leading < ctx.source_lines()[ctx.line_index()].length() else {
+    NoMatch
+  }
+  guard is_thematic_break_at(ctx.source_lines()[ctx.line_index()], leading) else {
+    NoMatch
+  }
+  if ctx.is_collecting() {
+    return block_match(1, @markdown.EventFragment::empty())
   }
   block_match(
     1,
-    EventFragment::element(
-      Element::with_attrs(
+    @markdown.EventFragment::element(
+      @markdown.Element::with_attrs(
         tag_name("cm:thematic_break"),
         [],
-        range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
+        range=Some(
+          block_source_range(ctx, ctx.line_index(), ctx.line_index() + 1),
+        ),
       ),
     ),
   )
@@ -287,8 +282,8 @@ fn setext_heading_level_at(line : String, start : Int, end : Int) -> Int {
 }
 
 ///|
-fn cm_html_block(ctx : BlockContext) -> BlockRuleResult {
-  let raw_line = ctx.lines[ctx.index]
+fn html_block(ctx : BlockContext) -> BlockRuleResult {
+  let raw_line = ctx.source_lines()[ctx.line_index()]
   let leading = count_leading_spaces(raw_line)
   guard leading <= 3 &&
     leading < raw_line.length() &&
@@ -311,52 +306,67 @@ fn html_block_until_terminator(
   ctx : BlockContext,
   terminator : String,
 ) -> BlockRuleResult {
-  if ctx.collect_only {
-    for i in ctx.index..<ctx.lines.length() {
-      if find_substring(ctx.lines[i], terminator, 0) >= 0 {
-        return block_match(i - ctx.index + 1, EventFragment::empty())
+  if ctx.is_collecting() {
+    for i in ctx.line_index()..<ctx.source_lines().length() {
+      if find_substring(ctx.source_lines()[i], terminator, 0) >= 0 {
+        return block_match(
+          i - ctx.line_index() + 1,
+          @markdown.EventFragment::empty(),
+        )
       }
     }
-    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
+    return block_match(
+      ctx.source_lines().length() - ctx.line_index(),
+      @markdown.EventFragment::empty(),
+    )
   }
   let raw = StringBuilder::new()
-  for i in ctx.index..<ctx.lines.length() {
-    raw.write_string(ctx.lines[i])
+  for i in ctx.line_index()..<ctx.source_lines().length() {
+    raw.write_string(ctx.source_lines()[i])
     raw.write_string("\n")
-    if find_substring(ctx.lines[i], terminator, 0) >= 0 {
+    if find_substring(ctx.source_lines()[i], terminator, 0) >= 0 {
       return block_match(
-        i - ctx.index + 1,
-        EventFragment::html(raw.to_string()),
+        i - ctx.line_index() + 1,
+        @markdown.EventFragment::html(raw.to_string()),
       )
     }
   }
   block_match(
-    ctx.lines.length() - ctx.index,
-    EventFragment::html(raw.to_string()),
+    ctx.source_lines().length() - ctx.line_index(),
+    @markdown.EventFragment::html(raw.to_string()),
   )
 }
 
 ///|
 fn html_block_until_blank(ctx : BlockContext) -> BlockRuleResult {
-  if ctx.collect_only {
-    for i in ctx.index..<ctx.lines.length() {
-      if is_blank(ctx.lines[i]) {
-        return block_match(i - ctx.index, EventFragment::empty())
+  if ctx.is_collecting() {
+    for i in ctx.line_index()..<ctx.source_lines().length() {
+      if is_blank(ctx.source_lines()[i]) {
+        return block_match(
+          i - ctx.line_index(),
+          @markdown.EventFragment::empty(),
+        )
       }
     }
-    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
+    return block_match(
+      ctx.source_lines().length() - ctx.line_index(),
+      @markdown.EventFragment::empty(),
+    )
   }
   let raw = StringBuilder::new()
-  for i in ctx.index..<ctx.lines.length() {
-    if is_blank(ctx.lines[i]) {
-      return block_match(i - ctx.index, EventFragment::html(raw.to_string()))
+  for i in ctx.line_index()..<ctx.source_lines().length() {
+    if is_blank(ctx.source_lines()[i]) {
+      return block_match(
+        i - ctx.line_index(),
+        @markdown.EventFragment::html(raw.to_string()),
+      )
     }
-    raw.write_string(ctx.lines[i])
+    raw.write_string(ctx.source_lines()[i])
     raw.write_string("\n")
   }
   block_match(
-    ctx.lines.length() - ctx.index,
-    EventFragment::html(raw.to_string()),
+    ctx.source_lines().length() - ctx.line_index(),
+    @markdown.EventFragment::html(raw.to_string()),
   )
 }
 
@@ -401,8 +411,8 @@ fn html_script_pre_style_terminator(line : String) -> String? {
 }
 
 ///|
-fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
-  let line = ctx.lines[ctx.index]
+fn fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
+  let line = ctx.source_lines()[ctx.line_index()]
   let opening_indent = count_leading_spaces(line)
   guard opening_indent <= 3 else { NoMatch }
   let trimmed = trim(line)
@@ -412,46 +422,62 @@ fn cm_fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
     contains_char(trim(trimmed[fence.length():].to_owned()), '`')) else {
     NoMatch
   }
-  if ctx.collect_only {
-    for i in (ctx.index + 1)..<ctx.lines.length() {
-      if is_closing_fence_line(ctx.lines[i], fence) {
-        return block_match(i - ctx.index + 1, EventFragment::empty())
+  if ctx.is_collecting() {
+    for i in (ctx.line_index() + 1)..<ctx.source_lines().length() {
+      if is_closing_fence_line(ctx.source_lines()[i], fence) {
+        return block_match(
+          i - ctx.line_index() + 1,
+          @markdown.EventFragment::empty(),
+        )
       }
     }
-    return block_match(ctx.lines.length() - ctx.index, EventFragment::empty())
+    return block_match(
+      ctx.source_lines().length() - ctx.line_index(),
+      @markdown.EventFragment::empty(),
+    )
   }
   let info = fence_info(trimmed, fence)
   let code = StringBuilder::new()
-  for i in (ctx.index + 1)..<ctx.lines.length() {
-    if is_closing_fence_line(ctx.lines[i], fence) {
+  for i in (ctx.line_index() + 1)..<ctx.source_lines().length() {
+    if is_closing_fence_line(ctx.source_lines()[i], fence) {
       return block_match(
-        i - ctx.index + 1,
-        EventFragment::element(
-          Element::with_attrs(
+        i - ctx.line_index() + 1,
+        @markdown.EventFragment::element(
+          @markdown.Element::with_attrs(
             tag_name("cm:code_block"),
             code_block_attrs(info),
-            range=Some(block_source_range(ctx, ctx.index, i + 1)),
+            range=Some(block_source_range(ctx, ctx.line_index(), i + 1)),
           ),
           children=[
-            EventFragment::text(finalize_code_block_text(code.to_string())),
+            @markdown.EventFragment::text(
+              finalize_code_block_text(code.to_string()),
+            ),
           ],
         ),
       )
     }
-    if i > ctx.index + 1 {
+    if i > ctx.line_index() + 1 {
       code.write_string("\n")
     }
-    code.write_string(strip_fenced_code_indent(ctx.lines[i], opening_indent))
+    code.write_string(
+      strip_fenced_code_indent(ctx.source_lines()[i], opening_indent),
+    )
   }
   block_match(
-    ctx.lines.length() - ctx.index,
-    EventFragment::element(
-      Element::with_attrs(
+    ctx.source_lines().length() - ctx.line_index(),
+    @markdown.EventFragment::element(
+      @markdown.Element::with_attrs(
         tag_name("cm:code_block"),
         code_block_attrs(info),
-        range=Some(block_source_range(ctx, ctx.index, ctx.lines.length())),
+        range=Some(
+          block_source_range(ctx, ctx.line_index(), ctx.source_lines().length()),
+        ),
       ),
-      children=[EventFragment::text(finalize_code_block_text(code.to_string()))],
+      children=[
+        @markdown.EventFragment::text(
+          finalize_code_block_text(code.to_string()),
+        ),
+      ],
     ),
   )
 }
@@ -464,36 +490,36 @@ fn strip_fenced_code_indent(line : String, indent : Int) -> String {
 }
 
 ///|
-fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
-  let line = ctx.lines[ctx.index]
+fn indented_code_block(ctx : BlockContext) -> BlockRuleResult {
+  let line = ctx.source_lines()[ctx.line_index()]
   guard count_leading_spaces(line) >= 4 else { NoMatch }
-  if ctx.collect_only {
-    let mut i = ctx.index
-    while i < ctx.lines.length() {
-      if is_blank(ctx.lines[i]) {
-        if next_nonblank_is_indented_code(ctx.lines, i + 1) {
+  if ctx.is_collecting() {
+    let mut i = ctx.line_index()
+    while i < ctx.source_lines().length() {
+      if is_blank(ctx.source_lines()[i]) {
+        if next_nonblank_is_indented_code(ctx.source_lines(), i + 1) {
           i = i + 1
           continue
         }
         break
       }
-      if count_leading_spaces(ctx.lines[i]) < 4 {
+      if count_leading_spaces(ctx.source_lines()[i]) < 4 {
         break
       }
       i = i + 1
     }
-    return block_match(i - ctx.index, EventFragment::empty())
+    return block_match(i - ctx.line_index(), @markdown.EventFragment::empty())
   }
   let code = StringBuilder::new()
-  let mut i = ctx.index
-  while i < ctx.lines.length() {
-    if is_blank(ctx.lines[i]) {
-      if next_nonblank_is_indented_code(ctx.lines, i + 1) {
-        if i > ctx.index {
+  let mut i = ctx.line_index()
+  while i < ctx.source_lines().length() {
+    if is_blank(ctx.source_lines()[i]) {
+      if next_nonblank_is_indented_code(ctx.source_lines(), i + 1) {
+        if i > ctx.line_index() {
           code.write_string("\n")
         }
-        if count_leading_spaces(ctx.lines[i]) >= 4 {
-          code.write_view(ctx.lines[i][4:])
+        if count_leading_spaces(ctx.source_lines()[i]) >= 4 {
+          code.write_view(ctx.source_lines()[i][4:])
         }
         i = i + 1
         continue
@@ -501,24 +527,28 @@ fn cm_indented_code_block(ctx : BlockContext) -> BlockRuleResult {
         break
       }
     }
-    if count_leading_spaces(ctx.lines[i]) < 4 {
+    if count_leading_spaces(ctx.source_lines()[i]) < 4 {
       break
     }
-    if i > ctx.index {
+    if i > ctx.line_index() {
       code.write_string("\n")
     }
-    code.write_view(ctx.lines[i][4:])
+    code.write_view(ctx.source_lines()[i][4:])
     i = i + 1
   }
   block_match(
-    i - ctx.index,
-    EventFragment::element(
-      Element::with_attrs(
+    i - ctx.line_index(),
+    @markdown.EventFragment::element(
+      @markdown.Element::with_attrs(
         tag_name("cm:code_block"),
         [],
-        range=Some(block_source_range(ctx, ctx.index, i)),
+        range=Some(block_source_range(ctx, ctx.line_index(), i)),
       ),
-      children=[EventFragment::text(finalize_code_block_text(code.to_string()))],
+      children=[
+        @markdown.EventFragment::text(
+          finalize_code_block_text(code.to_string()),
+        ),
+      ],
     ),
   )
 }
@@ -543,11 +573,13 @@ fn next_nonblank_is_indented_code(lines : Array[String], start : Int) -> Bool {
 }
 
 ///|
-fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
-  guard is_blockquote_marker_line(ctx.lines[ctx.index]) else { NoMatch }
-  let mut i = ctx.index
+fn blockquote_block(ctx : BlockContext) -> BlockRuleResult {
+  guard is_blockquote_marker_line(ctx.source_lines()[ctx.line_index()]) else {
+    NoMatch
+  }
+  let mut i = ctx.line_index()
   let mut used_lazy = false
-  let first = strip_blockquote_marker(ctx.lines[i])
+  let first = strip_blockquote_marker(ctx.source_lines()[i])
   if is_single_line_blockquote(ctx, first, i + 1) {
     return emit_single_line_blockquote(ctx, first)
   }
@@ -558,8 +590,9 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
   if result.used_lazy {
     used_lazy = true
   }
-  while i < ctx.lines.length() && is_blockquote_marker_line(ctx.lines[i]) {
-    let stripped = strip_blockquote_marker(ctx.lines[i])
+  while i < ctx.source_lines().length() &&
+        is_blockquote_marker_line(ctx.source_lines()[i]) {
+    let stripped = strip_blockquote_marker(ctx.source_lines()[i])
     inner.append(stripped)
     i = i + 1
     let result = append_blockquote_lazy_lines(ctx, inner, stripped, i)
@@ -568,21 +601,21 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
       used_lazy = true
     }
   }
-  if ctx.collect_only && !inner.may_contain_reference {
-    return block_match(i - ctx.index, EventFragment::empty())
+  if ctx.is_collecting() && !inner.may_contain_reference {
+    return block_match(i - ctx.line_index(), @markdown.EventFragment::empty())
   }
-  if ctx.collect_only {
-    inner.collect_references(ctx.plan, ctx.state)
-    return block_match(i - ctx.index, EventFragment::empty())
+  if ctx.is_collecting() {
+    inner.collect_references(ctx.services())
+    return block_match(i - ctx.line_index(), @markdown.EventFragment::empty())
   }
-  let buffer = Events()
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
   sink.emit(
-    Enter(
-      Element::with_attrs(
+    @markdown.Enter(
+      @markdown.Element::with_attrs(
         tag_name("cm:block_quote"),
         [],
-        range=Some(block_source_range(ctx, ctx.index, i)),
+        range=Some(block_source_range(ctx, ctx.line_index(), i)),
       ),
     ),
   )
@@ -595,39 +628,25 @@ fn cm_blockquote_block(ctx : BlockContext) -> BlockRuleResult {
     ""
   }
   if parse_reference_definition(trim(inner_text)) is Some(definition) {
-    ctx.state.add_reference(definition)
+    add_reference(ctx.services(), definition)
   } else if lazy_starts_with_block {
-    inner.parse_into(ctx.plan, sink, ctx.state)
+    inner.parse_into(ctx.services(), sink)
   } else if used_lazy {
-    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-    parse_inlines_with_rules(
-      inner_text,
-      ctx.registry,
-      ctx.inline_rules,
-      ctx.inline_mode,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
+    sink.emit(@markdown.Enter(@markdown.Element(tag_name("cm:paragraph"))))
+    ctx.services().parse_inline(inner_text, sink)
+    sink.emit(@markdown.Exit(tag_name("cm:paragraph")))
   } else if inner.length == 1 &&
     inner.first != "" &&
     count_leading_spaces(inner.first) < 4 &&
     !is_paragraph_interrupt(inner.first) {
-    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-    parse_inlines_with_rules(
-      paragraph_line(inner.first),
-      ctx.registry,
-      ctx.inline_rules,
-      ctx.inline_mode,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
+    sink.emit(@markdown.Enter(@markdown.Element(tag_name("cm:paragraph"))))
+    ctx.services().parse_inline(paragraph_line(inner.first), sink)
+    sink.emit(@markdown.Exit(tag_name("cm:paragraph")))
   } else {
-    inner.parse_into(ctx.plan, sink, ctx.state)
+    inner.parse_into(ctx.services(), sink)
   }
-  sink.emit(Exit(tag_name("cm:block_quote")))
-  block_match(i - ctx.index, buffer.into_fragment())
+  sink.emit(@markdown.Exit(tag_name("cm:block_quote")))
+  block_match(i - ctx.line_index(), buffer.into_fragment())
 }
 
 ///|
@@ -636,12 +655,13 @@ fn is_single_line_blockquote(
   stripped : String,
   next : Int,
 ) -> Bool {
-  if next >= ctx.lines.length() || is_blockquote_marker_line(ctx.lines[next]) {
-    return next >= ctx.lines.length()
+  if next >= ctx.source_lines().length() ||
+    is_blockquote_marker_line(ctx.source_lines()[next]) {
+    return next >= ctx.source_lines().length()
   }
-  is_blank(ctx.lines[next]) ||
+  is_blank(ctx.source_lines()[next]) ||
   !blockquote_allows_lazy(stripped) ||
-  is_paragraph_interrupt(ctx.lines[next])
+  is_paragraph_interrupt(ctx.source_lines()[next])
 }
 
 ///|
@@ -649,34 +669,36 @@ fn emit_single_line_blockquote(
   ctx : BlockContext,
   inner : String,
 ) -> BlockRuleResult {
-  if ctx.collect_only {
+  if ctx.is_collecting() {
     if may_contain_reference_definition(inner) {
       let payload = BlockPayload(inner)
-      payload.collect_references(ctx.plan, ctx.state)
+      payload.collect_references(ctx.services())
     }
-    return block_match(1, EventFragment::empty())
+    return block_match(1, @markdown.EventFragment::empty())
   }
-  let buffer = Events()
+  let buffer = @markdown.Events()
   let sink = buffer.owned_sink()
   sink.emit(
-    Enter(
-      Element::with_attrs(
+    @markdown.Enter(
+      @markdown.Element::with_attrs(
         tag_name("cm:block_quote"),
         [],
-        range=Some(block_source_range(ctx, ctx.index, ctx.index + 1)),
+        range=Some(
+          block_source_range(ctx, ctx.line_index(), ctx.line_index() + 1),
+        ),
       ),
     ),
   )
   if may_contain_reference_definition(inner) {
     if parse_reference_definition(trim(inner)) is Some(definition) {
-      ctx.state.add_reference(definition)
+      add_reference(ctx.services(), definition)
     } else {
       emit_single_line_blockquote_content(ctx, inner, sink)
     }
   } else {
     emit_single_line_blockquote_content(ctx, inner, sink)
   }
-  sink.emit(Exit(tag_name("cm:block_quote")))
+  sink.emit(@markdown.Exit(tag_name("cm:block_quote")))
   block_match(1, buffer.into_fragment())
 }
 
@@ -689,18 +711,11 @@ fn emit_single_line_blockquote_content(
   if inner != "" &&
     count_leading_spaces(inner) < 4 &&
     !is_paragraph_interrupt(inner) {
-    sink.emit(Enter(Element(tag_name("cm:paragraph"))))
-    parse_inlines_with_rules(
-      paragraph_line(inner),
-      ctx.registry,
-      ctx.inline_rules,
-      ctx.inline_mode,
-      sink,
-      ctx.state,
-    )
-    sink.emit(Exit(tag_name("cm:paragraph")))
+    sink.emit(@markdown.Enter(@markdown.Element(tag_name("cm:paragraph"))))
+    ctx.services().parse_inline(paragraph_line(inner), sink)
+    sink.emit(@markdown.Exit(tag_name("cm:paragraph")))
   } else {
-    BlockPayload(inner).parse_into(ctx.plan, sink, ctx.state)
+    BlockPayload(inner).parse_into(ctx.services(), sink)
   }
 }
 
@@ -720,12 +735,12 @@ fn append_blockquote_lazy_lines(
   let allow_lazy = blockquote_allows_lazy(stripped)
   let mut i = start
   let mut used_lazy = false
-  while i < ctx.lines.length() &&
-        !is_blank(ctx.lines[i]) &&
-        !is_blockquote_marker_line(ctx.lines[i]) &&
+  while i < ctx.source_lines().length() &&
+        !is_blank(ctx.source_lines()[i]) &&
+        !is_blockquote_marker_line(ctx.source_lines()[i]) &&
         allow_lazy &&
-        !is_paragraph_interrupt(ctx.lines[i]) {
-    inner.append(paragraph_line(ctx.lines[i]))
+        !is_paragraph_interrupt(ctx.source_lines()[i]) {
+    inner.append(paragraph_line(ctx.source_lines()[i]))
     used_lazy = true
     i = i + 1
   }
@@ -761,16 +776,17 @@ fn block_source_range(
   start_line : Int,
   end_line : Int,
 ) -> SourceRange {
-  if start_line >= ctx.line_starts.length() || end_line <= start_line {
+  if start_line >= ctx.source_line_starts().length() || end_line <= start_line {
     source_range(0, 0)
   } else {
     let last = end_line - 1
-    let end = if last < ctx.lines.length() && last < ctx.line_starts.length() {
-      ctx.line_starts[last] + ctx.lines[last].length()
+    let end = if last < ctx.source_lines().length() &&
+      last < ctx.source_line_starts().length() {
+      ctx.source_line_starts()[last] + ctx.source_lines()[last].length()
     } else {
-      ctx.line_starts[start_line]
+      ctx.source_line_starts()[start_line]
     }
-    source_range(ctx.line_starts[start_line], end)
+    source_range(ctx.source_line_starts()[start_line], end)
   }
 }
 
@@ -1088,13 +1104,8 @@ fn fence_info(line : String, fence : String) -> String {
 fn code_block_attrs(info : String) -> Array[Attr] {
   match info {
     "" => []
-    _ => [{ name: attr_name("info"), value: info }]
+    _ => [attr("info", info)]
   }
-}
-
-///|
-fn contains_char(text : String, needle : Int) -> Bool {
-  find_char(text, needle, 0) >= 0
 }
 
 ///|
