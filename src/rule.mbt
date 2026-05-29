@@ -52,7 +52,7 @@ pub fn ConsumedLines::to_int(self : ConsumedLines) -> Int {
 ///|
 pub(all) enum InlineRuleResult {
   NoMatch
-  Match(ConsumedChars, EventFragment)
+  Match(ConsumedChars)
 }
 
 ///|
@@ -66,8 +66,8 @@ pub(all) enum BlockRuleResult {
 pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
 
 ///|
-/// An inline rule consumes characters from inline source and returns events for accepted matches.
-pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
+/// An inline rule consumes characters from inline source and emits events for accepted matches.
+pub type InlineRuleFn = (InlineContext, Sink) -> InlineRuleResult
 
 ///|
 /// A core rule wraps a downstream sink with stream transformation behavior.
@@ -131,6 +131,7 @@ pub fn Rule::block(
   priority? : Int = 0,
   before? : Array[RuleName] = [],
   after? : Array[RuleName] = [],
+  triggers? : String = "",
   f : BlockRuleFn,
 ) -> Rule {
   Rule::from_entry({
@@ -140,7 +141,7 @@ pub fn Rule::block(
     after: copy_rule_names(after),
     priority,
     order: 0,
-    triggers: "",
+    triggers,
     block: Some(f),
     inline: None,
     core: None,
@@ -156,6 +157,7 @@ pub fn Rule::block_continue(
   priority? : Int = 0,
   before? : Array[RuleName] = [],
   after? : Array[RuleName] = [],
+  triggers? : String = "",
   f : BlockRuleFn,
 ) -> Rule {
   Rule::from_entry({
@@ -165,7 +167,7 @@ pub fn Rule::block_continue(
     after: copy_rule_names(after),
     priority,
     order: 0,
-    triggers: "",
+    triggers,
     block: Some(f),
     inline: None,
     core: None,

@@ -165,6 +165,7 @@ fn issue_thread_document_comments(count : Int) -> String {
 ///|
 fn no_op_inline_rule(
   _ctx : @markdown.InlineContext,
+  _sink : @markdown.Sink,
 ) -> @markdown.InlineRuleResult {
   NoMatch
 }

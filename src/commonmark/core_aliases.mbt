@@ -58,6 +58,16 @@ fn block_match(consumed : Int, fragment : EventFragment) -> BlockRuleResult {
 }
 
 ///|
-fn inline_match(consumed : Int, fragment : EventFragment) -> InlineRuleResult {
-  Match(@markdown.ConsumedChars(consumed), fragment)
+fn inline_match(consumed : Int) -> InlineRuleResult {
+  Match(@markdown.ConsumedChars(consumed))
+}
+
+///|
+fn emit_inline_match(
+  sink : Sink,
+  consumed : Int,
+  fragment : EventFragment,
+) -> InlineRuleResult {
+  fragment.emit_to(sink)
+  inline_match(consumed)
 }

@@ -1,9 +1,11 @@
 ///|
 fn inline_result(
+  sink : @markdown.Sink,
   consumed : Int,
   fragment : @markdown.EventFragment,
 ) -> @markdown.InlineRuleResult {
-  Match(ConsumedChars(consumed), fragment)
+  fragment.emit_to(sink)
+  Match(ConsumedChars(consumed))
 }
 
 ///|
@@ -55,9 +57,9 @@ test "custom inline rules keep two pass reference behavior" {
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
     triggers="@",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("@") {
-        inline_result(1, @markdown.EventFragment::text("marker"))
+        inline_result(sink, 1, @markdown.EventFragment::text("marker"))
       } else {
         NoMatch
       }
@@ -88,7 +90,7 @@ test "inline nomatch cannot emit partial events" {
     @markdown.RuleName::raw("x:inline:nomatch"),
     priority=100,
     triggers="@",
-    fn(_ctx) { NoMatch },
+    fn(_ctx, _sink) { NoMatch },
   )
   assert_eq(render_html(@commonmark.rule().extend(rule), "@"), "<p>@</p>\n")
 }
@@ -112,9 +114,10 @@ test "matched inline emits fragment and consumes exact chars" {
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
     triggers="@",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("@@") {
         inline_result(
+          sink,
           2,
           @markdown.EventFragment::element(
             Element(@markdown.Tag::raw("x:marker")),
@@ -167,9 +170,9 @@ test "delimiter rules run before inline rules and honor ordering" {
     @markdown.RuleName::raw("x:delimiter:first"),
     priority=0,
     triggers="^",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("^") {
-        inline_result(1, @markdown.EventFragment::text("delimiter"))
+        inline_result(sink, 1, @markdown.EventFragment::text("delimiter"))
       } else {
         NoMatch
       }
@@ -179,9 +182,9 @@ test "delimiter rules run before inline rules and honor ordering" {
     @markdown.RuleName::raw("x:inline:second"),
     priority=100,
     triggers="^",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("^") {
-        inline_result(1, @markdown.EventFragment::text("inline"))
+        inline_result(sink, 1, @markdown.EventFragment::text("inline"))
       } else {
         NoMatch
       }
@@ -228,9 +231,9 @@ test "rule priority disable enable and replace remain intact" {
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
     triggers="@",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("@") {
-        inline_result(1, @markdown.EventFragment::text("marker"))
+        inline_result(sink, 1, @markdown.EventFragment::text("marker"))
       } else {
         NoMatch
       }
@@ -252,9 +255,9 @@ test "rule priority disable enable and replace remain intact" {
     @markdown.RuleName::raw("x:inline:marker"),
     priority=100,
     triggers="@",
-    fn(ctx) {
+    fn(ctx, sink) {
       if ctx.scanner().has_prefix("@") {
-        inline_result(1, @markdown.EventFragment::text("replacement"))
+        inline_result(sink, 1, @markdown.EventFragment::text("replacement"))
       } else {
         NoMatch
       }

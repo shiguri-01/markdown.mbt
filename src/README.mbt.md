@@ -67,7 +67,7 @@ test {
     @markdown.RuleName::raw("x:inline:math"),
     priority=100,
     triggers="$",
-    fn(ctx) {
+    fn(ctx, sink) {
       let scanner = ctx.scanner()
       if !scanner.has_prefix("$") {
         NoMatch
@@ -81,14 +81,13 @@ test {
           NoMatch
         } else {
           match scanner.slice(1, end) {
-            Some(text) =>
-              Match(
-                ConsumedChars(end + 1),
-                @markdown.EventFragment::element(
-                  Element(@markdown.Tag::raw("x:math")),
-                  children=[@markdown.EventFragment::text(text)],
-                ),
-              )
+            Some(text) => {
+              @markdown.EventFragment::element(
+                Element(@markdown.Tag::raw("x:math")),
+                children=[@markdown.EventFragment::text(text)],
+              ).emit_to(sink)
+              Match(ConsumedChars(end + 1))
+            }
             None => NoMatch
           }
         }

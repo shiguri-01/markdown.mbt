@@ -1,20 +1,52 @@
 ///|
-fn text_inline(ctx : InlineContext) -> InlineRuleResult {
+fn text_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let start = ctx.offset()
+  let has_extension_triggers = ctx.has_inline_triggers_other_than(
+    commonmark_inline_trigger_chars(),
+  )
   guard start < text.length() &&
     !is_non_space_special(char_at(text, start)) &&
-    !ctx.has_inline_trigger_at(start) else {
+    (!has_extension_triggers || !ctx.has_inline_trigger_at(start)) else {
     NoMatch
   }
-  let end = plain_text_end_with_context(ctx, text, start, text.length())
-  guard end > start else { NoMatch }
-  let fragment = if start == 0 && end == text.length() {
-    @markdown.EventFragment::text(text)
+  let end = if has_extension_triggers {
+    plain_text_end_with_context(ctx, text, start, text.length())
   } else {
-    @markdown.EventFragment::text(text[start:end].to_owned())
+    plain_text_end(text, start, text.length())
   }
-  inline_match(end - start, fragment)
+  guard end > start else { NoMatch }
+  if start == 0 && end == text.length() {
+    sink.emit(@markdown.Text(text))
+  } else {
+    sink.emit(@markdown.Text(text[start:end].to_owned()))
+  }
+  inline_match(end - start)
+}
+
+///|
+fn commonmark_inline_trigger_chars() -> String {
+  " ![<&`*_\\\n"
+}
+
+///|
+fn plain_text_end(text : String, start : Int, end : Int) -> Int {
+  let mut i = start
+  while i < end {
+    let c = char_at(text, i)
+    if c == ' ' {
+      let space_end = space_run_end(text, i, end)
+      if space_end < end && char_at(text, space_end) == '\n' {
+        return i
+      }
+      i = space_end
+    } else if is_non_space_special(c) {
+      return i
+    } else {
+      i = i + 1
+    }
+  }
+  end
 }
 
 ///|
@@ -75,7 +107,7 @@ fn is_non_space_special(c : Int) -> Bool {
 }
 
 ///|
-fn escape_inline(ctx : InlineContext) -> InlineRuleResult {
+fn escape_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '\\' &&
@@ -83,26 +115,29 @@ fn escape_inline(ctx : InlineContext) -> InlineRuleResult {
     is_ascii_punctuation(char_at(text, i + 1)) else {
     NoMatch
   }
-  inline_match(2, @markdown.EventFragment::text(text[i + 1:i + 2].to_owned()))
+  sink.emit(@markdown.Text(text[i + 1:i + 2].to_owned()))
+  inline_match(2)
 }
 
 ///|
-fn hard_break_inline(ctx : InlineContext) -> InlineRuleResult {
+fn hard_break_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   if i + 1 < text.length() &&
     char_at(text, i) == '\\' &&
     char_at(text, i + 1) == '\n' {
-    inline_match(2, @markdown.EventFragment::hard_break())
+    sink.emit(@markdown.HardBreak)
+    inline_match(2)
   } else if char_at(text, i) == ' ' {
     let mut end = i
     while end < text.length() && char_at(text, end) == ' ' {
       end = end + 1
     }
     if end - i >= 2 && end < text.length() && char_at(text, end) == '\n' {
-      inline_match(end - i + 1, @markdown.EventFragment::hard_break())
+      sink.emit(@markdown.HardBreak)
+      inline_match(end - i + 1)
     } else if end < text.length() && char_at(text, end) == '\n' {
-      inline_match(end - i, @markdown.EventFragment::empty())
+      inline_match(end - i)
     } else {
       NoMatch
     }
@@ -112,13 +147,14 @@ fn hard_break_inline(ctx : InlineContext) -> InlineRuleResult {
 }
 
 ///|
-fn soft_break_inline(ctx : InlineContext) -> InlineRuleResult {
+fn soft_break_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   guard char_at(ctx.source(), ctx.offset()) == '\n' else { NoMatch }
-  inline_match(1, @markdown.EventFragment::soft_break())
+  sink.emit(@markdown.SoftBreak)
+  inline_match(1)
 }
 
 ///|
-fn code_span_inline(ctx : InlineContext) -> InlineRuleResult {
+fn code_span_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '`' else { NoMatch }
@@ -126,7 +162,8 @@ fn code_span_inline(ctx : InlineContext) -> InlineRuleResult {
   let width = delimiter_run_len(text, i, '`')
   let end = find_code_span_end(text, i + width, width)
   guard end >= 0 else { NoMatch }
-  inline_match(
+  emit_inline_match(
+    sink,
     end - i + width,
     @markdown.EventFragment::element(
       @markdown.Element(tag_name("cm:code_span")),
@@ -179,7 +216,7 @@ fn find_code_span_end_before(
 }
 
 ///|
-fn autolink_inline(ctx : InlineContext) -> InlineRuleResult {
+fn autolink_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '<' else { NoMatch }
@@ -188,7 +225,8 @@ fn autolink_inline(ctx : InlineContext) -> InlineRuleResult {
   let destination = text[i + 1:end].to_owned()
   let href = autolink_href(destination)
   guard href != "" else { NoMatch }
-  inline_match(
+  emit_inline_match(
+    sink,
     end - i + 1,
     @markdown.EventFragment::element(
       @markdown.Element::with_attrs(tag_name("cm:link"), [
@@ -211,12 +249,13 @@ fn autolink_href(destination : String) -> String {
 }
 
 ///|
-fn raw_html_inline(ctx : InlineContext) -> InlineRuleResult {
+fn raw_html_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '<' else { NoMatch }
   if raw_html_inline_end(text, i) is Some(end) {
-    return inline_match(
+    return emit_inline_match(
+      sink,
       end - i,
       @markdown.EventFragment::html(text[i:end].to_owned()),
     )
@@ -224,7 +263,11 @@ fn raw_html_inline(ctx : InlineContext) -> InlineRuleResult {
   if raw_html_tag_end(text, i) is Some(end) {
     let raw = text[i:end].to_owned()
     if looks_like_raw_html(raw) {
-      return inline_match(end - i, @markdown.EventFragment::html(raw))
+      return emit_inline_match(
+        sink,
+        end - i,
+        @markdown.EventFragment::html(raw),
+      )
     }
   }
   NoMatch
@@ -279,7 +322,7 @@ fn looks_like_html_declaration_at(text : String, start : Int) -> Bool {
 }
 
 ///|
-fn entity_inline(ctx : InlineContext) -> InlineRuleResult {
+fn entity_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '&' else { NoMatch }
@@ -287,28 +330,23 @@ fn entity_inline(ctx : InlineContext) -> InlineRuleResult {
   guard end >= 0 && end - i <= 32 else { NoMatch }
   let name = text[i + 1:end].to_owned()
   match decode_entity(name) {
-    Some(decoded) =>
-      inline_match(end - i + 1, @markdown.EventFragment::text(decoded))
+    Some(decoded) => {
+      sink.emit(@markdown.Text(decoded))
+      inline_match(end - i + 1)
+    }
     None => NoMatch
   }
 }
 
 ///|
-fn emphasis_delimiter(ctx : InlineContext) -> InlineRuleResult {
+fn emphasis_delimiter(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let start = ctx.offset()
   let marker = char_at(text, start)
   guard marker == '*' || marker == '_' else { NoMatch }
-  let buffer = @markdown.Events()
-  let consumed = emit_emphasis(
-    text,
-    start,
-    text.length(),
-    ctx.services(),
-    buffer.owned_sink(),
-  )
+  let consumed = emit_emphasis(text, start, text.length(), ctx.services(), sink)
   if consumed > 0 {
-    inline_match(consumed, buffer.into_fragment())
+    inline_match(consumed)
   } else {
     NoMatch
   }

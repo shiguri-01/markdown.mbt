@@ -2,8 +2,10 @@
 fn parse_inlines_with_rules(
   text : String,
   registry : RuleRegistry,
+  plan : PreparedRulePlan,
   rules : Array[RuleEntry],
   inline_mode : InlineParseMode,
+  inline_trigger_chars : String,
   sink : Sink,
   state : ParseState,
 ) -> Unit {
@@ -20,8 +22,10 @@ fn parse_inlines_with_rules(
       index: i,
       scanner: inline_scanner(text, i),
       registry,
+      plan,
       inline_rules: rules,
       inline_mode,
+      inline_trigger_chars,
       state,
     }
     let consumed = try_inline_rules(ctx, rules, sink)
@@ -46,8 +50,7 @@ fn try_inline_rules(
       continue
     }
     if rule.inline is Some(f) {
-      if f(ctx) is Match(chars, fragment) {
-        fragment.emit_to(sink)
+      if f(ctx, sink) is Match(chars) {
         return chars.to_int()
       }
     }

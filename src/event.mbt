@@ -404,9 +404,10 @@ pub fn EventFragment::events(self : EventFragment) -> Array[Event] {
 }
 
 ///|
-fn EventFragment::emit_to(self : EventFragment, sink : Sink) -> Unit {
+/// Emits this fragment into `sink`.
+pub fn EventFragment::emit_to(self : EventFragment, sink : Sink) -> Unit {
   for event in self.events {
-    sink.emit(copy_event(event))
+    sink.emit(event)
   }
 }
 

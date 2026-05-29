@@ -107,6 +107,11 @@ fn parse_block_lines_range_into(
   } else {
     plan.inline_mode
   }
+  let inline_trigger_chars = if collect_only {
+    ""
+  } else {
+    plan.inline_trigger_chars
+  }
   let block_continue_rules = plan.block_continue_rules
   let block_start_rules = plan.block_rules
   while i < stop {
@@ -118,6 +123,7 @@ fn parse_block_lines_range_into(
       plan,
       inline_rules,
       inline_mode,
+      inline_trigger_chars,
       state,
       collect_only,
     }
@@ -139,6 +145,9 @@ fn try_block_rules(
   sink : Sink,
 ) -> Int {
   for rule in rules {
+    if !block_rule_trigger_matches(ctx, rule) {
+      continue
+    }
     if rule.block is Some(f) {
       let consumed = emit_block_rule_result(f(ctx), sink, fallback=0)
       if consumed > 0 {
@@ -147,6 +156,29 @@ fn try_block_rules(
     }
   }
   0
+}
+
+///|
+fn block_rule_trigger_matches(ctx : BlockContext, rule : RuleEntry) -> Bool {
+  if rule.triggers == "" {
+    return true
+  }
+  let line = ctx.current_line()
+  if line == "" {
+    return false
+  }
+  let mut i = 0
+  while i < line.length() && i < 4 && char_at(line, i) == ' ' {
+    i = i + 1
+  }
+  let c = if i >= line.length() {
+    10
+  } else if i >= 4 {
+    32
+  } else {
+    char_at(line, i)
+  }
+  contains_char(rule.triggers, c)
 }
 
 ///|

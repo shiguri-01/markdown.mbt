@@ -1,3 +1,7 @@
 import {
   "shiguri/markdown/commonmark" @commonmark,
 } for "test"
+
+import {
+  "moonbitlang/core/hashmap",
+}

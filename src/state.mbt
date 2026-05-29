@@ -9,20 +9,13 @@ pub fn StateKey::StateKey(scope : String, name : String) -> StateKey {
 }
 
 ///|
-priv struct StateStringEntry {
-  key : String
-  item : String
-  value : String
-}
-
-///|
 priv struct ParseState {
-  strings : Array[StateStringEntry]
+  strings : @hashmap.HashMap[String, @hashmap.HashMap[String, String]]
 }
 
 ///|
 fn ParseState::ParseState() -> ParseState {
-  { strings: [] }
+  { strings: @hashmap.HashMap([]) }
 }
 
 ///|
@@ -31,12 +24,10 @@ fn ParseState::string_get(
   key : StateKey,
   item : String,
 ) -> String? {
-  for entry in self.strings {
-    if entry.key == key.value && entry.item == item {
-      return Some(entry.value)
-    }
+  match self.strings.get(key.value) {
+    Some(items) => items.get(item)
+    None => None
   }
-  None
 }
 
 ///|
@@ -46,12 +37,13 @@ fn ParseState::string_set(
   item : String,
   value : String,
 ) -> Unit {
-  for i in 0..<self.strings.length() {
-    let entry = self.strings[i]
-    if entry.key == key.value && entry.item == item {
-      self.strings[i] = { key: key.value, item, value }
-      return
+  let items = match self.strings.get(key.value) {
+    Some(items) => items
+    None => {
+      let items = @hashmap.HashMap([])
+      self.strings.set(key.value, items)
+      items
     }
   }
-  self.strings.push({ key: key.value, item, value })
+  items.set(item, value)
 }

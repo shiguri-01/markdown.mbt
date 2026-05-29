@@ -1,5 +1,5 @@
 ///|
-fn link_inline(ctx : InlineContext) -> InlineRuleResult {
+fn link_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard char_at(text, i) == '[' else { NoMatch }
@@ -19,6 +19,7 @@ fn link_inline(ctx : InlineContext) -> InlineRuleResult {
       close_dest + 1,
       attrs,
       ctx.services(),
+      sink,
     )
   } else if reference_attrs_for_link_text(text, i, close_text, ctx.services())
     is Some(resolved) {
@@ -29,6 +30,7 @@ fn link_inline(ctx : InlineContext) -> InlineRuleResult {
       resolved.end,
       resolved.attrs,
       ctx.services(),
+      sink,
     )
   } else {
     NoMatch
@@ -55,19 +57,18 @@ fn link_inline_match(
   end : Int,
   attrs : Array[Attr],
   services : ParserServices,
+  sink : Sink,
 ) -> InlineRuleResult {
-  let buffer = @markdown.Events()
-  let sink = buffer.owned_sink()
   sink.emit(
     @markdown.Enter(@markdown.Element::with_attrs(tag_name("cm:link"), attrs)),
   )
   services.parse_inline(text[start + 1:close_text].to_owned(), sink)
   sink.emit(@markdown.Exit(tag_name("cm:link")))
-  inline_match(end - start, buffer.into_fragment())
+  inline_match(end - start)
 }
 
 ///|
-fn image_inline(ctx : InlineContext) -> InlineRuleResult {
+fn image_inline(ctx : InlineContext, sink : Sink) -> InlineRuleResult {
   let text = ctx.source()
   let i = ctx.offset()
   guard i + 1 < text.length() &&
@@ -83,7 +84,8 @@ fn image_inline(ctx : InlineContext) -> InlineRuleResult {
   let alt = image_alt_text(text[i + 2:close_text].to_owned(), ctx.services())
   if direct_link_attrs(text, close_text) is Some((close_dest, attrs)) {
     attrs.push(attr("alt", alt))
-    inline_match(
+    emit_inline_match(
+      sink,
       close_dest - i + 1,
       @markdown.EventFragment::element(
         @markdown.Element::with_attrs(tag_name("cm:image"), attrs),
@@ -97,7 +99,8 @@ fn image_inline(ctx : InlineContext) -> InlineRuleResult {
       ctx.services(),
     )
     is Some(resolved) {
-    inline_match(
+    emit_inline_match(
+      sink,
       resolved.end - i,
       @markdown.EventFragment::element(
         @markdown.Element::with_attrs(tag_name("cm:image"), resolved.attrs),

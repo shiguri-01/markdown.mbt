@@ -97,6 +97,7 @@ pub struct EventFragment {
 }
 pub fn EventFragment::concat(Array[Self]) -> Self
 pub fn EventFragment::element(Element, children? : Array[Self]) -> Self
+pub fn EventFragment::emit_to(Self, Sink) -> Unit
 pub fn EventFragment::empty() -> Self
 pub fn EventFragment::events(Self) -> Array[Event]
 pub fn EventFragment::from_events(Array[Event]) -> Self?
@@ -126,6 +127,7 @@ pub struct InlineContext {
   // private fields
 }
 pub fn InlineContext::has_inline_trigger_at(Self, Int) -> Bool
+pub fn InlineContext::has_inline_triggers_other_than(Self, String) -> Bool
 pub fn InlineContext::offset(Self) -> Int
 pub fn InlineContext::scanner(Self) -> InlineScanner
 pub fn InlineContext::services(Self) -> ParserServices
@@ -133,7 +135,7 @@ pub fn InlineContext::source(Self) -> String
 
 pub(all) enum InlineRuleResult {
   NoMatch
-  Match(ConsumedChars, EventFragment)
+  Match(ConsumedChars)
 }
 
 pub struct InlineScanner {
@@ -166,14 +168,14 @@ pub struct Rule {
   // private fields
 }
 pub fn Rule::Rule(String) -> Self
-pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
-pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (BlockContext) -> BlockRuleResult) -> Self
+pub fn Rule::block(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (BlockContext) -> BlockRuleResult) -> Self
+pub fn Rule::block_continue(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (BlockContext) -> BlockRuleResult) -> Self
 pub fn Rule::core(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], (Sink) -> Sink) -> Self
-pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::delimiter(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext, Sink) -> InlineRuleResult) -> Self
 pub fn Rule::disable(Self, RuleName) -> Self
 pub fn Rule::enable(Self, RuleName) -> Self
 pub fn Rule::extend(Self, Self) -> Self
-pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext) -> InlineRuleResult) -> Self
+pub fn Rule::inline(RuleName, priority? : Int, before? : Array[RuleName], after? : Array[RuleName], triggers? : String, (InlineContext, Sink) -> InlineRuleResult) -> Self
 pub fn Rule::name(Self) -> String
 pub fn Rule::replace(Self, Self) -> Self
 
@@ -223,7 +225,7 @@ pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
 
 pub type CoreRuleFn = (Sink) -> Sink
 
-pub type InlineRuleFn = (InlineContext) -> InlineRuleResult
+pub type InlineRuleFn = (InlineContext, Sink) -> InlineRuleResult
 
 // Traits
 

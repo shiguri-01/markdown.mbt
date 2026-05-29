@@ -13,6 +13,7 @@ priv struct PreparedRulePlan {
   block_continue_rules : Array[RuleEntry]
   inline_parse_rules : Array[RuleEntry]
   inline_mode : InlineParseMode
+  inline_trigger_chars : String
   core_rules : Array[RuleEntry]
 }
 
@@ -35,6 +36,7 @@ fn PreparedRulePlan::PreparedRulePlan(
     block_continue_rules,
     inline_parse_rules,
     inline_mode: inline_parse_mode(inline_parse_rules),
+    inline_trigger_chars: inline_trigger_chars(inline_parse_rules),
     core_rules,
   }
 }
@@ -195,6 +197,20 @@ fn RuleRegistry::inline_parse_rules(self : RuleRegistry) -> Array[RuleEntry] {
     rules.push(rule)
   }
   rules
+}
+
+///|
+fn inline_trigger_chars(rules : Array[RuleEntry]) -> String {
+  let out = StringBuilder::new()
+  for rule in rules {
+    for i in 0..<rule.triggers.length() {
+      let c = char_at(rule.triggers, i)
+      if !contains_char(out.to_string(), c) {
+        out.write_string(rule.triggers[i:i + 1].to_owned())
+      }
+    }
+  }
+  out.to_string()
 }
 
 ///|

@@ -36,6 +36,7 @@ pub struct BlockContext {
   priv plan : PreparedRulePlan
   priv inline_rules : Array[RuleEntry]
   priv inline_mode : InlineParseMode
+  priv inline_trigger_chars : String
   priv state : ParseState
   priv collect_only : Bool
 }
@@ -47,8 +48,10 @@ pub struct InlineContext {
   priv index : Int
   priv scanner : InlineScanner
   priv registry : RuleRegistry
+  priv plan : PreparedRulePlan
   priv inline_rules : Array[RuleEntry]
   priv inline_mode : InlineParseMode
+  priv inline_trigger_chars : String
   priv state : ParseState
 }
 
@@ -59,6 +62,7 @@ pub struct ParserServices {
   priv plan : PreparedRulePlan
   priv inline_rules : Array[RuleEntry]
   priv inline_mode : InlineParseMode
+  priv inline_trigger_chars : String
   priv state : ParseState
 }
 
@@ -68,9 +72,10 @@ fn ParserServices::ParserServices(
   plan : PreparedRulePlan,
   inline_rules : Array[RuleEntry],
   inline_mode : InlineParseMode,
+  inline_trigger_chars : String,
   state : ParseState,
 ) -> ParserServices {
-  { registry, plan, inline_rules, inline_mode, state }
+  { registry, plan, inline_rules, inline_mode, inline_trigger_chars, state }
 }
 
 ///|
@@ -152,6 +157,7 @@ pub fn BlockContext::services(self : BlockContext) -> ParserServices {
     self.plan,
     self.inline_rules,
     self.inline_mode,
+    self.inline_trigger_chars,
     self.state,
   )
 }
@@ -192,8 +198,20 @@ pub fn InlineContext::has_inline_trigger_at(
     return false
   }
   let c = char_at(self.text, index)
-  for rule in self.inline_rules {
-    if rule.triggers != "" && contains_char(rule.triggers, c) {
+  contains_char(self.inline_trigger_chars, c)
+}
+
+///|
+/// Returns whether any inline rule declares a trigger outside `ignored`.
+///
+/// Text rules can use this to keep their own syntax characters on the fast
+/// path while still yielding to extension rules with new trigger characters.
+pub fn InlineContext::has_inline_triggers_other_than(
+  self : InlineContext,
+  ignored : String,
+) -> Bool {
+  for i in 0..<self.inline_trigger_chars.length() {
+    if !contains_char(ignored, char_at(self.inline_trigger_chars, i)) {
       return true
     }
   }
@@ -203,12 +221,12 @@ pub fn InlineContext::has_inline_trigger_at(
 ///|
 /// Returns parser services for nested parsing from an inline rule.
 pub fn InlineContext::services(self : InlineContext) -> ParserServices {
-  let plan = PreparedRulePlan(self.registry)
   ParserServices(
     self.registry,
-    plan,
+    self.plan,
     self.inline_rules,
     self.inline_mode,
+    self.inline_trigger_chars,
     self.state,
   )
 }
@@ -223,8 +241,10 @@ pub fn ParserServices::parse_inline(
   parse_inlines_with_rules(
     text,
     self.registry,
+    self.plan,
     self.inline_rules,
     self.inline_mode,
+    self.inline_trigger_chars,
     sink,
     self.state,
   )

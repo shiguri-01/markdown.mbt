@@ -16,6 +16,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:fenced_code"),
       priority=90,
+      triggers="`~",
       fenced_code_block,
     ),
   )
@@ -23,6 +24,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:indented_code"),
       priority=80,
+      triggers=" ",
       indented_code_block,
     ),
   )
@@ -30,6 +32,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:thematic_break"),
       priority=70,
+      triggers="*-_",
       thematic_break_block,
     ),
   )
@@ -44,6 +47,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:html"),
       priority=65,
+      triggers="<",
       html_block,
     ),
   )
@@ -51,6 +55,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:atx_heading"),
       priority=60,
+      triggers="#",
       atx_heading_block,
     ),
   )
@@ -58,6 +63,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:block_quote"),
       priority=50,
+      triggers=">",
       blockquote_block,
     ),
   )
@@ -65,6 +71,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:list"),
       priority=40,
+      triggers="-+*0123456789",
       list_block,
     ),
   )
@@ -72,6 +79,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::block(
       @markdown.RuleName::raw("cm:block:reference_definition"),
       priority=10,
+      triggers="[",
       reference_definition_block,
     ),
   )
@@ -86,6 +94,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:image"),
       priority=90,
+      triggers="!",
       image_inline,
     ),
   )
@@ -93,6 +102,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:link"),
       priority=80,
+      triggers="[",
       link_inline,
     ),
   )
@@ -100,6 +110,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:autolink"),
       priority=75,
+      triggers="<",
       autolink_inline,
     ),
   )
@@ -107,6 +118,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:raw_html"),
       priority=74,
+      triggers="<",
       raw_html_inline,
     ),
   )
@@ -114,6 +126,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:entity"),
       priority=73,
+      triggers="&",
       entity_inline,
     ),
   )
@@ -121,6 +134,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:code_span"),
       priority=70,
+      triggers="`",
       code_span_inline,
     ),
   )
@@ -128,6 +142,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::delimiter(
       @markdown.RuleName::raw("cm:delimiter:emphasis"),
       priority=60,
+      triggers="*_",
       emphasis_delimiter,
     ),
   )
@@ -135,6 +150,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:hard_break"),
       priority=45,
+      triggers=" \\",
       hard_break_inline,
     ),
   )
@@ -142,6 +158,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:escape"),
       priority=40,
+      triggers="\\",
       escape_inline,
     ),
   )
@@ -149,6 +166,7 @@ pub fn rule() -> @markdown.Rule {
     @markdown.Rule::inline(
       @markdown.RuleName::raw("cm:inline:soft_break"),
       priority=20,
+      triggers="\n",
       soft_break_inline,
     ),
   )
