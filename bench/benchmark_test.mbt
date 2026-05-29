@@ -276,6 +276,16 @@ test "markdown processing speed" (b : @bench.T) {
     @commonmark.rule().extend(many_inline_rules_rule(50)),
   )
   b.bench(
+    name="setup/commonmark_rule",
+    fn() { b.keep(@commonmark.rule()) },
+    count=10,
+  )
+  b.bench(
+    name="setup/processor_commonmark",
+    fn() { b.keep(@markdown.Processor(@commonmark.rule())) },
+    count=10,
+  )
+  b.bench(
     name="micro/plain_single/1mb",
     fn() { b.keep(parse_event_count_with(commonmark, one_mb_single_paragraph)) },
     count=10,
