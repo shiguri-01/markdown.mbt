@@ -40,46 +40,73 @@ fn task_list_core(downstream : Sink) -> Sink {
 
 ///|
 fn emit_task_item_buffer(events : Array[Event], sink : Sink) -> Unit {
-  let checked = detect_and_strip_task_marker(events)
-  match checked {
-    Some(value) => emit_task_item_with_attr(events, value, sink)
-    None =>
-      for event in events {
-        sink.emit(event)
-      }
+  mark_task_items(events)
+  for event in events {
+    sink.emit(event)
   }
 }
 
 ///|
-fn emit_task_item_with_attr(
-  events : Array[Event],
-  checked : Bool,
-  sink : Sink,
-) -> Unit {
+fn mark_task_items(events : Array[Event]) -> Unit {
   for i in 0..<events.length() {
     match events[i] {
       @markdown.Enter(el) if i == 0 && el.tag().to_string() == "cm:item" =>
-        sink.emit(
-          @markdown.Enter(
-            @markdown.Element::with_attrs(
-              el.tag(),
-              attrs_with(
-                el.attrs(),
-                attr("gfm:checked", if checked { "true" } else { "false" }),
-              ),
-              range=el.range(),
-            ),
-          ),
-        )
-      _ => sink.emit(events[i])
+        match detect_and_strip_task_marker(events, i, events.length()) {
+          Some(checked) => events[i] = task_item_enter(el, checked)
+          None => ()
+        }
+      @markdown.Enter(el) if el.tag().to_string() == "cm:item" => {
+        let end = matching_item_end(events, i)
+        match detect_and_strip_task_marker(events, i, end) {
+          Some(checked) => events[i] = task_item_enter(el, checked)
+          None => ()
+        }
+      }
+      _ => ()
     }
   }
 }
 
 ///|
-fn detect_and_strip_task_marker(events : Array[Event]) -> Bool? {
+fn task_item_enter(el : @markdown.Element, checked : Bool) -> Event {
+  @markdown.Enter(
+    @markdown.Element::with_attrs(
+      el.tag(),
+      attrs_with(
+        el.attrs(),
+        attr("gfm:checked", if checked { "true" } else { "false" }),
+      ),
+      range=el.range(),
+    ),
+  )
+}
+
+///|
+fn matching_item_end(events : Array[Event], start : Int) -> Int {
+  let mut depth = 0
+  for i in start..<events.length() {
+    match events[i] {
+      @markdown.Enter(_) => depth = depth + 1
+      @markdown.Exit(_) => {
+        depth = depth - 1
+        if depth == 0 {
+          return i + 1
+        }
+      }
+      _ => ()
+    }
+  }
+  events.length()
+}
+
+///|
+fn detect_and_strip_task_marker(
+  events : Array[Event],
+  start : Int,
+  end : Int,
+) -> Bool? {
   let mut item_depth = 0
-  for i in 0..<events.length() {
+  for i in start..<end {
     match events[i] {
       @markdown.Enter(_) => item_depth = item_depth + 1
       @markdown.Exit(_) => item_depth = item_depth - 1
@@ -91,7 +118,7 @@ fn detect_and_strip_task_marker(events : Array[Event]) -> Bool? {
               return Some(result.checked)
             }
             None if text == "[" =>
-              match detect_split_task_marker(events, i) {
+              match detect_split_task_marker(events, i, end) {
                 Some(value) => return Some(value)
                 None => return None
               }
@@ -105,11 +132,15 @@ fn detect_and_strip_task_marker(events : Array[Event]) -> Bool? {
 }
 
 ///|
-fn detect_split_task_marker(events : Array[Event], start : Int) -> Bool? {
+fn detect_split_task_marker(
+  events : Array[Event],
+  start : Int,
+  end : Int,
+) -> Bool? {
   let mut text = "["
   let used : Array[Int] = [start]
   let mut i = start + 1
-  while i < events.length() && text.length() < 5 {
+  while i < end && text.length() < 5 {
     match events[i] {
       @markdown.Text(next) => {
         text = text + next

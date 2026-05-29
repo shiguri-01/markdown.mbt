@@ -10,7 +10,7 @@ test "gfm strikethrough renders del" {
 test "gfm task list items render disabled checkboxes" {
   assert_eq(
     render_html(@gfm.rule(), "- [x] done\n- [ ] todo\n"),
-    "<ul>\n<li><input type=\"checkbox\" disabled=\"\" checked=\"\" /> done</li>\n<li><input type=\"checkbox\" disabled=\"\" /> todo</li>\n</ul>\n",
+    "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> todo</li>\n</ul>\n",
   )
 }
 

@@ -9,10 +9,21 @@ priv struct AutolinkMatch {
 ///|
 fn extended_autolink_core(downstream : Sink) -> Sink {
   let mut skip_depth = 0
+  let mut pending : String? = None
+  fn flush() -> Unit {
+    match pending {
+      Some(text) => {
+        emit_extended_autolink_text(text, downstream)
+        pending = None
+      }
+      None => ()
+    }
+  }
   Sink(
     fn(event) {
       match event {
         @markdown.Enter(el) => {
+          flush()
           let tag = el.tag().to_string()
           if tag == "cm:link" || tag == "cm:image" || tag == "cm:code_span" {
             skip_depth = skip_depth + 1
@@ -20,6 +31,7 @@ fn extended_autolink_core(downstream : Sink) -> Sink {
           downstream.emit(event)
         }
         @markdown.Exit(tag) => {
+          flush()
           let name = tag.to_string()
           downstream.emit(event)
           if name == "cm:link" || name == "cm:image" || name == "cm:code_span" {
@@ -30,12 +42,21 @@ fn extended_autolink_core(downstream : Sink) -> Sink {
           if skip_depth > 0 {
             downstream.emit(event)
           } else {
-            emit_extended_autolink_text(text, downstream)
+            match pending {
+              Some(prev) => pending = Some(prev + text)
+              None => pending = Some(text)
+            }
           }
-        _ => downstream.emit(event)
+        _ => {
+          flush()
+          downstream.emit(event)
+        }
       }
     },
-    finish=fn() { downstream.finish() },
+    finish=fn() {
+      flush()
+      downstream.finish()
+    },
   )
 }
 
@@ -85,6 +106,9 @@ fn autolink_at(text : String, start : Int) -> AutolinkMatch? {
   }
   if has_prefix_at(text, "https://", start) {
     return url_autolink_at(text, start, start + 8, "")
+  }
+  if has_prefix_at(text, "ftp://", start) {
+    return url_autolink_at(text, start, start + 6, "")
   }
   if has_prefix_at(text, "mailto:", start) {
     return scheme_email_autolink_at(text, start, start + 7, "mailto")
@@ -241,6 +265,10 @@ fn valid_domain(text : String, start : Int, end : Int) -> Bool {
       if i == last_segment_start {
         return false
       }
+      if !is_ascii_alnum(char_at(text, last_segment_start)) ||
+        !is_ascii_alnum(char_at(text, i - 1)) {
+        return false
+      }
       prev_segment_start = last_segment_start
       last_segment_start = i + 1
       segment_count = segment_count + 1
@@ -296,10 +324,11 @@ fn trim_autolink_end(text : String, start : Int, end : Int) -> Int {
         closing_parens_exceed_opening(text, start, out) {
     out = out - 1
   }
-  if out > start &&
-    char_at(text, out - 1) == ';' &&
-    looks_like_entity_suffix(text, start, out) {
-    out = out - 1
+  if out > start && char_at(text, out - 1) == ';' {
+    let entity = entity_suffix_start(text, start, out)
+    if entity >= start {
+      out = entity
+    }
   }
   out
 }
@@ -331,11 +360,15 @@ fn closing_parens_exceed_opening(text : String, start : Int, end : Int) -> Bool 
 }
 
 ///|
-fn looks_like_entity_suffix(text : String, start : Int, end : Int) -> Bool {
+fn entity_suffix_start(text : String, start : Int, end : Int) -> Int {
   let mut i = end - 2
-  guard i >= start && is_ascii_alnum(char_at(text, i)) else { false }
+  guard i >= start && is_ascii_alnum(char_at(text, i)) else { -1 }
   while i >= start && is_ascii_alnum(char_at(text, i)) {
     i = i - 1
   }
-  i >= start && char_at(text, i) == '&'
+  if i >= start && char_at(text, i) == '&' {
+    i
+  } else {
+    -1
+  }
 }

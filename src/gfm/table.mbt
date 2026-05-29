@@ -178,7 +178,7 @@ fn parse_delimiter_cell(cell : String) -> String? {
     hyphens = hyphens + 1
     i = i + 1
   }
-  guard hyphens >= 3 else { None }
+  guard hyphens >= 1 else { None }
   let right = if i < text.length() && char_at(text, i) == ':' {
     i = i + 1
     true

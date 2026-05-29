@@ -3,6 +3,7 @@ import {
   "moonbitlang/core/json",
   "shiguri/markdown" @markdown,
   "shiguri/markdown/commonmark" @commonmark,
+  "shiguri/markdown/gfm" @gfm,
 }
 
 options(
@@ -12,6 +13,11 @@ options(
       "input": "../testdata/commonmark-0.31.2-spec.json",
       "output": "commonmark_spec_json.mbt",
       "command": ":embed -i $input -o $output --name commonmark_spec_json",
+    },
+    {
+      "input": "../testdata/gfm-0.29-spec.json",
+      "output": "gfm_spec_json.mbt",
+      "command": ":embed -i $input -o $output --name gfm_spec_json",
     },
   ],
 )

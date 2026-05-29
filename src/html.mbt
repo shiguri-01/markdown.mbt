@@ -111,11 +111,13 @@ fn Html::write_pending_task_checkbox(self : Html) -> Unit {
 
 ///|
 fn Html::write_task_checkbox(self : Html, checked : Bool) -> Unit {
-  self.out.write_string("<input type=\"checkbox\" disabled=\"\"")
   if checked {
-    self.out.write_string(" checked=\"\"")
+    self.out.write_string(
+      "<input checked=\"\" disabled=\"\" type=\"checkbox\"> ",
+    )
+  } else {
+    self.out.write_string("<input disabled=\"\" type=\"checkbox\"> ")
   }
-  self.out.write_string(" /> ")
 }
 
 ///|

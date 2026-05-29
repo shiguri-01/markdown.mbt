@@ -10,8 +10,10 @@ struct CommonMarkExample {
 
 ///|
 struct ConformanceOptions {
+  dialect : String
   section : String?
   example : Int?
+  extensions_only : Bool
   failed_only : Bool
   format_json : Bool
   show_help : Bool
@@ -38,7 +40,7 @@ fn main {
     print_help()
     return
   }
-  let examples = load_examples()
+  let examples = load_examples(options.dialect)
   let results = run_examples(examples, options)
   if options.format_json {
     print_json_report(results)
@@ -49,14 +51,27 @@ fn main {
 
 ///|
 fn parse_args(args : Array[String]) -> ConformanceOptions {
+  let mut dialect = "commonmark"
   let mut section : String? = None
   let mut example : Int? = None
+  let mut extensions_only = false
   let mut failed_only = false
   let mut format_json = false
   let mut show_help = false
   let mut i = 1
   while i < args.length() {
     match args[i] {
+      "--dialect" => {
+        if i + 1 >= args.length() {
+          abort("--dialect requires commonmark or gfm")
+        }
+        if args[i + 1] == "commonmark" || args[i + 1] == "gfm" {
+          dialect = args[i + 1]
+        } else {
+          abort("--dialect must be commonmark or gfm")
+        }
+        i = i + 2
+      }
       "--section" => {
         if i + 1 >= args.length() {
           abort("--section requires a section name")
@@ -73,6 +88,10 @@ fn parse_args(args : Array[String]) -> ConformanceOptions {
       }
       "--failed" => {
         failed_only = true
+        i = i + 1
+      }
+      "--extensions-only" => {
+        extensions_only = true
         i = i + 1
       }
       "--format" => {
@@ -95,7 +114,7 @@ fn parse_args(args : Array[String]) -> ConformanceOptions {
       other => abort("unknown option: " + other)
     }
   }
-  { section, example, failed_only, format_json, show_help }
+  { dialect, section, example, extensions_only, failed_only, format_json, show_help }
 }
 
 ///|
@@ -116,28 +135,35 @@ fn parse_positive_int(value : String, option : String) -> Int {
 
 ///|
 fn print_help() -> Unit {
-  println("CommonMark 0.31.2 conformance report")
+  println("Markdown conformance report")
   println("")
   println("Usage:")
   println("  moon -C conformance run . [options]")
   println("")
   println("Options:")
+  println("  --dialect NAME     Run commonmark or gfm")
   println("  --section NAME     Run only examples from a section")
   println("  --example N        Run only one example")
+  println("  --extensions-only  Run only GFM extension sections")
   println("  --failed           Print failed examples")
   println("  --format json      Emit machine-readable JSON")
   println("  -h, --help         Show this help")
 }
 
 ///|
-fn load_examples() -> Array[CommonMarkExample] {
-  let parsed = try @json.parse(commonmark_spec_json) catch {
-    _ => abort("failed to parse CommonMark spec JSON")
+fn load_examples(dialect : String) -> Array[CommonMarkExample] {
+  let spec_json = if dialect == "gfm" {
+    gfm_spec_json
+  } else {
+    commonmark_spec_json
+  }
+  let parsed = try @json.parse(spec_json) catch {
+    _ => abort("failed to parse spec JSON")
   } noraise {
     value => value
   }
   try @json.from_json(parsed) catch {
-    _ => abort("failed to decode CommonMark spec JSON")
+    _ => abort("failed to decode spec JSON")
   } noraise {
     examples => examples
   }
@@ -152,10 +178,12 @@ fn run_examples(
   for example in examples {
     if should_run_example(example, options) {
       let html = @markdown.Html()
-      @markdown.Processor(@commonmark.rule()).parse(
-        example.markdown,
-        html.sink(),
-      )
+      let rule = if options.dialect == "gfm" {
+        @gfm.rule()
+      } else {
+        @commonmark.rule()
+      }
+      @markdown.Processor(rule).parse(example.markdown, html.sink())
       let actual = html.to_string()
       results.push({ example, actual })
     }
@@ -171,6 +199,9 @@ fn should_run_example(
   match options.section {
     Some(section) => if example.section != section { return false }
     None => ()
+  }
+  if options.extensions_only && !example.section.contains("(extension)") {
+    return false
   }
   match options.example {
     Some(number) => example.example == number
@@ -191,7 +222,8 @@ fn print_text_report(
     passed = passed + report.passed
   }
   println(
-    "CommonMark 0.31.2: " +
+    conformance_label(options) +
+    ": " +
     passed.to_string() +
     "/" +
     total.to_string() +
@@ -212,6 +244,19 @@ fn print_text_report(
   }
   if options.failed_only || options.example is Some(_) {
     print_failures(results)
+  }
+}
+
+///|
+fn conformance_label(options : ConformanceOptions) -> String {
+  if options.dialect == "gfm" {
+    if options.extensions_only {
+      "GFM 0.29 extensions"
+    } else {
+      "GFM 0.29"
+    }
+  } else {
+    "CommonMark 0.31.2"
   }
 }
 
