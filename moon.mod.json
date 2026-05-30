@@ -7,5 +7,6 @@
   "license": "Apache-2.0",
   "keywords": ["markdown", "commonmark", "parser", "html"],
   "supported-targets": ["wasm", "wasm-gc", "js", "native"],
-  "description": "Event-driven Markdown parser for MoonBit with CommonMark parsing, HTML rendering, transforms, and AST helpers."
+  "description": "Event-driven Markdown parser for MoonBit with CommonMark parsing, HTML rendering, transforms, and AST helpers.",
+  "exclude": ["src/tools"]
 }

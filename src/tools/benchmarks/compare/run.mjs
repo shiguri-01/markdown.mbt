@@ -5,29 +5,46 @@ import process from "node:process";
 import MarkdownIt from "markdown-it";
 
 const root = process.cwd();
-const outDir = path.join(root, "bench", "compare", ".generated");
+const markdownHtmlPackage = path.join(
+  root,
+  "src",
+  "tools",
+  "benchmarks",
+  "compare",
+  "markdown_html",
+);
+const outDir = path.join(
+  root,
+  "src",
+  "tools",
+  "benchmarks",
+  "compare",
+  ".generated",
+);
 const fixtureDir = path.join(outDir, "fixtures");
 const moonNativeRunner = path.join(
   root,
-  "bench",
-  "compare",
-  "markdown_html",
   "_build",
   "native",
   "release",
   "build",
-  "markdown-html.exe",
+  "tools",
+  "benchmarks",
+  "compare",
+  "markdown_html",
+  "markdown_html.exe",
 );
 const moonWasmRunner = path.join(
   root,
-  "bench",
-  "compare",
-  "markdown_html",
   "_build",
   "wasm-gc",
   "release",
   "build",
-  "markdown-html.wasm",
+  "tools",
+  "benchmarks",
+  "compare",
+  "markdown_html",
+  "markdown_html.wasm",
 );
 
 function readmeLikeDocumentSections(count) {
@@ -154,17 +171,15 @@ function runCapture(command, args) {
 
 function buildMoonRunners() {
   run("moon", [
-    "-C",
-    path.join(root, "bench", "compare", "markdown_html"),
     "build",
+    markdownHtmlPackage,
     "--target",
     "native",
     "--release",
   ]);
   run("moon", [
-    "-C",
-    path.join(root, "bench", "compare", "markdown_html"),
     "build",
+    markdownHtmlPackage,
     "--target",
     "wasm-gc",
     "--release",

@@ -115,7 +115,15 @@ fn parse_args(args : Array[String]) -> ConformanceOptions {
       other => abort("unknown option: " + other)
     }
   }
-  { dialect, section, example, extensions_only, failed_only, format_json, show_help }
+  {
+    dialect,
+    section,
+    example,
+    extensions_only,
+    failed_only,
+    format_json,
+    show_help,
+  }
 }
 
 ///|
@@ -139,7 +147,7 @@ fn print_help() -> Unit {
   println("Markdown conformance report")
   println("")
   println("Usage:")
-  println("  moon -C conformance run . [options]")
+  println("  moon run src/tools/conformance [options]")
   println("")
   println("Options:")
   println("  --dialect NAME     Run commonmark or gfm")
@@ -189,7 +197,10 @@ fn run_examples(
 }
 
 ///|
-fn conformance_rule(dialect : String, example : CommonMarkExample) -> @markdown.Rule {
+fn conformance_rule(
+  dialect : String,
+  example : CommonMarkExample,
+) -> @markdown.Rule {
   if dialect == "gfm" {
     gfm_example_rule(example)
   } else {

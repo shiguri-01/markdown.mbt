@@ -5,10 +5,6 @@ _build/
 .mooncakes/
 .moonagent/
 
-# Generated files
-conformance/commonmark_spec_json.mbt
-bench/compare/.generated/
-
 # Local/editor noise
 *.swp
 *.swo

@@ -1,9 +1,0 @@
-{
-  "name": "shiguri/markdown-conformance",
-  "version": "0.1.0",
-  "deps": {
-    "shiguri/markdown": {
-      "path": ".."
-    }
-  }
-}

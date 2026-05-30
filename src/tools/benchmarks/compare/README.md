@@ -17,7 +17,8 @@ markdown-compare
 ```
 
 The runner builds the MoonBit HTML renderer once in native release mode,
-generates Markdown fixture files under `bench/compare/.generated/fixtures`,
+generates Markdown fixture files under
+`src/tools/benchmarks/compare/.generated/fixtures`,
 then times each parser against the same input. `markdown.mbt/native` and
 `markdown.mbt/wasm-gc` are launched once per fixture and time warmup/repeat
 iterations inside that process, so per-iteration process startup is not

@@ -6,7 +6,8 @@ Run from this directory:
 moon bench --release
 ```
 
-For profiling, use the shared `bench/profile` workload from the repository root:
+For profiling, use the shared `src/tools/benchmarks/profile` workload from the
+repository root:
 
 ```bash
 just prof-wasm-gc

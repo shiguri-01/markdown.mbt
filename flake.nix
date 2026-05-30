@@ -70,7 +70,7 @@
           markdown-compare = pkgs.buildNpmPackage {
             pname = "markdown-compare";
             version = "0.1.0";
-            src = ./bench/compare;
+            src = ./src/tools/benchmarks/compare;
             npmDepsHash = "sha256-/svFFUs9DK0knLzAm2GabSEBLfw26Bt3h5fnJ7j08xA=";
             dontNpmBuild = true;
             nativeBuildInputs = [

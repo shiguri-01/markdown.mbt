@@ -2,14 +2,14 @@
 
 This script analyzes CommonMark 0.31.2 conformance separately from the regular
 unit test suite. It uses the official JSON fixture vendored at
-`../testdata/commonmark-0.31.2-spec.json`.
+`../../../testdata/commonmark-0.31.2-spec.json`.
 
 ```bash
-moon -C conformance run .
-moon -C conformance run . --failed
-moon -C conformance run . --section Links --failed
-moon -C conformance run . --example 207
-moon -C conformance run . --format json
+moon run src/tools/conformance
+moon run src/tools/conformance --failed
+moon run src/tools/conformance --section Links --failed
+moon run src/tools/conformance --example 207
+moon run src/tools/conformance --format json
 ```
 
 The default report shows pass counts by CommonMark section. Use `--failed` or
