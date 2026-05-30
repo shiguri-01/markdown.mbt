@@ -1,8 +1,27 @@
 #!/usr/bin/env bun
-import fs from "node:fs";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import MarkdownIt from "markdown-it";
+
+type Args = {
+  repeats: number;
+  warmups: number;
+};
+
+type WrittenFixture = {
+  name: string;
+  input: string;
+  file: string;
+  bytes: number;
+};
+
+type ResultRow = {
+  parser: string;
+  fixture: string;
+  bytes: number;
+  times: number[];
+};
 
 const root = process.cwd();
 const markdownHtmlPackage = path.join(
@@ -47,8 +66,8 @@ const moonWasmRunner = path.join(
   "markdown_html.wasm",
 );
 
-function readmeLikeDocumentSections(count) {
-  const out = [];
+function readmeLikeDocumentSections(count: number): string {
+  const out: string[] = [];
   out.push("# markdown.mbt\n\n");
   out.push(
     "A MoonBit Markdown parser with CommonMark-compatible block and inline handling, " +
@@ -78,7 +97,7 @@ function readmeLikeDocumentSections(count) {
   return out.join("");
 }
 
-function issueThreadDocumentComments(count) {
+function issueThreadDocumentComments(count: number): string {
   const out = ["# Parser regression discussion\n\n"];
   for (let i = 0; i < count; i += 1) {
     out.push(`## Comment ${i}\n\n`);
@@ -100,7 +119,7 @@ function issueThreadDocumentComments(count) {
   return out.join("");
 }
 
-function fixtures() {
+function fixtures(): Map<string, string> {
   return new Map([
     ["readme_like_16kb", readmeLikeDocumentSections(36)],
     ["readme_like_200kb", readmeLikeDocumentSections(460)],
@@ -109,7 +128,7 @@ function fixtures() {
   ]);
 }
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]): Args {
   let repeats = 10;
   let warmups = 3;
   for (let i = 2; i < argv.length; i += 1) {
@@ -141,35 +160,44 @@ function parseArgs(argv) {
   return { repeats, warmups };
 }
 
-function run(command, args) {
-  const result = Bun.spawnSync([command, ...args], {
+function decode(bytes: Uint8Array): string {
+  return new TextDecoder().decode(bytes);
+}
+
+function run(command: string, args: string[]): void {
+  const result = Bun.spawnSync({
+    cmd: [command, ...args],
     cwd: root,
     stdout: "ignore",
     stderr: "pipe",
-    env: { ...process.env, LC_ALL: "C" },
+    env: { ...Bun.env, LC_ALL: "C" },
   });
   if (!result.success) {
-    const stderr = new TextDecoder().decode(result.stderr);
-    throw new Error(`${command} failed with exit code ${result.exitCode}\n${stderr}`);
+    throw new Error(`${command} failed with exit code ${result.exitCode}\n${decode(result.stderr)}`);
   }
 }
 
-function runCapture(command, args) {
-  const result = Bun.spawnSync([command, ...args], {
+function runCapture(command: string, args: string[]): string {
+  const result = Bun.spawnSync({
+    cmd: [command, ...args],
     cwd: root,
     stdout: "pipe",
     stderr: "pipe",
-    env: { ...process.env, LC_ALL: "C" },
+    env: { ...Bun.env, LC_ALL: "C" },
   });
-  const stdout = new TextDecoder().decode(result.stdout);
   if (!result.success) {
-    const stderr = new TextDecoder().decode(result.stderr);
-    throw new Error(`${command} failed with exit code ${result.exitCode}\n${stderr}`);
+    throw new Error(`${command} failed with exit code ${result.exitCode}\n${decode(result.stderr)}`);
   }
-  return stdout;
+  return decode(result.stdout);
 }
 
-function buildMoonRunners() {
+async function assertFileExists(file: string, label: string): Promise<void> {
+  if (!(await Bun.file(file).exists())) {
+    throw new Error(`${label} was not built at ${file}`);
+  }
+}
+
+async function buildMoonRunners(): Promise<void> {
   run("moon", [
     "build",
     markdownHtmlPackage,
@@ -184,19 +212,20 @@ function buildMoonRunners() {
     "wasm-gc",
     "--release",
   ]);
-  if (!fs.existsSync(moonNativeRunner)) {
-    throw new Error(`MoonBit native runner was not built at ${moonNativeRunner}`);
-  }
-  if (!fs.existsSync(moonWasmRunner)) {
-    throw new Error(`MoonBit wasm-gc runner was not built at ${moonWasmRunner}`);
-  }
+  await assertFileExists(moonNativeRunner, "MoonBit native runner");
+  await assertFileExists(moonWasmRunner, "MoonBit wasm-gc runner");
 }
 
-function timedExternal(command, args, repeats, warmups) {
+function timedExternal(
+  command: string,
+  args: string[],
+  repeats: number,
+  warmups: number,
+): number[] {
   for (let i = 0; i < warmups; i += 1) {
     run(command, args);
   }
-  const times = [];
+  const times: number[] = [];
   for (let i = 0; i < repeats; i += 1) {
     const start = Bun.nanoseconds();
     run(command, args);
@@ -205,7 +234,13 @@ function timedExternal(command, args, repeats, warmups) {
   return times;
 }
 
-function timedMoonbitRunner(command, args, fixture, repeats, warmups) {
+function timedMoonbitRunner(
+  command: string,
+  args: string[],
+  fixture: string,
+  repeats: number,
+  warmups: number,
+): number[] {
   const stdout = runCapture(command, [
     ...args,
     "--bench",
@@ -225,14 +260,14 @@ function timedMoonbitRunner(command, args, fixture, repeats, warmups) {
   });
 }
 
-function timedBunMarkdown(input, repeats, warmups) {
+function timedBunMarkdown(input: string, repeats: number, warmups: number): number[] {
   for (let i = 0; i < warmups; i += 1) {
     const html = Bun.markdown.html(input);
     if (html.length === 0) {
       throw new Error("Bun.markdown produced empty output");
     }
   }
-  const times = [];
+  const times: number[] = [];
   for (let i = 0; i < repeats; i += 1) {
     const start = Bun.nanoseconds();
     const html = Bun.markdown.html(input);
@@ -244,14 +279,19 @@ function timedBunMarkdown(input, repeats, warmups) {
   return times;
 }
 
-function timedMarkdownIt(md, input, repeats, warmups) {
+function timedMarkdownIt(
+  md: MarkdownIt,
+  input: string,
+  repeats: number,
+  warmups: number,
+): number[] {
   for (let i = 0; i < warmups; i += 1) {
     const html = md.render(input);
     if (html.length === 0) {
       throw new Error("markdown-it produced empty output");
     }
   }
-  const times = [];
+  const times: number[] = [];
   for (let i = 0; i < repeats; i += 1) {
     const start = Bun.nanoseconds();
     const html = md.render(input);
@@ -263,11 +303,11 @@ function timedMarkdownIt(md, input, repeats, warmups) {
   return times;
 }
 
-function mean(values) {
+function mean(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function printTable(rows) {
+function printTable(rows: ResultRow[]): void {
   console.log("| parser | fixture | bytes | mean ms | min ms | max ms |");
   console.log("| --- | --- | ---: | ---: | ---: | ---: |");
   for (const row of rows) {
@@ -278,28 +318,28 @@ function printTable(rows) {
   }
 }
 
-function writeFixtures(sourceFixtures) {
-  fs.mkdirSync(fixtureDir, { recursive: true });
-  const written = [];
+async function writeFixtures(sourceFixtures: Map<string, string>): Promise<WrittenFixture[]> {
+  await mkdir(fixtureDir, { recursive: true });
+  const written: WrittenFixture[] = [];
   for (const [name, input] of sourceFixtures) {
     const file = path.join(fixtureDir, `${name}.md`);
-    fs.writeFileSync(file, input, "utf8");
-    written.push({ name, input, file, bytes: Buffer.byteLength(input) });
+    await Bun.write(file, input);
+    written.push({ name, input, file, bytes: new Blob([input]).size });
   }
   return written;
 }
 
-function main() {
+async function main(): Promise<void> {
   const { repeats, warmups } = parseArgs(process.argv);
-  buildMoonRunners();
-  const sourceFixtures = writeFixtures(fixtures());
+  await buildMoonRunners();
+  const sourceFixtures = await writeFixtures(fixtures());
   const md = new MarkdownIt("commonmark", {
     html: true,
     linkify: false,
     typographer: false,
   });
 
-  const rows = [];
+  const rows: ResultRow[] = [];
   for (const fixture of sourceFixtures) {
     rows.push({
       parser: "markdown.mbt/native",
@@ -341,4 +381,4 @@ function main() {
   printTable(rows);
 }
 
-main();
+await main();

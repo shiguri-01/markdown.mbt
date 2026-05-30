@@ -67,19 +67,51 @@
             makeWrapper ${pkgs.nodejs}/bin/node $out/bin/node
             makeWrapper ${pkgs.nodejs}/bin/node $out/bin/node.cmd
           '';
-          markdown-compare = pkgs.buildNpmPackage {
+          compareSrc = pkgs.lib.cleanSourceWith {
+            src = ./src/tools/benchmarks/compare;
+            filter =
+              path: _type:
+              let
+                name = baseNameOf path;
+              in
+              name != ".generated" && name != "node_modules";
+          };
+          markdown-compare-node-modules = pkgs.stdenvNoCC.mkDerivation {
+            pname = "markdown-compare-node-modules";
+            version = "0.1.0";
+            src = compareSrc;
+            nativeBuildInputs = [ pkgs.bun ];
+            dontConfigure = true;
+            buildPhase = ''
+              runHook preBuild
+              bun install --frozen-lockfile --no-progress
+              runHook postBuild
+            '';
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib
+              rm -rf node_modules/.cache node_modules/.bin
+              cp -R node_modules $out/lib/node_modules
+              runHook postInstall
+            '';
+            outputHash = "sha256-G+fp9T/AbKOyh4Kqg8UmVOyREmIocC9vcIJycdRSntg=";
+            outputHashMode = "recursive";
+          };
+          markdown-compare = pkgs.stdenvNoCC.mkDerivation {
             pname = "markdown-compare";
             version = "0.1.0";
-            src = ./src/tools/benchmarks/compare;
-            npmDepsHash = "sha256-/svFFUs9DK0knLzAm2GabSEBLfw26Bt3h5fnJ7j08xA=";
-            dontNpmBuild = true;
+            src = compareSrc;
             nativeBuildInputs = [
               pkgs.makeBinaryWrapper
             ];
-            postInstall = ''
-              rm $out/bin/markdown-compare
+            dontBuild = true;
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/bin $out/lib/markdown-compare
+              cp -R . $out/lib/markdown-compare
+              ln -s ${markdown-compare-node-modules}/lib/node_modules $out/lib/markdown-compare/node_modules
               makeWrapper ${pkgs.bun}/bin/bun $out/bin/markdown-compare \
-                --add-flags $out/lib/node_modules/markdown-compare/run.mjs \
+                --add-flags "run --prefer-offline --no-install $out/lib/markdown-compare/run.ts" \
                 --prefix PATH : ${
                   pkgs.lib.makeBinPath [
                     moonbit-node
@@ -88,6 +120,7 @@
                     pkgs.moonbit-bin.moonbit.latest
                   ]
                 }
+              runHook postInstall
             '';
           };
           basePackages = [
