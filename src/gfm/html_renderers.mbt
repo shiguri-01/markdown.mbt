@@ -24,14 +24,14 @@ fn render_task_item_html(
   el : @markdown.Element,
 ) -> String {
   if writer.starts_with_block_child() {
-    writer <+ "<li>\n"
+    writer.write("<li>\n")
   } else {
-    writer <+ "<li>"
+    writer.write("<li>")
   }
   match attr_value(el.attrs(), "gfm:checked") {
     Some("true") =>
-      writer <+ "<input checked=\"\" disabled=\"\" type=\"checkbox\"> "
-    Some("false") => writer <+ "<input disabled=\"\" type=\"checkbox\"> "
+      writer.write("<input checked=\"\" disabled=\"\" type=\"checkbox\"> ")
+    Some("false") => writer.write("<input disabled=\"\" type=\"checkbox\"> ")
     _ => ()
   }
   "</li>\n"
@@ -42,9 +42,9 @@ fn render_strikethrough_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<del"
+  writer.write("<del")
   writer.write_attrs(el.attrs())
-  writer <+ ">"
+  writer.write(">")
   "</del>"
 }
 
@@ -53,7 +53,7 @@ fn render_table_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer <+ "<table>\n"
+  writer.write("<table>\n")
   "</table>\n"
 }
 
@@ -62,7 +62,7 @@ fn render_thead_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer <+ "<thead>\n"
+  writer.write("<thead>\n")
   "</thead>\n"
 }
 
@@ -71,7 +71,7 @@ fn render_tbody_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer <+ "<tbody>\n"
+  writer.write("<tbody>\n")
   "</tbody>\n"
 }
 
@@ -80,7 +80,7 @@ fn render_tr_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer <+ "<tr>\n"
+  writer.write("<tr>\n")
   "</tr>\n"
 }
 
@@ -89,9 +89,9 @@ fn render_th_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<th"
+  writer.write("<th")
   writer.write_attrs(el.attrs())
-  writer <+ ">"
+  writer.write(">")
   "</th>\n"
 }
 
@@ -100,9 +100,9 @@ fn render_td_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<td"
+  writer.write("<td")
   writer.write_attrs(el.attrs())
-  writer <+ ">"
+  writer.write(">")
   "</td>\n"
 }
 

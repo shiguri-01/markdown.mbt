@@ -15,12 +15,6 @@ pub fn HtmlWriter::write(self : HtmlWriter, value : String) -> Unit {
 }
 
 ///|
-/// Writes raw HTML.
-pub fn HtmlWriter::write_string(self : HtmlWriter, value : String) -> Unit {
-  self.write(value)
-}
-
-///|
 /// Returns whether the current element starts with a block child.
 pub fn HtmlWriter::starts_with_block_child(self : HtmlWriter) -> Bool {
   self.block_child

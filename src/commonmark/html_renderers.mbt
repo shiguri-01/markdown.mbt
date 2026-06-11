@@ -22,11 +22,11 @@ fn render_paragraph_html(
   el : @markdown.Element,
 ) -> String {
   if el.attrs().length() == 0 {
-    writer <+ "<p>"
+    writer.write("<p>")
   } else {
-    writer <+ "<p"
+    writer.write("<p")
     writer.write_attrs(el.attrs())
-    writer <+ ">"
+    writer.write(">")
   }
   "</p>\n"
 }
@@ -37,11 +37,11 @@ fn render_strong_html(
   el : @markdown.Element,
 ) -> String {
   if el.attrs().length() == 0 {
-    writer <+ "<strong>"
+    writer.write("<strong>")
   } else {
-    writer <+ "<strong"
+    writer.write("<strong")
     writer.write_attrs(el.attrs())
-    writer <+ ">"
+    writer.write(">")
   }
   "</strong>"
 }
@@ -52,11 +52,11 @@ fn render_emphasis_html(
   el : @markdown.Element,
 ) -> String {
   if el.attrs().length() == 0 {
-    writer <+ "<em>"
+    writer.write("<em>")
   } else {
-    writer <+ "<em"
+    writer.write("<em")
     writer.write_attrs(el.attrs())
-    writer <+ ">"
+    writer.write(">")
   }
   "</em>"
 }
@@ -67,11 +67,11 @@ fn render_code_span_html(
   el : @markdown.Element,
 ) -> String {
   if el.attrs().length() == 0 {
-    writer <+ "<code>"
+    writer.write("<code>")
   } else {
-    writer <+ "<code"
+    writer.write("<code")
     writer.write_attrs(el.attrs())
-    writer <+ ">"
+    writer.write(">")
   }
   "</code>"
 }
@@ -82,11 +82,11 @@ fn render_block_quote_html(
   el : @markdown.Element,
 ) -> String {
   if el.attrs().length() == 0 {
-    writer <+ "<blockquote>\n"
+    writer.write("<blockquote>\n")
   } else {
-    writer <+ "<blockquote"
+    writer.write("<blockquote")
     writer.write_attrs(el.attrs())
-    writer <+ ">\n"
+    writer.write(">\n")
   }
   "</blockquote>\n"
 }
@@ -97,10 +97,10 @@ fn render_heading_html(
   el : @markdown.Element,
 ) -> String {
   let level = attr_value(el.attrs(), "level", "1")
-  writer <+ "<h"
-  writer <+ "\{level}"
+  writer.write("<h")
+  writer.write(level)
   writer.write_attrs_except1(el.attrs(), "level")
-  writer <+ ">"
+  writer.write(">")
   heading_close_html(level)
 }
 
@@ -110,15 +110,15 @@ fn render_list_html(
   el : @markdown.Element,
 ) -> String {
   if attr_value(el.attrs(), "ordered", "false") == "true" {
-    writer <+ "<ol"
+    writer.write("<ol")
     write_ordered_start_attr(writer, el.attrs())
     writer.write_attrs_except2(el.attrs(), "ordered", "start")
-    writer <+ ">\n"
+    writer.write(">\n")
     "</ol>\n"
   } else {
-    writer <+ "<ul"
+    writer.write("<ul")
     writer.write_attrs_except2(el.attrs(), "ordered", "start")
-    writer <+ ">\n"
+    writer.write(">\n")
     "</ul>\n"
   }
 }
@@ -129,9 +129,9 @@ fn render_item_html(
   _el : @markdown.Element,
 ) -> String {
   if writer.starts_with_block_child() {
-    writer <+ "<li>\n"
+    writer.write("<li>\n")
   } else {
-    writer <+ "<li>"
+    writer.write("<li>")
   }
   "</li>\n"
 }
@@ -141,10 +141,10 @@ fn render_code_block_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<pre><code"
+  writer.write("<pre><code")
   write_code_info_attr(writer, el.attrs())
   writer.write_attrs_except1(el.attrs(), "info")
-  writer <+ ">"
+  writer.write(">")
   "</code></pre>\n"
 }
 
@@ -153,12 +153,12 @@ fn render_link_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<a href=\""
+  writer.write("<a href=\"")
   writer.write_escaped(attr_value(el.attrs(), "destination", ""))
-  writer <+ "\""
+  writer.write("\"")
   write_title_attr(writer, el.attrs())
   writer.write_attrs_except2(el.attrs(), "destination", "title")
-  writer <+ ">"
+  writer.write(">")
   "</a>"
 }
 
@@ -167,14 +167,14 @@ fn render_image_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<img src=\""
+  writer.write("<img src=\"")
   writer.write_escaped(attr_value(el.attrs(), "destination", ""))
-  writer <+ "\" alt=\""
+  writer.write("\" alt=\"")
   writer.write_escaped(attr_value(el.attrs(), "alt", ""))
-  writer <+ "\""
+  writer.write("\"")
   write_title_attr(writer, el.attrs())
   writer.write_attrs_except3(el.attrs(), "destination", "alt", "title")
-  writer <+ " />"
+  writer.write(" />")
   ""
 }
 
@@ -183,9 +183,9 @@ fn render_thematic_break_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer <+ "<hr"
+  writer.write("<hr")
   writer.write_attrs(el.attrs())
-  writer <+ " />\n"
+  writer.write(" />\n")
   ""
 }
 
@@ -209,9 +209,9 @@ fn write_title_attr(
 ) -> Unit {
   let title = attr_value(attrs, "title", "")
   if title != "" {
-    writer <+ " title=\""
+    writer.write(" title=\"")
     writer.write_escaped(title)
-    writer <+ "\""
+    writer.write("\"")
   }
 }
 
@@ -222,9 +222,9 @@ fn write_ordered_start_attr(
 ) -> Unit {
   let start = attr_value(attrs, "start", "1")
   if start != "1" {
-    writer <+ " start=\""
+    writer.write(" start=\"")
     writer.write_escaped(start)
-    writer <+ "\""
+    writer.write("\"")
   }
 }
 
@@ -235,8 +235,8 @@ fn write_code_info_attr(
 ) -> Unit {
   let info = attr_value(attrs, "info", "")
   if info != "" {
-    writer <+ " class=\"language-"
+    writer.write(" class=\"language-")
     writer.write_escaped(info)
-    writer <+ "\""
+    writer.write("\"")
   }
 }

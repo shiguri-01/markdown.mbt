@@ -161,7 +161,6 @@ pub fn HtmlWriter::write_attrs_except1(Self, Array[Attr], String) -> Unit
 pub fn HtmlWriter::write_attrs_except2(Self, Array[Attr], String, String) -> Unit
 pub fn HtmlWriter::write_attrs_except3(Self, Array[Attr], String, String, String) -> Unit
 pub fn HtmlWriter::write_escaped(Self, String) -> Unit
-pub fn HtmlWriter::write_string(Self, String) -> Unit
 
 pub struct InlineContext {
   // private fields
