@@ -1,7 +1,7 @@
 ///|
 test "gfm strikethrough renders del" {
   assert_eq(
-    render_html(@gfm.rule(), "before ~~gone~~ after"),
+    render_gfm_html(@gfm.rule(), "before ~~gone~~ after"),
     "<p>before <del>gone</del> after</p>\n",
   )
 }
@@ -9,7 +9,7 @@ test "gfm strikethrough renders del" {
 ///|
 test "gfm task list items render disabled checkboxes" {
   assert_eq(
-    render_html(@gfm.rule(), "- [x] done\n- [ ] todo\n"),
+    render_gfm_html(@gfm.rule(), "- [x] done\n- [ ] todo\n"),
     "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> todo</li>\n</ul>\n",
   )
 }
@@ -17,7 +17,7 @@ test "gfm task list items render disabled checkboxes" {
 ///|
 test "gfm tables render alignments and body rows" {
   assert_eq(
-    render_html(
+    render_gfm_html(
       @gfm.rule(),
       "| left | center | right |\n| :--- | :---: | ---: |\n| a | b | c |\n",
     ),
@@ -28,7 +28,7 @@ test "gfm tables render alignments and body rows" {
 ///|
 test "gfm tables pad missing cells and ignore excess cells" {
   assert_eq(
-    render_html(
+    render_gfm_html(
       @gfm.rule(),
       "| a | b |\n| --- | --- |\n| one |\n| x | y | z |\n",
     ),
@@ -39,7 +39,7 @@ test "gfm tables pad missing cells and ignore excess cells" {
 ///|
 test "gfm extended autolinks render urls and emails" {
   assert_eq(
-    render_html(
+    render_gfm_html(
       @gfm.rule(),
       "Visit www.commonmark.org/help and contact foo@example.com.",
     ),
@@ -50,7 +50,7 @@ test "gfm extended autolinks render urls and emails" {
 ///|
 test "gfm extended autolinks trim trailing punctuation" {
   assert_eq(
-    render_html(@gfm.rule(), "Visit www.commonmark.org."),
+    render_gfm_html(@gfm.rule(), "Visit www.commonmark.org."),
     "<p>Visit <a href=\"http://www.commonmark.org\">www.commonmark.org</a>.</p>\n",
   )
 }
@@ -58,7 +58,7 @@ test "gfm extended autolinks trim trailing punctuation" {
 ///|
 test "gfm tagfilter escapes disallowed raw html tags" {
   assert_eq(
-    render_html(@gfm.rule(), "<strong> <title> <style> <em>\n"),
+    render_gfm_html(@gfm.rule(), "<strong> <title> <style> <em>\n"),
     "<p><strong> &lt;title> &lt;style> <em></p>\n",
   )
 }
@@ -67,14 +67,16 @@ test "gfm tagfilter escapes disallowed raw html tags" {
 test "gfm extensions can be enabled individually" {
   let table_only = @commonmark.rule().extend(@gfm.tables())
   assert_eq(
-    render_html(table_only, "| a |\n| - |\n| b |\n\n~~x~~ www.example.com\n"),
+    render_gfm_html(
+      table_only, "| a |\n| - |\n| b |\n\n~~x~~ www.example.com\n",
+    ),
     "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n<p>~~x~~ www.example.com</p>\n",
   )
   let strike_and_link = @commonmark.rule()
     .extend(@gfm.strikethrough())
     .extend(@gfm.autolinks())
   assert_eq(
-    render_html(strike_and_link, "~~x~~ www.example.com"),
+    render_gfm_html(strike_and_link, "~~x~~ www.example.com"),
     "<p><del>x</del> <a href=\"http://www.example.com\">www.example.com</a></p>\n",
   )
 }
@@ -82,17 +84,35 @@ test "gfm extensions can be enabled individually" {
 ///|
 test "gfm task list and tagfilter extensions can be enabled individually" {
   assert_eq(
-    render_html(
+    render_gfm_html(
       @commonmark.rule().extend(@gfm.task_list_items()),
       "- [x] done\n",
     ),
     "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n</ul>\n",
   )
   assert_eq(
-    render_html(
+    render_gfm_html(
       @commonmark.rule().extend(@gfm.tagfilter()),
       "<script>x</script>\n",
     ),
     "&lt;script>x&lt;/script>\n",
+  )
+}
+
+///|
+test "gfm task list checkbox html belongs to gfm renderers" {
+  assert_eq(
+    render_html(
+      @commonmark.rule().extend(@gfm.task_list_items()),
+      "- [x] done\n",
+    ),
+    "<ul>\n<li>done</li>\n</ul>\n",
+  )
+  assert_eq(
+    render_gfm_html(
+      @commonmark.rule().extend(@gfm.task_list_items()),
+      "- [x] done\n",
+    ),
+    "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n</ul>\n",
   )
 }

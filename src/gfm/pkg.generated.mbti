@@ -8,7 +8,11 @@ import {
 // Values
 pub fn autolinks() -> @markdown.Rule
 
+pub fn extension_renderers() -> @markdown.HtmlRenderers
+
 pub fn extensions() -> @markdown.Rule
+
+pub fn html_renderers() -> @markdown.HtmlRenderers
 
 pub fn rule() -> @markdown.Rule
 

@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn html_renderers() -> @markdown.HtmlRenderers
+
 pub fn rule() -> @markdown.Rule
 
 // Errors

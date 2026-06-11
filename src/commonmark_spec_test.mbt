@@ -826,7 +826,7 @@ fn commonmark_subset_examples() -> Array[CommonMarkSpecExample] {
 
 ///|
 fn render_commonmark(markdown : String) -> String {
-  let html = @markdown.Html()
+  let html = @markdown.Html(@commonmark.html_renderers())
   @markdown.Processor(@commonmark.rule()).parse(markdown, html.sink())
   html.to_string()
 }

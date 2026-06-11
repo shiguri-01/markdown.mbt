@@ -92,7 +92,7 @@ fn readme_like_document_sections(count : Int) -> String {
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html()\n")
+  out.write_string("let html = @markdown.Html(@commonmark.html_renderers())\n")
   out.write_string(
     "@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n",
   )
@@ -257,7 +257,10 @@ fn parse_render_length_with(
   processor : @markdown.Processor,
   input : String,
 ) -> Int {
-  let html = @markdown.Html(size_hint=input.length())
+  let html = @markdown.Html(
+    @commonmark.html_renderers(),
+    size_hint=input.length(),
+  )
   processor.parse(input, html.sink())
   html.to_string().length()
 }

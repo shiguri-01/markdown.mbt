@@ -14,7 +14,10 @@ fn main {
 
 ///|
 fn render_length(processor : @markdown.Processor, input : String) -> Int {
-  let html = @markdown.Html(size_hint=input.length())
+  let html = @markdown.Html(
+    @commonmark.html_renderers(),
+    size_hint=input.length(),
+  )
   processor.parse(input, html.sink())
   html.to_string().length()
 }

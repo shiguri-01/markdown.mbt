@@ -14,7 +14,10 @@ fn main {
     return
   }
   let input = fixture(args[1])
-  let html = @markdown.Html(size_hint=input.length())
+  let html = @markdown.Html(
+    @commonmark.html_renderers(),
+    size_hint=input.length(),
+  )
   @markdown.Processor(@commonmark.rule()).parse(input, html.sink())
   println(html.to_string())
 }
@@ -52,7 +55,10 @@ fn run_bench(name : String, repeats : Int, warmups : Int) -> Unit {
 
 ///|
 fn parse_render_length(input : String) -> Int {
-  let html = @markdown.Html(size_hint=input.length())
+  let html = @markdown.Html(
+    @commonmark.html_renderers(),
+    size_hint=input.length(),
+  )
   @markdown.Processor(@commonmark.rule()).parse(input, html.sink())
   html.to_string().length()
 }
@@ -102,7 +108,7 @@ fn readme_like_document_sections(count : Int) -> String {
   )
   out.write_string("## Installation\n\n")
   out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html()\n")
+  out.write_string("let html = @markdown.Html(@commonmark.html_renderers())\n")
   out.write_string(
     "@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n",
   )

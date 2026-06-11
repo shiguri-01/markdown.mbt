@@ -75,7 +75,7 @@ function readmeLikeDocumentSections(count: number): string {
   );
   out.push("## Installation\n\n");
   out.push("```moonbit\n");
-  out.push("let html = @markdown.Html()\n");
+  out.push("let html = @markdown.Html(@commonmark.html_renderers())\n");
   out.push("@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n");
   out.push("```\n\n");
   out.push("## Features\n\n");

@@ -186,7 +186,7 @@ fn run_examples(
   let results : Array[ConformanceResult] = []
   for example in examples {
     if should_run_example(example, options) {
-      let html = @markdown.Html()
+      let html = @markdown.Html(conformance_renderers(options.dialect))
       let rule = conformance_rule(options.dialect, example)
       @markdown.Processor(rule).parse(example.markdown, html.sink())
       let actual = html.to_string()
@@ -194,6 +194,15 @@ fn run_examples(
     }
   }
   results
+}
+
+///|
+fn conformance_renderers(dialect : String) -> @markdown.HtmlRenderers {
+  if dialect == "gfm" {
+    @gfm.html_renderers()
+  } else {
+    @commonmark.html_renderers()
+  }
 }
 
 ///|

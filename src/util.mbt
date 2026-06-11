@@ -42,11 +42,6 @@ fn contains_char(text : String, needle : Int) -> Bool {
 }
 
 ///|
-fn is_space(c : Int) -> Bool {
-  c == ' ' || c == '\t' || c == '\n' || c == '\r'
-}
-
-///|
 fn has_prefix_at(text : String, prefix : String, start : Int) -> Bool {
   guard start >= 0 && start + prefix.length() <= text.length() else { false }
   for i in 0..<prefix.length() {

@@ -137,9 +137,30 @@ pub fn Events::sink(Self) -> Sink
 pub struct Html {
   // private fields
 }
-pub fn Html::Html(size_hint? : Int) -> Self
+pub fn Html::Html(HtmlRenderers, size_hint? : Int) -> Self
 pub fn Html::sink(Self) -> Sink
 pub fn Html::to_string(Self) -> String
+
+pub struct HtmlRenderers {
+  // private fields
+}
+pub fn HtmlRenderers::HtmlRenderers() -> Self
+pub fn HtmlRenderers::disable(Self, Tag) -> Self
+pub fn HtmlRenderers::enable(Self, Tag) -> Self
+pub fn HtmlRenderers::extend(Self, Self) -> Self
+pub fn HtmlRenderers::register(Self, Tag, (HtmlWriter, Element) -> String) -> Self
+pub fn HtmlRenderers::replace(Self, Tag, (HtmlWriter, Element) -> String) -> Self
+
+pub struct HtmlWriter {
+  // private fields
+}
+pub fn HtmlWriter::starts_with_block_child(Self) -> Bool
+pub fn HtmlWriter::write_attrs(Self, Array[Attr]) -> Unit
+pub fn HtmlWriter::write_attrs_except1(Self, Array[Attr], String) -> Unit
+pub fn HtmlWriter::write_attrs_except2(Self, Array[Attr], String, String) -> Unit
+pub fn HtmlWriter::write_attrs_except3(Self, Array[Attr], String, String, String) -> Unit
+pub fn HtmlWriter::write_escaped(Self, String) -> Unit
+pub fn HtmlWriter::write_string(Self, String) -> Unit
 
 pub struct InlineContext {
   // private fields
@@ -242,6 +263,8 @@ pub fn Tag::to_string(Self) -> String
 pub type BlockRuleFn = (BlockContext) -> BlockRuleResult
 
 pub type CoreRuleFn = (Sink) -> Sink
+
+pub type HtmlRendererFn = (HtmlWriter, Element) -> String
 
 pub type InlineRuleFn = (InlineContext, Sink) -> InlineRuleResult
 

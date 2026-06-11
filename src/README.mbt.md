@@ -12,7 +12,7 @@ Use the CommonMark rule with the sink for the output you want:
 ```mbt check
 ///|
 test {
-  let html = @markdown.Html()
+  let html = @markdown.Html(@commonmark.html_renderers())
   @markdown.Processor(@commonmark.rule()).parse(
     "# Hello *MoonBit*",
     html.sink(),
@@ -41,7 +41,7 @@ You can also keep a processor and reuse it:
 ```mbt check
 ///|
 test {
-  let html = @markdown.Html()
+  let html = @markdown.Html(@commonmark.html_renderers())
   @markdown.Processor(@commonmark.rule()).parse("# Hello", html.sink())
   assert_eq(html.to_string(), "<h1>Hello</h1>\n")
 }
@@ -64,6 +64,20 @@ test {
 Rules are composable syntax definitions. A rule can register parser entries or
 apply controls such as `disable`, `enable`, and `replace`. Processors and rules
 are immutable builders: each method returns a new value.
+
+Syntax extensions and HTML renderers are configured separately. For example,
+GFM tables and strikethrough emit GFM event tags, and `@gfm.html_renderers()`
+provides CommonMark plus GFM renderers.
+
+```mbt check
+///|
+test {
+  let rule = @gfm.rule()
+  let html = @markdown.Html(@gfm.html_renderers())
+  @markdown.Processor(rule).parse("~~done~~", html.sink())
+  assert_eq(html.to_string(), "<p><del>done</del></p>\n")
+}
+```
 
 ```mbt check
 ///|
@@ -100,7 +114,7 @@ test {
     },
   )
 
-  let html = @markdown.Html()
+  let html = @markdown.Html(@commonmark.html_renderers())
   let rule = @commonmark.rule().extend(math)
   @markdown.Processor(rule).parse("Euler: $x + y$", html.sink())
   assert_eq(html.to_string(), "<p>Euler: <x:math>x + y</x:math></p>\n")
@@ -114,7 +128,7 @@ test {
     .disable(@markdown.RuleName::commonmark("block:html"))
     .disable(@markdown.RuleName::commonmark("inline:raw_html"))
 
-  let html = @markdown.Html()
+  let html = @markdown.Html(@commonmark.html_renderers())
   let rule = @commonmark.rule().extend(no_raw_html)
   @markdown.Processor(rule).parse("<span>raw</span>", html.sink())
   assert_eq(html.to_string(), "<p>&lt;span&gt;raw&lt;/span&gt;</p>\n")
