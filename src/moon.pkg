@@ -1,6 +1,6 @@
 import {
-  "shiguri/markdown/commonmark" @commonmark,
-  "shiguri/markdown/gfm" @gfm,
+  "shiguri-01/markdown/commonmark" @commonmark,
+  "shiguri-01/markdown/gfm" @gfm,
 } for "test"
 
 import {

@@ -1,9 +1,9 @@
 import {
   "moonbitlang/core/env",
   "moonbitlang/core/json",
-  "shiguri/markdown" @markdown,
-  "shiguri/markdown/commonmark" @commonmark,
-  "shiguri/markdown/gfm" @gfm,
+  "shiguri-01/markdown" @markdown,
+  "shiguri-01/markdown/commonmark" @commonmark,
+  "shiguri-01/markdown/gfm" @gfm,
 }
 
 options(

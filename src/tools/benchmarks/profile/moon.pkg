@@ -1,6 +1,6 @@
 import {
-  "shiguri/markdown/commonmark" @commonmark,
-  "shiguri/markdown" @markdown,
+  "shiguri-01/markdown/commonmark" @commonmark,
+  "shiguri-01/markdown" @markdown,
 }
 
 options(

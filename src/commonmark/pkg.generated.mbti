@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "shiguri/markdown/commonmark"
+package "shiguri-01/markdown/commonmark"
 
 import {
-  "shiguri/markdown",
+  "shiguri-01/markdown",
 }
 
 // Values

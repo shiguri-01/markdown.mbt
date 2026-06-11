@@ -41,7 +41,7 @@ conformance target="commonmark" *args:
 
 # Run internal Markdown processing benchmarks.
 bench:
-  moon bench --package shiguri/markdown/tools/benchmarks --release
+  moon bench --package shiguri-01/markdown/tools/benchmarks --release
 
 # Run cross-parser HTML benchmarks from the Nix dev shell.
 compare:

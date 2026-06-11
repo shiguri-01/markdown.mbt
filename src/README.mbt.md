@@ -1,4 +1,4 @@
-# shiguri/markdown
+# shiguri-01/markdown
 
 An event-driven Markdown parser for MoonBit.
 
