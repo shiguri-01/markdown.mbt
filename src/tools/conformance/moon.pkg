@@ -6,18 +6,28 @@ import {
   "shiguri-01/markdown/gfm",
 }
 
+rule(
+  name: "embed-commonmark-spec-json",
+  command: ":embed -i $input -o $output --name commonmark_spec_json",
+)
+
+rule(
+  name: "embed-gfm-spec-json",
+  command: ":embed -i $input -o $output --name gfm_spec_json",
+)
+
+dev_build(
+  rule: "embed-commonmark-spec-json",
+  input: "../../../testdata/commonmark-0.31.2-spec.json",
+  output: "commonmark_spec_json.mbt",
+)
+
+dev_build(
+  rule: "embed-gfm-spec-json",
+  input: "../../../testdata/gfm-0.29-spec.json",
+  output: "gfm_spec_json.mbt",
+)
+
 options(
   "is-main": true,
-  "pre-build": [
-    {
-      "input": "../../../testdata/commonmark-0.31.2-spec.json",
-      "output": "commonmark_spec_json.mbt",
-      "command": ":embed -i $input -o $output --name commonmark_spec_json",
-    },
-    {
-      "input": "../../../testdata/gfm-0.29-spec.json",
-      "output": "gfm_spec_json.mbt",
-      "command": ":embed -i $input -o $output --name gfm_spec_json",
-    },
-  ],
 )
