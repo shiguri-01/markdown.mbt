@@ -439,7 +439,7 @@ fn copy_string_options(values : Array[String?]) -> Array[String?] {
 }
 
 ///|
-pub impl ToJson for AstNode with to_json(self) {
+pub impl ToJson for AstNode with fn to_json(self) {
   match self {
     AstRoot(children) =>
       Json::object({

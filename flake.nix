@@ -60,6 +60,7 @@
         system:
         let
           pkgs = pkgsFor system;
+          moonbit = pkgs.moonbit-bin.moonbit.v0_10_0-e66899a54-60bc8c3;
           moonbit-node = pkgs.runCommand "moonbit-node" {
             nativeBuildInputs = [ pkgs.makeWrapper ];
           } ''
@@ -117,7 +118,7 @@
                     moonbit-node
                     pkgs.bun
                     pkgs.cmark
-                    pkgs.moonbit-bin.moonbit.latest
+                    moonbit
                   ]
                 }
               runHook postInstall
@@ -131,7 +132,7 @@
             pkgs.just
             pkgs.lefthook
             markdown-compare
-            pkgs.moonbit-bin.moonbit.latest
+            moonbit
           ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
             pkgs.perf
           ];

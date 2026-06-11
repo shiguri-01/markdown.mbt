@@ -1,8 +1,8 @@
 import {
-  "moonbitlang/core/bench" @bench,
+  "moonbitlang/core/bench",
   "moonbitlang/core/env",
-  "shiguri-01/markdown/commonmark" @commonmark,
-  "shiguri-01/markdown" @markdown,
+  "shiguri-01/markdown/commonmark",
+  "shiguri-01/markdown",
 }
 
 options(

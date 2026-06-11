@@ -22,11 +22,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1778651571,
-        "narHash": "sha256-s1EfvrJEqnz5+MI9+XTiOhcDUoO40BeaNG+prVsRr5M=",
+        "lastModified": 1781072898,
+        "narHash": "sha256-Ncfk7q+NoUSuSlm1TNvHnI1Zp8Z6EJVjZ+bma6qpPXI=",
         "owner": "moonbit-community",
         "repo": "moonbit-overlay",
-        "rev": "b12e1ab1f4f966c6a75c8949fdde94eac5e59287",
+        "rev": "96727d9f3962fffe8342713f94bd714f81a00c6b",
         "type": "github"
       },
       "original": {

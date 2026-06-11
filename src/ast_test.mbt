@@ -77,10 +77,11 @@ test "ast reports invalid event streams" {
   let sink = ast.sink()
   sink.emit(@markdown.Exit(@markdown.Tag::raw("x:missing")))
   sink.finish()
-  let result = try? ast.result()
-  match result {
-    Err(@markdown.AstError::UnexpectedExit(tag)) =>
+  try ast.result() catch {
+    @markdown.AstError::UnexpectedExit(tag) =>
       assert_eq(tag.to_string(), "x:missing")
+    _ => abort("expected unexpected exit")
+  } noraise {
     _ => abort("expected unexpected exit")
   }
 }

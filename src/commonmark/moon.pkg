@@ -1,3 +1,3 @@
 import {
-  "shiguri-01/markdown" @markdown,
+  "shiguri-01/markdown",
 }
