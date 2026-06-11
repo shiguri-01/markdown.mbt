@@ -42,13 +42,13 @@ fn paragraph_text(ctx : BlockContext, end : Int) -> String {
   let text = StringBuilder::new()
   for i in ctx.line_index()..<end {
     if i > ctx.line_index() {
-      text.write_string("\n")
+      text <+ "\n"
     }
     let line = paragraph_line(ctx.source_lines()[i])
     if i + 1 == end {
-      text.write_string(strip_trailing_spaces(line))
+      text <+ "\{strip_trailing_spaces(line)}"
     } else {
-      text.write_string(line)
+      text <+ "\{line}"
     }
   }
   text.to_string()
@@ -209,9 +209,9 @@ fn setext_heading_content(ctx : BlockContext, underline_index : Int) -> String {
   let text = StringBuilder::new()
   for i in ctx.line_index()..<underline_index {
     if i > ctx.line_index() {
-      text.write_string("\n")
+      text <+ "\n"
     }
-    text.write_string(paragraph_line(ctx.source_lines()[i]))
+    text <+ "\{paragraph_line(ctx.source_lines()[i])}"
   }
   trim(text.to_string())
 }
@@ -322,8 +322,8 @@ fn html_block_until_terminator(
   }
   let raw = StringBuilder::new()
   for i in ctx.line_index()..<ctx.source_lines().length() {
-    raw.write_string(ctx.source_lines()[i])
-    raw.write_string("\n")
+    raw <+ "\{ctx.source_lines()[i]}"
+    raw <+ "\n"
     if find_substring(ctx.source_lines()[i], terminator, 0) >= 0 {
       return block_match(
         i - ctx.line_index() + 1,
@@ -361,8 +361,8 @@ fn html_block_until_blank(ctx : BlockContext) -> BlockRuleResult {
         @markdown.EventFragment::html(raw.to_string()),
       )
     }
-    raw.write_string(ctx.source_lines()[i])
-    raw.write_string("\n")
+    raw <+ "\{ctx.source_lines()[i]}"
+    raw <+ "\n"
   }
   block_match(
     ctx.source_lines().length() - ctx.line_index(),
@@ -457,11 +457,9 @@ fn fenced_code_block(ctx : BlockContext) -> BlockRuleResult {
       )
     }
     if i > ctx.line_index() + 1 {
-      code.write_string("\n")
+      code <+ "\n"
     }
-    code.write_string(
-      strip_fenced_code_indent(ctx.source_lines()[i], opening_indent),
-    )
+    code <+ "\{strip_fenced_code_indent(ctx.source_lines()[i], opening_indent)}"
   }
   block_match(
     ctx.source_lines().length() - ctx.line_index(),
@@ -516,7 +514,7 @@ fn indented_code_block(ctx : BlockContext) -> BlockRuleResult {
     if is_blank(ctx.source_lines()[i]) {
       if next_nonblank_is_indented_code(ctx.source_lines(), i + 1) {
         if i > ctx.line_index() {
-          code.write_string("\n")
+          code <+ "\n"
         }
         if count_leading_spaces(ctx.source_lines()[i]) >= 4 {
           code.write_view(ctx.source_lines()[i][4:])
@@ -531,7 +529,7 @@ fn indented_code_block(ctx : BlockContext) -> BlockRuleResult {
       break
     }
     if i > ctx.line_index() {
-      code.write_string("\n")
+      code <+ "\n"
     }
     code.write_view(ctx.source_lines()[i][4:])
     i = i + 1
@@ -831,7 +829,7 @@ fn expand_tabs_from_column(
   guard prefix_spaces > 0 || find_char(text, '\t', 0) >= 0 else { text }
   let out = StringBuilder::new(size_hint=text.length() + prefix_spaces + 4)
   for _ in 0..<prefix_spaces {
-    out.write_string(" ")
+    out <+ " "
   }
   let mut column = start_column
   for i in 0..<text.length() {
@@ -839,7 +837,7 @@ fn expand_tabs_from_column(
       '\t' => {
         let spaces = 4 - column % 4
         for _ in 0..<spaces {
-          out.write_string(" ")
+          out <+ " "
         }
         column = column + spaces
       }

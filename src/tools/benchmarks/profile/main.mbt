@@ -25,23 +25,21 @@ fn render_length(processor : @markdown.Processor, input : String) -> Int {
 ///|
 fn fixture() -> String {
   let out = StringBuilder::new()
-  out.write_string("# markdown.mbt\n\n")
-  out.write_string(
-    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling.\n\n",
-  )
+  out <+ "# markdown.mbt\n\n"
+  out <+
+    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling.\n\n"
   for i in 0..<460 {
-    out.write_string("## Section ")
-    out.write_string(i.to_string())
-    out.write_string("\n\n")
-    out.write_string(
-      "This paragraph includes `inline code`, *emphasis*, **strong text**, and [cross references](#section-",
-    )
-    out.write_string(i.to_string())
-    out.write_string(").\n\n")
-    out.write_string("- Parse source into a stable event stream.\n")
-    out.write_string("- Render known CommonMark nodes to HTML.\n")
-    out.write_string("- Preserve extension elements for downstream tools.\n\n")
-    out.write_string("> Profiling should keep enough parser work visible.\n\n")
+    out <+ "## Section "
+    out <+ "\{i}"
+    out <+ "\n\n"
+    out <+
+      "This paragraph includes `inline code`, *emphasis*, **strong text**, and [cross references](#section-"
+    out <+ "\{i}"
+    out <+ ").\n\n"
+    out <+ "- Parse source into a stable event stream.\n"
+    out <+ "- Render known CommonMark nodes to HTML.\n"
+    out <+ "- Preserve extension elements for downstream tools.\n\n"
+    out <+ "> Profiling should keep enough parser work visible.\n\n"
   }
   out.to_string()
 }

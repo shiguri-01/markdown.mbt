@@ -121,9 +121,9 @@ fn block_lines_text(lines : Array[String]) -> String {
   let text = StringBuilder::new()
   for i in 0..<lines.length() {
     if i > 0 {
-      text.write_string("\n")
+      text <+ "\n"
     }
-    text.write_string(lines[i])
+    text <+ "\{lines[i]}"
   }
   text.to_string()
 }

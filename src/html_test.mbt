@@ -35,9 +35,9 @@ test "html sink escapes extension events and preserves raw html" {
 test "html renderers map extension tags" {
   let tag = @markdown.Tag::raw("x:note")
   let renderers = @markdown.HtmlRenderers().register(tag, fn(writer, el) {
-    writer.write_string("<aside")
+    writer <+ "<aside"
     writer.write_attrs(el.attrs())
-    writer.write_string(">")
+    writer <+ ">"
     "</aside>"
   })
   let html = @markdown.Html(renderers)
@@ -87,7 +87,7 @@ test "html renderer controls apply across later extensions" {
       @commonmark.rule(),
       @markdown.HtmlRenderers()
       .replace(paragraph, fn(writer, _el) {
-        writer.write_string("<aside>")
+        writer <+ "<aside>"
         "</aside>"
       })
       .extend(@commonmark.html_renderers()),

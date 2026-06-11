@@ -2,7 +2,7 @@
 fn repeat_text(text : String, count : Int) -> String {
   let out = StringBuilder::new(size_hint=text.length() * count)
   for _ in 0..<count {
-    out.write_string(text)
+    out <+ "\{text}"
   }
   out.to_string()
 }
@@ -12,7 +12,7 @@ fn repeat_text_to_size(text : String, size : Int) -> String {
   let out = StringBuilder::new(size_hint=size)
   let mut remaining = size
   while remaining >= text.length() {
-    out.write_string(text)
+    out <+ "\{text}"
     remaining = remaining - text.length()
   }
   if remaining > 0 {
@@ -86,36 +86,30 @@ fn readme_like_huge_document() -> String {
 ///|
 fn readme_like_document_sections(count : Int) -> String {
   let out = StringBuilder::new()
-  out.write_string("# markdown.mbt\n\n")
-  out.write_string(
-    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling, rule hooks, and HTML rendering.\n\n",
-  )
-  out.write_string("## Installation\n\n")
-  out.write_string("```moonbit\n")
-  out.write_string("let html = @markdown.Html(@commonmark.html_renderers())\n")
-  out.write_string(
-    "@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n",
-  )
-  out.write_string("```\n\n")
-  out.write_string("## Features\n\n")
+  out <+ "# markdown.mbt\n\n"
+  out <+
+    "A MoonBit Markdown parser with CommonMark-compatible block and inline handling, rule hooks, and HTML rendering.\n\n"
+  out <+ "## Installation\n\n"
+  out <+ "```moonbit\n"
+  out <+ "let html = @markdown.Html(@commonmark.html_renderers())\n"
+  out <+ "@markdown.Processor(@commonmark.rule()).parse(source, html.sink())\n"
+  out <+ "```\n\n"
+  out <+ "## Features\n\n"
   for i in 0..<count {
-    out.write_string("### Feature area ")
-    out.write_string(i.to_string())
-    out.write_string("\n\n")
-    out.write_string(
-      "This section documents parser behavior for paragraphs, lists, links, code spans, and extension rules. ",
-    )
-    out.write_string(
-      "It includes `inline code`, *emphasis*, **strong text**, and [cross references](#feature-area-",
-    )
-    out.write_string(i.to_string())
-    out.write_string(").\n\n")
-    out.write_string("- Parse source into a stable event stream.\n")
-    out.write_string("- Render known CommonMark nodes to HTML.\n")
-    out.write_string("- Preserve extension elements for downstream tools.\n\n")
-    out.write_string(
-      "> Note: rules can add new rules without changing the default rule.\n\n",
-    )
+    out <+ "### Feature area "
+    out <+ "\{i}"
+    out <+ "\n\n"
+    out <+
+      "This section documents parser behavior for paragraphs, lists, links, code spans, and extension rules. "
+    out <+
+      "It includes `inline code`, *emphasis*, **strong text**, and [cross references](#feature-area-"
+    out <+ "\{i}"
+    out <+ ").\n\n"
+    out <+ "- Parse source into a stable event stream.\n"
+    out <+ "- Render known CommonMark nodes to HTML.\n"
+    out <+ "- Preserve extension elements for downstream tools.\n\n"
+    out <+
+      "> Note: rules can add new rules without changing the default rule.\n\n"
   }
   out.to_string()
 }
@@ -148,27 +142,24 @@ fn gfm_feature_large_document() -> String {
 ///|
 fn gfm_feature_document_sections(count : Int) -> String {
   let out = StringBuilder::new()
-  out.write_string("# GFM extension workload\n\n")
+  out <+ "# GFM extension workload\n\n"
   for i in 0..<count {
-    out.write_string("## Iteration ")
-    out.write_string(i.to_string())
-    out.write_string("\n\n")
-    out.write_string("| task | owner | status |\n")
-    out.write_string("| :--- | ---: | :---: |\n")
-    out.write_string("| www.example.com/")
-    out.write_string(i.to_string())
-    out.write_string(" | @bot | ~~stale~~ |\n")
-    out.write_string("| foo")
-    out.write_string(i.to_string())
-    out.write_string("@example.com | team | active |\n\n")
-    out.write_string("- [x] parse table rows with escaped pipes\n")
-    out.write_string("- [ ] render task list checkboxes\n")
-    out.write_string(
-      "- [x] link https://github.com/moonbitlang/moonbit-docs\n\n",
-    )
-    out.write_string(
-      "A paragraph with ~~deleted text~~, www.commonmark.org/help, and a filtered <script>x</script> tag.\n\n",
-    )
+    out <+ "## Iteration "
+    out <+ "\{i}"
+    out <+ "\n\n"
+    out <+ "| task | owner | status |\n"
+    out <+ "| :--- | ---: | :---: |\n"
+    out <+ "| www.example.com/"
+    out <+ "\{i}"
+    out <+ " | @bot | ~~stale~~ |\n"
+    out <+ "| foo"
+    out <+ "\{i}"
+    out <+ "@example.com | team | active |\n\n"
+    out <+ "- [x] parse table rows with escaped pipes\n"
+    out <+ "- [ ] render task list checkboxes\n"
+    out <+ "- [x] link https://github.com/moonbitlang/moonbit-docs\n\n"
+    out <+
+      "A paragraph with ~~deleted text~~, www.commonmark.org/help, and a filtered <script>x</script> tag.\n\n"
   }
   out.to_string()
 }
@@ -176,27 +167,25 @@ fn gfm_feature_document_sections(count : Int) -> String {
 ///|
 fn issue_thread_document_comments(count : Int) -> String {
   let out = StringBuilder::new()
-  out.write_string("# Parser regression discussion\n\n")
+  out <+ "# Parser regression discussion\n\n"
   for i in 0..<count {
-    out.write_string("## Comment ")
-    out.write_string(i.to_string())
-    out.write_string("\n\n")
-    out.write_string(
-      "The failing input combines blockquotes, list items, escaped punctuation, and reference links in one report.\n\n",
-    )
-    out.write_string(
-      "> Expected output should keep `code` intact and avoid merging unrelated paragraphs.\n\n",
-    )
-    out.write_string("- [ ] reproduce with native backend\n")
-    out.write_string("- [x] add a focused regression test\n")
-    out.write_string("- [ ] compare against the rendered HTML output\n\n")
-    out.write_string("```text\n")
-    out.write_string("line ")
-    out.write_string(i.to_string())
-    out.write_string(": *literal* [label][ref] <span>html</span>\n")
-    out.write_string("```\n\n")
+    out <+ "## Comment "
+    out <+ "\{i}"
+    out <+ "\n\n"
+    out <+
+      "The failing input combines blockquotes, list items, escaped punctuation, and reference links in one report.\n\n"
+    out <+
+      "> Expected output should keep `code` intact and avoid merging unrelated paragraphs.\n\n"
+    out <+ "- [ ] reproduce with native backend\n"
+    out <+ "- [x] add a focused regression test\n"
+    out <+ "- [ ] compare against the rendered HTML output\n\n"
+    out <+ "```text\n"
+    out <+ "line "
+    out <+ "\{i}"
+    out <+ ": *literal* [label][ref] <span>html</span>\n"
+    out <+ "```\n\n"
   }
-  out.write_string("[ref]: /issues/parser-regression \"parser regression\"\n")
+  out <+ "[ref]: /issues/parser-regression \"parser regression\"\n"
   out.to_string()
 }
 

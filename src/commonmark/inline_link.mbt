@@ -118,13 +118,14 @@ fn image_alt_text(text : String, services : ParserServices) -> String {
   let out = StringBuilder::new(size_hint=text.length())
   for event in buffer.owned_events() {
     match event {
-      @markdown.Text(text) => out.write_string(text)
-      @markdown.SoftBreak => out.write_string("\n")
-      @markdown.HardBreak => out.write_string("\n")
-      @markdown.RawHtml(raw) => out.write_string(raw)
+      @markdown.Text(text) => out <+ "\{text}"
+      @markdown.SoftBreak => out <+ "\n"
+      @markdown.HardBreak => out <+ "\n"
+      @markdown.RawHtml(raw) => out <+ "\{raw}"
       @markdown.Enter(el) =>
         if el.tag().to_string() == "cm:image" {
-          out.write_string(attr_value(el.attrs(), "alt", ""))
+          let alt = attr_value(el.attrs(), "alt", "")
+          out <+ "\{alt}"
         }
       _ => ()
     }
@@ -193,7 +194,7 @@ fn normalize_attribute_text(text : String) -> String {
             if start < i {
               out.write_view(text[start:i])
             }
-            out.write_string(decoded)
+            out <+ "\{decoded}"
             i = end + 1
             start = i
           }
@@ -544,10 +545,7 @@ fn StringBuilder::write_percent_utf8(self : StringBuilder, c : Int) -> Unit {
 
 ///|
 fn StringBuilder::write_percent_byte(self : StringBuilder, byte : Int) -> Unit {
-  self
-  ..write_string("%")
-  ..write_string(hex_digit((byte >> 4) & 0xF))
-  .write_string(hex_digit(byte & 0xF))
+  self <+ "%\{hex_digit((byte >> 4) & 0xF)}\{hex_digit(byte & 0xF)}"
 }
 
 ///|

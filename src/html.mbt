@@ -53,12 +53,11 @@ fn Html::write_event(self : Html, event : Event) -> Unit {
       if self.close_stack.length() > 0 {
         let close = self.close_stack[self.close_stack.length() - 1]
         ignore(self.close_stack.pop())
-        self.out.write_string(close)
+        self.out <+ "\{close}"
       } else {
-        self.out
-        ..write_string("</")
-        ..write_escaped_html(tag.value)
-        .write_string(">")
+        self.out <+ "</"
+        self.out.write_escaped_html(tag.value)
+        self.out <+ ">"
       }
     }
     Text(text) => {
@@ -67,15 +66,15 @@ fn Html::write_event(self : Html, event : Event) -> Unit {
     }
     SoftBreak => {
       self.flush_pending_item_open(false)
-      self.out.write_string("\n")
+      self.out <+ "\n"
     }
     HardBreak => {
       self.flush_pending_item_open(false)
-      self.out.write_string("<br />\n")
+      self.out <+ "<br />\n"
     }
     RawHtml(raw) => {
       self.flush_pending_item_open(contains_char(raw, '\n'))
-      self.out.write_string(raw)
+      self.out <+ "\{raw}"
     }
   }
 }
@@ -113,11 +112,10 @@ fn write_open_html(
   match plan.find(el.tag) {
     Some(f) => f({ out, block_child }, el)
     None => {
-      out
-      ..write_string("<")
-      ..write_escaped_html(el.tag.value)
-      ..write_attrs(el.attrs)
-      .write_string(">")
+      out <+ "<"
+      out.write_escaped_html(el.tag.value)
+      out.write_attrs(el.attrs)
+      out <+ ">"
       "</" + escape_html(el.tag.value) + ">"
     }
   }
@@ -179,12 +177,11 @@ fn StringBuilder::write_attrs_except3(
 
 ///|
 fn StringBuilder::write_attr(self : StringBuilder, attr : Attr) -> Unit {
-  self
-  ..write_string(" ")
-  ..write_escaped_html(attr.name.value)
-  ..write_string("=\"")
-  ..write_escaped_html(attr.value)
-  .write_string("\"")
+  self <+ " "
+  self.write_escaped_html(attr.name.value)
+  self <+ "=\""
+  self.write_escaped_html(attr.value)
+  self <+ "\""
 }
 
 ///|
@@ -201,7 +198,7 @@ fn StringBuilder::write_escaped_html(
     }
   }
   if first < 0 {
-    self.write_string(input)
+    self <+ "\{input}"
     return
   }
   let mut start = 0
@@ -212,28 +209,28 @@ fn StringBuilder::write_escaped_html(
         if start < i {
           self.write_view(input[start:i])
         }
-        self.write_string("&amp;")
+        self <+ "&amp;"
         start = i + 1
       }
       '<' => {
         if start < i {
           self.write_view(input[start:i])
         }
-        self.write_string("&lt;")
+        self <+ "&lt;"
         start = i + 1
       }
       '>' => {
         if start < i {
           self.write_view(input[start:i])
         }
-        self.write_string("&gt;")
+        self <+ "&gt;"
         start = i + 1
       }
       '"' => {
         if start < i {
           self.write_view(input[start:i])
         }
-        self.write_string("&quot;")
+        self <+ "&quot;"
         start = i + 1
       }
       _ => ()
@@ -267,28 +264,28 @@ fn escape_html(input : String) -> String {
         if start < i {
           out.write_view(input[start:i])
         }
-        out.write_string("&amp;")
+        out <+ "&amp;"
         start = i + 1
       }
       '<' => {
         if start < i {
           out.write_view(input[start:i])
         }
-        out.write_string("&lt;")
+        out <+ "&lt;"
         start = i + 1
       }
       '>' => {
         if start < i {
           out.write_view(input[start:i])
         }
-        out.write_string("&gt;")
+        out <+ "&gt;"
         start = i + 1
       }
       '"' => {
         if start < i {
           out.write_view(input[start:i])
         }
-        out.write_string("&quot;")
+        out <+ "&quot;"
         start = i + 1
       }
       _ => ()

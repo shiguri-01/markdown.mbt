@@ -1179,7 +1179,7 @@ fn normalize_code_span(text : String) -> String {
   let normalized = StringBuilder::new(size_hint=text.length())
   for i in 0..<text.length() {
     if is_space(char_at(text, i)) {
-      normalized.write_string(" ")
+      normalized <+ " "
     } else {
       normalized.write_view(text[i:i + 1])
     }

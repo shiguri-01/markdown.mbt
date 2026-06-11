@@ -2,9 +2,9 @@
 fn repeated_paragraphs(count : Int) -> String {
   let out = StringBuilder::new()
   for i in 0..<count {
-    out.write_string("padding line ")
-    out.write_string(i.to_string())
-    out.write_string("\n\n")
+    out <+ "padding line "
+    out <+ "\{i}"
+    out <+ "\n\n"
   }
   out.to_string()
 }

@@ -315,7 +315,7 @@ fn collect_reference_label(
     }
     line_index = line_index + 1
     if line_index < lines.length() {
-      label.write_string("\n")
+      label <+ "\n"
       pos = 0
     }
   }
@@ -426,7 +426,7 @@ fn parse_reference_title_lines(
     if is_blank(lines[line_index]) {
       return None
     }
-    content.write_string("\n")
+    content <+ "\n"
     let line = lines[line_index]
     let mut j = 0
     while j < line.length() {
@@ -583,7 +583,7 @@ fn ascii_lower(input : String) -> String {
   for i in first_upper..<input.length() {
     let c = char_at(input, i)
     if c >= 'A' && c <= 'Z' {
-      out.write_string(ascii_char(c + ('a' - 'A')))
+      out <+ "\{ascii_char(c + ('a' - 'A'))}"
     } else {
       out.write_view(input[i:i + 1])
     }
@@ -611,7 +611,7 @@ fn case_fold(input : String) -> String {
   for i in first_fold..<input.length() {
     let c = char_at(input, i)
     match unicode_case_fold_char(c) {
-      Some(folded) => out.write_string(folded)
+      Some(folded) => out <+ "\{folded}"
       None => out.write_view(input[i:i + 1])
     }
   }
@@ -647,7 +647,7 @@ fn collapse_spaces(input : String) -> String {
     let c = char_at(input, i)
     if is_space(c) {
       if !in_space {
-        out.write_string(" ")
+        out <+ " "
       }
       in_space = true
     } else {

@@ -289,13 +289,13 @@ fn expand_leading_tabs(line : String) -> String {
     let c = char_at(line, i)
     match c {
       ' ' => {
-        out.write_string(" ")
+        out <+ " "
         continue i + 1, column + 1
       }
       '\t' => {
         let spaces = 4 - column % 4
         for _ in 0..<spaces {
-          out.write_string(" ")
+          out <+ " "
         }
         continue i + 1, column + spaces
       }

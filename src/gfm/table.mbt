@@ -205,10 +205,10 @@ fn unescape_table_cell(cell : String) -> String {
     if i + 1 < cell.length() &&
       char_at(cell, i) == '\\' &&
       char_at(cell, i + 1) == '|' {
-      out.write_string("|")
+      out <+ "|"
       i = i + 2
     } else {
-      out.write_string(cell[i:i + 1].to_owned())
+      out <+ "\{cell[i:i + 1].to_owned()}"
       i = i + 1
     }
   }

@@ -231,7 +231,7 @@ fn inline_trigger_chars(rules : Array[RuleEntry]) -> String {
       let c = char_at(rule.triggers, i)
       if !array_contains_int(seen, c) {
         seen.push(c)
-        out.write_string(rule.triggers[i:i + 1].to_owned())
+        out <+ "\{rule.triggers[i:i + 1].to_owned()}"
       }
     }
   }

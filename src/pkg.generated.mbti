@@ -155,6 +155,7 @@ pub struct HtmlWriter {
   // private fields
 }
 pub fn HtmlWriter::starts_with_block_child(Self) -> Bool
+pub fn HtmlWriter::write(Self, String) -> Unit
 pub fn HtmlWriter::write_attrs(Self, Array[Attr]) -> Unit
 pub fn HtmlWriter::write_attrs_except1(Self, Array[Attr], String) -> Unit
 pub fn HtmlWriter::write_attrs_except2(Self, Array[Attr], String, String) -> Unit

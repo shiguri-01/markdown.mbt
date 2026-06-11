@@ -262,7 +262,7 @@ fn ast_text_value(nodes : Array[AstNode]) -> String {
   let out = StringBuilder::new()
   for node in nodes {
     match node {
-      AstText(text) => out.write_string(text)
+      AstText(text) => out <+ "\{text}"
       _ => ()
     }
   }

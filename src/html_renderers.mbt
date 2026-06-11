@@ -10,8 +10,14 @@ pub struct HtmlWriter {
 
 ///|
 /// Writes raw HTML.
+pub fn HtmlWriter::write(self : HtmlWriter, value : String) -> Unit {
+  self.out <+ "\{value}"
+}
+
+///|
+/// Writes raw HTML.
 pub fn HtmlWriter::write_string(self : HtmlWriter, value : String) -> Unit {
-  self.out.write_string(value)
+  self.write(value)
 }
 
 ///|

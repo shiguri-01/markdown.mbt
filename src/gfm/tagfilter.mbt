@@ -18,10 +18,10 @@ fn filter_disallowed_html(raw : String) -> String {
   let mut i = 0
   while i < raw.length() {
     if char_at(raw, i) == '<' && disallowed_html_tag_at(raw, i) > i {
-      out.write_string("&lt;")
+      out <+ "&lt;"
       i = i + 1
     } else {
-      out.write_string(raw[i:i + 1].to_owned())
+      out <+ "\{raw[i:i + 1].to_owned()}"
       i = i + 1
     }
   }
@@ -70,7 +70,7 @@ fn ascii_lower(text : String) -> String {
   let out = StringBuilder::new()
   for i in 0..<text.length() {
     let c = to_lower_ascii(char_at(text, i))
-    out.write_string(ascii_char(c))
+    out <+ "\{ascii_char(c)}"
   }
   out.to_string()
 }

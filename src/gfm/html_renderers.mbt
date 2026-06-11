@@ -24,17 +24,14 @@ fn render_task_item_html(
   el : @markdown.Element,
 ) -> String {
   if writer.starts_with_block_child() {
-    writer.write_string("<li>\n")
+    writer <+ "<li>\n"
   } else {
-    writer.write_string("<li>")
+    writer <+ "<li>"
   }
   match attr_value(el.attrs(), "gfm:checked") {
     Some("true") =>
-      writer.write_string(
-        "<input checked=\"\" disabled=\"\" type=\"checkbox\"> ",
-      )
-    Some("false") =>
-      writer.write_string("<input disabled=\"\" type=\"checkbox\"> ")
+      writer <+ "<input checked=\"\" disabled=\"\" type=\"checkbox\"> "
+    Some("false") => writer <+ "<input disabled=\"\" type=\"checkbox\"> "
     _ => ()
   }
   "</li>\n"
@@ -45,9 +42,9 @@ fn render_strikethrough_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer.write_string("<del")
+  writer <+ "<del"
   writer.write_attrs(el.attrs())
-  writer.write_string(">")
+  writer <+ ">"
   "</del>"
 }
 
@@ -56,7 +53,7 @@ fn render_table_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer.write_string("<table>\n")
+  writer <+ "<table>\n"
   "</table>\n"
 }
 
@@ -65,7 +62,7 @@ fn render_thead_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer.write_string("<thead>\n")
+  writer <+ "<thead>\n"
   "</thead>\n"
 }
 
@@ -74,7 +71,7 @@ fn render_tbody_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer.write_string("<tbody>\n")
+  writer <+ "<tbody>\n"
   "</tbody>\n"
 }
 
@@ -83,7 +80,7 @@ fn render_tr_html(
   writer : @markdown.HtmlWriter,
   _el : @markdown.Element,
 ) -> String {
-  writer.write_string("<tr>\n")
+  writer <+ "<tr>\n"
   "</tr>\n"
 }
 
@@ -92,9 +89,9 @@ fn render_th_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer.write_string("<th")
+  writer <+ "<th"
   writer.write_attrs(el.attrs())
-  writer.write_string(">")
+  writer <+ ">"
   "</th>\n"
 }
 
@@ -103,9 +100,9 @@ fn render_td_html(
   writer : @markdown.HtmlWriter,
   el : @markdown.Element,
 ) -> String {
-  writer.write_string("<td")
+  writer <+ "<td"
   writer.write_attrs(el.attrs())
-  writer.write_string(">")
+  writer <+ ">"
   "</td>\n"
 }
 

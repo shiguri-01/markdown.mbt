@@ -17,7 +17,7 @@ test "commonmark inline text keeps ordinary spaces together" {
 test "commonmark inline text keeps long ordinary space runs together" {
   let spaces = StringBuilder::new(size_hint=128)
   for _ in 0..<128 {
-    spaces.write_string(" ")
+    spaces <+ " "
   }
   let events = @markdown.Events()
   @markdown.Processor(@commonmark.rule()).parse(
