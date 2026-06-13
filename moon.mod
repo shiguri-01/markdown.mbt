@@ -17,7 +17,9 @@ description = "Event-driven Markdown parser with CommonMark, GFM, HTML, and AST 
 options(
   source: "src",
   exclude: [
+    // Repository-only README symlink. Publish src/README.mbt.md instead.
     "AGENTS.md",
+    "README.md",
     "flake.lock",
     "flake.nix",
     "justfile",
